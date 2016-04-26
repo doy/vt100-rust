@@ -6,6 +6,8 @@ mod tests {
 
     #[test]
     fn object_creation() {
-        let _ = vt100::Screen::new(24, 80);
+        let screen = vt100::Screen::new(24, 80);
+        assert_eq!(screen.rows, 24);
+        assert_eq!(screen.cols, 80);
     }
 }
