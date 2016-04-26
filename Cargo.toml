@@ -3,3 +3,10 @@ name = "vt100"
 version = "0.1.0"
 authors = ["Jesse Luehrs <doy@tozt.net>"]
 build = "build.rs"
+
+[build-dependencies]
+pkg-config = "0.3.8"
+
+[dependencies]
+libc = "0.2.10"
+glib-sys = "0.3.0"

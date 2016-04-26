@@ -1,6 +1,5 @@
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {
-    }
-}
+extern crate libc;
+
+mod screen;
+
+pub use screen::Screen;
