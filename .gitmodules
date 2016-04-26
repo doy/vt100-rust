@@ -1,0 +1,3 @@
+[submodule "libvt100"]
+	path = libvt100
+	url = git@github.com:doy/libvt100
