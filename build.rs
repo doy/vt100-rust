@@ -1,12 +1,17 @@
+extern crate gcc;
 extern crate pkg_config;
 
-fn main() {
+fn libvt100() {
+    let dir = std::env::current_dir()
+        .unwrap_or_else(|e| { panic!("couldn't get cwd: {}", e) });;
     std::env::set_current_dir("libvt100")
         .unwrap_or_else(|e| { panic!("failed to chdir: {}", e) });
     let out = std::process::Command::new("make")
         .arg("static")
         .output()
         .unwrap_or_else(|e| { panic!("failed to exec: {}", e) });
+    std::env::set_current_dir(dir)
+        .unwrap_or_else(|e| { panic!("failed to chdir: {}", e) });
     if !out.status.success() {
         println!("{}", std::string::String::from_utf8_lossy(&out.stderr));
         std::process::exit(out.status.code().unwrap_or(255));
@@ -14,7 +19,9 @@ fn main() {
 
     println!("cargo:rustc-link-search=native=libvt100");
     println!("cargo:rustc-link-lib=static=vt100");
+}
 
+fn glib() {
     let lib_def = pkg_config::probe_library("glib-2.0")
         .unwrap_or_else(|e| {
             panic!("Couldn't find required dependency glib-2.0: {}", e);
@@ -25,4 +32,14 @@ fn main() {
     for lib in lib_def.libs {
         println!("cargo:rustc-link-lib={}", lib);
     }
+}
+
+fn libvt100_wrappers() {
+    gcc::compile_library("libvt100wrappers.a", &["src/ffi.c"]);
+}
+
+fn main() {
+    libvt100();
+    glib();
+    libvt100_wrappers();
 }

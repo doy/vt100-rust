@@ -21,6 +21,9 @@ extern "C" {
         outp: *mut *mut libc::c_char,
         outlen: *mut libc::size_t,
     );
+
+    pub fn vt100_wrapper_rows(screen: *mut types::ScreenImpl) -> libc::c_int;
+    pub fn vt100_wrapper_cols(screen: *mut types::ScreenImpl) -> libc::c_int;
 }
 
 #[cfg(test)]
