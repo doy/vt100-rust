@@ -2,5 +2,4 @@
 name = "vt100"
 version = "0.1.0"
 authors = ["Jesse Luehrs <doy@tozt.net>"]
-
-[dependencies]
+build = "build.rs"
