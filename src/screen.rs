@@ -24,6 +24,16 @@ impl Screen {
         unsafe { ffi::vt100_wrapper_cols(screen_impl) }
     }
 
+    pub fn set_window_size(&self, rows: i32, cols: i32) {
+        let Screen(screen_impl) = *self;
+        unsafe { ffi::vt100_screen_set_window_size(screen_impl, rows, cols) };
+    }
+
+    pub fn set_scrollback_length(&self, rows: i32) {
+        let Screen(screen_impl) = *self;
+        unsafe { ffi::vt100_screen_set_scrollback_length(screen_impl, rows) };
+    }
+
     pub fn process(&mut self, s: &str) -> u64 {
         let Screen(screen_impl) = *self;
         unsafe {

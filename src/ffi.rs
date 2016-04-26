@@ -22,6 +22,16 @@ extern "C" {
         outlen: *mut libc::size_t,
     );
 
+    pub fn vt100_screen_set_window_size(
+        screen: *mut types::ScreenImpl,
+        rows: libc::c_int,
+        cols: libc::c_int,
+    );
+    pub fn vt100_screen_set_scrollback_length(
+        screen: *mut types::ScreenImpl,
+        rows: libc::c_int,
+    );
+
     pub fn vt100_wrapper_rows(screen: *mut types::ScreenImpl) -> libc::c_int;
     pub fn vt100_wrapper_cols(screen: *mut types::ScreenImpl) -> libc::c_int;
 }
