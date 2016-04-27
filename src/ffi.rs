@@ -40,6 +40,11 @@ extern "C" {
 
     pub fn vt100_wrapper_rows(screen: *mut types::ScreenImpl) -> libc::c_int;
     pub fn vt100_wrapper_cols(screen: *mut types::ScreenImpl) -> libc::c_int;
+    pub fn vt100_wrapper_cell_is_wide(cell: *mut types::CellImpl) -> libc::c_int;
+    pub fn vt100_wrapper_cell_bold(cell: *mut types::CellImpl) -> libc::c_int;
+    pub fn vt100_wrapper_cell_italic(cell: *mut types::CellImpl) -> libc::c_int;
+    pub fn vt100_wrapper_cell_underline(cell: *mut types::CellImpl) -> libc::c_int;
+    pub fn vt100_wrapper_cell_inverse(cell: *mut types::CellImpl) -> libc::c_int;
 }
 
 #[cfg(test)]

@@ -67,4 +67,13 @@ mod tests {
             vt100::Color::ColorIdx(2)
         );
     }
+
+    #[test]
+    fn cell_attrs() {
+        let mut screen = vt100::Screen::new(24, 80);
+        let input = b"foo\x1b[31m\x1b[32mb\x1b[3;7;42ma\x1b[23mr";
+        screen.process(input);
+
+        assert!(screen.cell(0, 4).unwrap().italic());
+    }
 }

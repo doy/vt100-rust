@@ -2,6 +2,7 @@ use libc;
 use std;
 
 use color;
+use ffi;
 use types;
 
 pub struct Cell(*mut types::CellImpl);
@@ -55,5 +56,30 @@ impl Cell {
         };
         let attrs = unsafe { &(*prefix).attrs };
         color::Color::new(&attrs.bgcolor)
+    }
+
+    pub fn is_wide(&self) -> bool {
+        let Cell(cell_impl) = *self;
+        unsafe { ffi::vt100_wrapper_cell_is_wide(cell_impl) != 0 }
+    }
+
+    pub fn bold(&self) -> bool {
+        let Cell(cell_impl) = *self;
+        unsafe { ffi::vt100_wrapper_cell_bold(cell_impl) != 0 }
+    }
+
+    pub fn italic(&self) -> bool {
+        let Cell(cell_impl) = *self;
+        unsafe { ffi::vt100_wrapper_cell_italic(cell_impl) != 0 }
+    }
+
+    pub fn underline(&self) -> bool {
+        let Cell(cell_impl) = *self;
+        unsafe { ffi::vt100_wrapper_cell_underline(cell_impl) != 0 }
+    }
+
+    pub fn inverse(&self) -> bool {
+        let Cell(cell_impl) = *self;
+        unsafe { ffi::vt100_wrapper_cell_inverse(cell_impl) != 0 }
     }
 }
