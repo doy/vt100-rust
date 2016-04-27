@@ -6,22 +6,22 @@ int vt100_wrapper_cell_is_wide(struct vt100_cell *cell)
     return cell->is_wide;
 }
 
-int vt100_wrapper_cell_bold(struct vt100_cell *cell)
+int vt100_wrapper_cell_attrs_bold(struct vt100_cell_attrs *attrs)
 {
-    return cell->attrs.bold;
+    return attrs->bold;
 }
 
-int vt100_wrapper_cell_italic(struct vt100_cell *cell)
+int vt100_wrapper_cell_attrs_italic(struct vt100_cell_attrs *attrs)
 {
-    return cell->attrs.italic;
+    return attrs->italic;
 }
 
-int vt100_wrapper_cell_underline(struct vt100_cell *cell)
+int vt100_wrapper_cell_attrs_underline(struct vt100_cell_attrs *attrs)
 {
-    return cell->attrs.underline;
+    return attrs->underline;
 }
 
-int vt100_wrapper_cell_inverse(struct vt100_cell *cell)
+int vt100_wrapper_cell_attrs_inverse(struct vt100_cell_attrs *attrs)
 {
-    return cell->attrs.inverse;
+    return attrs->inverse;
 }
