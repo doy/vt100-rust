@@ -14,7 +14,7 @@ struct ScreenGridPrefix {
 }
 
 #[repr(C)]
-struct ScreenImplPrefix {
+struct ScreenPrefix {
     grid: *mut ScreenGridPrefix,
     alternate: *mut ScreenGridPrefix,
 
@@ -34,7 +34,7 @@ impl Screen {
 
     pub fn rows(&self) -> i32 {
         let Screen(screen_impl) = *self;
-        let prefix: *mut ScreenImplPrefix = unsafe {
+        let prefix: *mut ScreenPrefix = unsafe {
             std::mem::transmute(screen_impl)
         };
         unsafe { (*(*prefix).grid).max.row }
@@ -42,7 +42,7 @@ impl Screen {
 
     pub fn cols(&self) -> i32 {
         let Screen(screen_impl) = *self;
-        let prefix: *mut ScreenImplPrefix = unsafe {
+        let prefix: *mut ScreenPrefix = unsafe {
             std::mem::transmute(screen_impl)
         };
         unsafe { (*(*prefix).grid).max.col }
@@ -129,7 +129,7 @@ impl Screen {
 
     pub fn cursor_position(&self) -> (i32, i32) {
         let Screen(screen_impl) = *self;
-        let prefix: *mut ScreenImplPrefix = unsafe {
+        let prefix: *mut ScreenPrefix = unsafe {
             std::mem::transmute(screen_impl)
         };
         unsafe {
@@ -139,7 +139,7 @@ impl Screen {
 
     pub fn title(&self) -> Option<&str> {
         let Screen(screen_impl) = *self;
-        let prefix: *mut ScreenImplPrefix = unsafe {
+        let prefix: *mut ScreenPrefix = unsafe {
             std::mem::transmute(screen_impl)
         };
         if unsafe { (*prefix).title }.is_null() {
@@ -158,7 +158,7 @@ impl Screen {
 
     pub fn icon_name(&self) -> Option<&str> {
         let Screen(screen_impl) = *self;
-        let prefix: *mut ScreenImplPrefix = unsafe {
+        let prefix: *mut ScreenPrefix = unsafe {
             std::mem::transmute(screen_impl)
         };
         if unsafe { (*prefix).icon_name }.is_null() {
