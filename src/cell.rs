@@ -8,17 +8,10 @@ use types;
 pub struct Cell(*mut types::CellImpl);
 
 #[repr(C)]
-struct CellAttrs {
-    fgcolor: types::ColorImpl,
-    bgcolor: types::ColorImpl,
-    attrs: libc::c_uchar,
-}
-
-#[repr(C)]
 struct CellPrefix {
     pub contents: [libc::c_char; 8],
     pub len: libc::size_t,
-    pub attrs: CellAttrs,
+    pub attrs: types::CellAttrs,
 }
 
 impl Cell {

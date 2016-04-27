@@ -2,6 +2,7 @@ use libc;
 use std;
 
 use cell;
+use color;
 use ffi;
 use types;
 
@@ -22,6 +23,8 @@ struct ScreenPrefix {
     title_len: libc::size_t,
     icon_name: *mut libc::c_char,
     icon_name_len: libc::size_t,
+
+    attrs: types::CellAttrs,
 }
 
 impl Screen {
@@ -173,6 +176,24 @@ impl Screen {
             };
             Some(std::str::from_utf8(slice).unwrap())
         }
+    }
+
+    pub fn fgcolor(&self) -> color::Color {
+        let Screen(screen_impl) = *self;
+        let prefix: *mut ScreenPrefix = unsafe {
+            std::mem::transmute(screen_impl)
+        };
+        let attrs = unsafe { &(*prefix).attrs };
+        color::Color::new(&attrs.fgcolor)
+    }
+
+    pub fn bgcolor(&self) -> color::Color {
+        let Screen(screen_impl) = *self;
+        let prefix: *mut ScreenPrefix = unsafe {
+            std::mem::transmute(screen_impl)
+        };
+        let attrs = unsafe { &(*prefix).attrs };
+        color::Color::new(&attrs.bgcolor)
     }
 }
 
