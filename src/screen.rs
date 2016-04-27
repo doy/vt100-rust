@@ -235,6 +235,62 @@ impl Screen {
             ffi::vt100_wrapper_cell_attrs_inverse(&mut (*prefix).attrs) != 0
         }
     }
+
+    pub fn hide_cursor(&self) -> bool {
+        let Screen(screen_impl) = *self;
+        unsafe {
+            ffi::vt100_wrapper_screen_hide_cursor(screen_impl) != 0
+        }
+    }
+
+    pub fn application_keypad(&self) -> bool {
+        let Screen(screen_impl) = *self;
+        unsafe {
+            ffi::vt100_wrapper_screen_application_keypad(screen_impl) != 0
+        }
+    }
+
+    pub fn application_cursor(&self) -> bool {
+        let Screen(screen_impl) = *self;
+        unsafe {
+            ffi::vt100_wrapper_screen_application_cursor(screen_impl) != 0
+        }
+    }
+
+    pub fn mouse_reporting_press(&self) -> bool {
+        let Screen(screen_impl) = *self;
+        unsafe {
+            ffi::vt100_wrapper_screen_mouse_reporting_press(screen_impl) != 0
+        }
+    }
+
+    pub fn mouse_reporting_press_release(&self) -> bool {
+        let Screen(screen_impl) = *self;
+        unsafe {
+            ffi::vt100_wrapper_screen_mouse_reporting_press_release(screen_impl) != 0
+        }
+    }
+
+    pub fn mouse_reporting_button_motion(&self) -> bool {
+        let Screen(screen_impl) = *self;
+        unsafe {
+            ffi::vt100_wrapper_screen_mouse_reporting_button_motion(screen_impl) != 0
+        }
+    }
+
+    pub fn mouse_reporting_sgr_mode(&self) -> bool {
+        let Screen(screen_impl) = *self;
+        unsafe {
+            ffi::vt100_wrapper_screen_mouse_reporting_sgr_mode(screen_impl) != 0
+        }
+    }
+
+    pub fn bracketed_paste(&self) -> bool {
+        let Screen(screen_impl) = *self;
+        unsafe {
+            ffi::vt100_wrapper_screen_bracketed_paste(screen_impl) != 0
+        }
+    }
 }
 
 impl Drop for Screen {
