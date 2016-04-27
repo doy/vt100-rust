@@ -195,6 +195,46 @@ impl Screen {
         let attrs = unsafe { &(*prefix).attrs };
         color::Color::new(&attrs.bgcolor)
     }
+
+    pub fn bold(&self) -> bool {
+        let Screen(screen_impl) = *self;
+        let prefix: *mut ScreenPrefix = unsafe {
+            std::mem::transmute(screen_impl)
+        };
+        unsafe {
+            ffi::vt100_wrapper_cell_attrs_bold(&mut (*prefix).attrs) != 0
+        }
+    }
+
+    pub fn italic(&self) -> bool {
+        let Screen(screen_impl) = *self;
+        let prefix: *mut ScreenPrefix = unsafe {
+            std::mem::transmute(screen_impl)
+        };
+        unsafe {
+            ffi::vt100_wrapper_cell_attrs_italic(&mut (*prefix).attrs) != 0
+        }
+    }
+
+    pub fn underline(&self) -> bool {
+        let Screen(screen_impl) = *self;
+        let prefix: *mut ScreenPrefix = unsafe {
+            std::mem::transmute(screen_impl)
+        };
+        unsafe {
+            ffi::vt100_wrapper_cell_attrs_underline(&mut (*prefix).attrs) != 0
+        }
+    }
+
+    pub fn inverse(&self) -> bool {
+        let Screen(screen_impl) = *self;
+        let prefix: *mut ScreenPrefix = unsafe {
+            std::mem::transmute(screen_impl)
+        };
+        unsafe {
+            ffi::vt100_wrapper_cell_attrs_inverse(&mut (*prefix).attrs) != 0
+        }
+    }
 }
 
 impl Drop for Screen {
