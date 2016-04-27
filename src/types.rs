@@ -1,6 +1,7 @@
 use libc;
 
 pub enum ScreenImpl {}
+pub enum CellImpl {}
 
 #[repr(C)]
 pub struct Loc {

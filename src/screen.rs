@@ -1,6 +1,7 @@
 use libc;
 use std;
 
+use cell;
 use ffi;
 use types;
 
@@ -90,6 +91,17 @@ impl Screen {
             )
         }.to_vec();
         std::string::String::from_utf8(rust_plaintext).unwrap()
+    }
+
+    pub fn cell(&self, row: i32, col: i32) -> Option<cell::Cell> {
+        let Screen(screen_impl) = *self;
+        if row < 0 || row >= self.rows() || col < 0 || col >= self.cols() {
+            return None
+        }
+        let cell_impl = unsafe {
+            ffi::vt100_screen_cell_at(screen_impl, row, col)
+        };
+        Some(cell::Cell::new(cell_impl))
     }
 }
 

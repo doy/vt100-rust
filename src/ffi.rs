@@ -32,6 +32,12 @@ extern "C" {
         rows: libc::c_int,
     );
 
+    pub fn vt100_screen_cell_at(
+        screen: *mut types::ScreenImpl,
+        row: libc::c_int,
+        col: libc::c_int,
+    ) -> *mut types::CellImpl;
+
     pub fn vt100_wrapper_rows(screen: *mut types::ScreenImpl) -> libc::c_int;
     pub fn vt100_wrapper_cols(screen: *mut types::ScreenImpl) -> libc::c_int;
 }
