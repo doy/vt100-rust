@@ -7,6 +7,17 @@ use types;
 
 pub struct Screen(*mut types::ScreenImpl);
 
+#[repr(C)]
+struct ScreenGridPrefix {
+    cur: types::Loc,
+    max: types::Loc,
+}
+
+#[repr(C)]
+struct ScreenImplPrefix {
+    grid: *mut ScreenGridPrefix,
+}
+
 impl Screen {
     pub fn new(rows: i32, cols: i32) -> Screen {
         let screen_impl = unsafe {
@@ -17,12 +28,18 @@ impl Screen {
 
     pub fn rows(&self) -> i32 {
         let Screen(screen_impl) = *self;
-        unsafe { ffi::vt100_wrapper_rows(screen_impl) }
+        let prefix: *mut ScreenImplPrefix = unsafe {
+            std::mem::transmute(screen_impl)
+        };
+        unsafe { (*(*prefix).grid).max.row }
     }
 
     pub fn cols(&self) -> i32 {
         let Screen(screen_impl) = *self;
-        unsafe { ffi::vt100_wrapper_cols(screen_impl) }
+        let prefix: *mut ScreenImplPrefix = unsafe {
+            std::mem::transmute(screen_impl)
+        };
+        unsafe { (*(*prefix).grid).max.col }
     }
 
     pub fn set_window_size(&self, rows: i32, cols: i32) {
