@@ -34,7 +34,7 @@ impl Screen {
         unsafe { ffi::vt100_screen_set_scrollback_length(screen_impl, rows) };
     }
 
-    pub fn process(&mut self, s: &str) -> u64 {
+    pub fn process(&mut self, s: &[u8]) -> u64 {
         let Screen(screen_impl) = *self;
         unsafe {
             ffi::vt100_screen_process_string(
