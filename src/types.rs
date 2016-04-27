@@ -2,6 +2,7 @@ use libc;
 
 pub enum ScreenImpl {}
 pub enum CellImpl {}
+#[repr(C)]
 pub struct ColorImpl(pub libc::uint32_t);
 
 #[repr(C)]
