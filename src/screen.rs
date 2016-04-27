@@ -16,6 +16,12 @@ struct ScreenGridPrefix {
 #[repr(C)]
 struct ScreenImplPrefix {
     grid: *mut ScreenGridPrefix,
+    alternate: *mut ScreenGridPrefix,
+
+    title: *mut libc::c_char,
+    title_len: libc::size_t,
+    icon_name: *mut libc::c_char,
+    icon_name_len: libc::size_t,
 }
 
 impl Screen {
@@ -119,6 +125,54 @@ impl Screen {
             ffi::vt100_screen_cell_at(screen_impl, row, col)
         };
         Some(cell::Cell::new(cell_impl))
+    }
+
+    pub fn cursor_position(&self) -> (i32, i32) {
+        let Screen(screen_impl) = *self;
+        let prefix: *mut ScreenImplPrefix = unsafe {
+            std::mem::transmute(screen_impl)
+        };
+        unsafe {
+            ((*(*prefix).grid).cur.col, (*(*prefix).grid).cur.col)
+        }
+    }
+
+    pub fn title(&self) -> Option<&str> {
+        let Screen(screen_impl) = *self;
+        let prefix: *mut ScreenImplPrefix = unsafe {
+            std::mem::transmute(screen_impl)
+        };
+        if unsafe { (*prefix).title }.is_null() {
+            None
+        }
+        else {
+            let slice: &mut [u8] = unsafe {
+                std::slice::from_raw_parts_mut(
+                    (*prefix).title as *mut u8,
+                    (*prefix).title_len
+                )
+            };
+            Some(std::str::from_utf8(slice).unwrap())
+        }
+    }
+
+    pub fn icon_name(&self) -> Option<&str> {
+        let Screen(screen_impl) = *self;
+        let prefix: *mut ScreenImplPrefix = unsafe {
+            std::mem::transmute(screen_impl)
+        };
+        if unsafe { (*prefix).icon_name }.is_null() {
+            None
+        }
+        else {
+            let slice: &mut [u8] = unsafe {
+                std::slice::from_raw_parts_mut(
+                    (*prefix).icon_name as *mut u8,
+                    (*prefix).icon_name_len
+                )
+            };
+            Some(std::str::from_utf8(slice).unwrap())
+        }
     }
 }
 
