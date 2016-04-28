@@ -119,6 +119,53 @@ impl Screen {
         std::string::String::from_utf8(rust_plaintext).unwrap()
     }
 
+    pub fn window_contents_formatted(&self,
+        row_start: i32,
+        col_start: i32,
+        row_end: i32,
+        col_end: i32
+    ) -> String {
+        let Screen(screen_impl) = *self;
+        let row_start = std::cmp::min(
+            std::cmp::max(row_start, 0),
+            self.rows() - 1
+        );
+        let col_start = std::cmp::min(
+            std::cmp::max(col_start, 0),
+            self.cols() - 1
+        );
+        let row_end = std::cmp::min(
+            std::cmp::max(row_end, 0),
+            self.rows() - 1
+        );
+        let col_end = std::cmp::min(
+            std::cmp::max(col_end, 0),
+            self.cols() - 1
+        );
+
+        let start_loc = types::Loc { row: row_start, col: col_start };
+        let end_loc = types::Loc { row: row_end, col: col_end };
+
+        let mut formatted: *mut libc::c_char = unsafe { std::mem::uninitialized() };
+        let mut len: libc::size_t = unsafe { std::mem::uninitialized() };
+        unsafe {
+            ffi::vt100_screen_get_string_formatted(
+                screen_impl,
+                &start_loc as *const types::Loc,
+                &end_loc as *const types::Loc,
+                &mut formatted as *mut *mut libc::c_char,
+                &mut len as *mut libc::size_t,
+            )
+        };
+        let rust_formatted = unsafe {
+            std::slice::from_raw_parts(
+                formatted as *mut libc::c_uchar,
+                len
+            )
+        }.to_vec();
+        std::string::String::from_utf8(rust_formatted).unwrap()
+    }
+
     pub fn cell(&self, row: i32, col: i32) -> Option<cell::Cell> {
         let Screen(screen_impl) = *self;
         if row < 0 || row >= self.rows() || col < 0 || col >= self.cols() {

@@ -21,6 +21,13 @@ extern "C" {
         outp: *mut *mut libc::c_char,
         outlen: *mut libc::size_t,
     );
+    pub fn vt100_screen_get_string_formatted(
+        screen: *mut types::ScreenImpl,
+        start: *const types::Loc,
+        end: *const types::Loc,
+        outp: *mut *mut libc::c_char,
+        outlen: *mut libc::size_t,
+    );
 
     pub fn vt100_screen_set_window_size(
         screen: *mut types::ScreenImpl,
