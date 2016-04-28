@@ -38,6 +38,8 @@ extern "C" {
         col: libc::c_int,
     ) -> *mut types::CellImpl;
 
+    // XXX: these wrappers (and all of ffi.c) only exist because rust can't
+    // handle bitfields yet - once it can, these should be removed
     pub fn vt100_wrapper_screen_hide_cursor(screen: *mut types::ScreenImpl) -> libc::c_int;
     pub fn vt100_wrapper_screen_application_keypad(screen: *mut types::ScreenImpl) -> libc::c_int;
     pub fn vt100_wrapper_screen_application_cursor(screen: *mut types::ScreenImpl) -> libc::c_int;
