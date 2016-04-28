@@ -339,6 +339,14 @@ impl Screen {
         }
     }
 
+    pub fn alternate_buffer_active(&self) -> bool {
+        let Screen(screen_impl) = *self;
+        let prefix: *mut ScreenPrefix = unsafe {
+            std::mem::transmute(screen_impl)
+        };
+        return !unsafe { (*prefix).alternate }.is_null();
+    }
+
     pub fn check_visual_bell(&self) -> bool {
         let Screen(screen_impl) = *self;
         unsafe {
