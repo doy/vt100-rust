@@ -46,6 +46,16 @@ extern "C" {
     pub fn vt100_wrapper_screen_mouse_reporting_button_motion(screen: *mut types::ScreenImpl) -> libc::c_int;
     pub fn vt100_wrapper_screen_mouse_reporting_sgr_mode(screen: *mut types::ScreenImpl) -> libc::c_int;
     pub fn vt100_wrapper_screen_bracketed_paste(screen: *mut types::ScreenImpl) -> libc::c_int;
+    pub fn vt100_wrapper_screen_visual_bell(screen: *mut types::ScreenImpl) -> libc::c_int;
+    pub fn vt100_wrapper_screen_audible_bell(screen: *mut types::ScreenImpl) -> libc::c_int;
+    pub fn vt100_wrapper_screen_update_title(screen: *mut types::ScreenImpl) -> libc::c_int;
+    pub fn vt100_wrapper_screen_update_icon_name(screen: *mut types::ScreenImpl) -> libc::c_int;
+    pub fn vt100_wrapper_screen_dirty(screen: *mut types::ScreenImpl) -> libc::c_int;
+    pub fn vt100_wrapper_screen_clear_visual_bell(screen: *mut types::ScreenImpl) -> libc::c_int;
+    pub fn vt100_wrapper_screen_clear_audible_bell(screen: *mut types::ScreenImpl) -> libc::c_int;
+    pub fn vt100_wrapper_screen_clear_update_title(screen: *mut types::ScreenImpl) -> libc::c_int;
+    pub fn vt100_wrapper_screen_clear_update_icon_name(screen: *mut types::ScreenImpl) -> libc::c_int;
+    pub fn vt100_wrapper_screen_clear_dirty(screen: *mut types::ScreenImpl) -> libc::c_int;
     pub fn vt100_wrapper_cell_is_wide(cell: *mut types::CellImpl) -> libc::c_int;
     pub fn vt100_wrapper_cell_attrs_bold(cell: *mut types::CellAttrs) -> libc::c_int;
     pub fn vt100_wrapper_cell_attrs_italic(cell: *mut types::CellAttrs) -> libc::c_int;

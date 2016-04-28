@@ -41,6 +41,56 @@ int vt100_wrapper_screen_bracketed_paste(struct vt100_screen *screen)
     return screen->bracketed_paste;
 }
 
+int vt100_wrapper_screen_visual_bell(struct vt100_screen *screen)
+{
+    return screen->visual_bell;
+}
+
+int vt100_wrapper_screen_audible_bell(struct vt100_screen *screen)
+{
+    return screen->audible_bell;
+}
+
+int vt100_wrapper_screen_update_title(struct vt100_screen *screen)
+{
+    return screen->update_title;
+}
+
+int vt100_wrapper_screen_update_icon_name(struct vt100_screen *screen)
+{
+    return screen->update_icon_name;
+}
+
+int vt100_wrapper_screen_dirty(struct vt100_screen *screen)
+{
+    return screen->dirty;
+}
+
+void vt100_wrapper_screen_clear_visual_bell(struct vt100_screen *screen)
+{
+    screen->visual_bell = 0;
+}
+
+void vt100_wrapper_screen_clear_audible_bell(struct vt100_screen *screen)
+{
+    screen->audible_bell = 0;
+}
+
+void vt100_wrapper_screen_clear_update_title(struct vt100_screen *screen)
+{
+    screen->update_title = 0;
+}
+
+void vt100_wrapper_screen_clear_update_icon_name(struct vt100_screen *screen)
+{
+    screen->update_icon_name = 0;
+}
+
+void vt100_wrapper_screen_clear_dirty(struct vt100_screen *screen)
+{
+    screen->dirty = 0;
+}
+
 int vt100_wrapper_cell_is_wide(struct vt100_cell *cell)
 {
     return cell->is_wide;

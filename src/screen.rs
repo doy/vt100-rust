@@ -291,6 +291,51 @@ impl Screen {
             ffi::vt100_wrapper_screen_bracketed_paste(screen_impl) != 0
         }
     }
+
+    pub fn check_visual_bell(&self) -> bool {
+        let Screen(screen_impl) = *self;
+        unsafe {
+            let state = ffi::vt100_wrapper_screen_visual_bell(screen_impl) != 0;
+            ffi::vt100_wrapper_screen_clear_visual_bell(screen_impl);
+            state
+        }
+    }
+
+    pub fn check_audible_bell(&self) -> bool {
+        let Screen(screen_impl) = *self;
+        unsafe {
+            let state = ffi::vt100_wrapper_screen_audible_bell(screen_impl) != 0;
+            ffi::vt100_wrapper_screen_clear_audible_bell(screen_impl);
+            state
+        }
+    }
+
+    pub fn check_update_title(&self) -> bool {
+        let Screen(screen_impl) = *self;
+        unsafe {
+            let state = ffi::vt100_wrapper_screen_update_title(screen_impl) != 0;
+            ffi::vt100_wrapper_screen_clear_update_title(screen_impl);
+            state
+        }
+    }
+
+    pub fn check_update_icon_name(&self) -> bool {
+        let Screen(screen_impl) = *self;
+        unsafe {
+            let state = ffi::vt100_wrapper_screen_update_icon_name(screen_impl) != 0;
+            ffi::vt100_wrapper_screen_clear_update_icon_name(screen_impl);
+            state
+        }
+    }
+
+    pub fn check_dirty(&self) -> bool {
+        let Screen(screen_impl) = *self;
+        unsafe {
+            let state = ffi::vt100_wrapper_screen_dirty(screen_impl) != 0;
+            ffi::vt100_wrapper_screen_clear_dirty(screen_impl);
+            state
+        }
+    }
 }
 
 impl Drop for Screen {
