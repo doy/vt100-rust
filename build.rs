@@ -6,6 +6,8 @@ fn libvt100() {
         .unwrap_or_else(|e| { panic!("couldn't get cwd: {}", e) });;
     std::env::set_current_dir("libvt100")
         .unwrap_or_else(|e| { panic!("failed to chdir: {}", e) });
+    let absdir = std::env::current_dir()
+        .unwrap_or_else(|e| { panic!("couldn't get cwd: {}", e) });;
     let out = std::process::Command::new("make")
         .arg("static")
         .output()
@@ -17,7 +19,7 @@ fn libvt100() {
         std::process::exit(out.status.code().unwrap_or(255));
     }
 
-    println!("cargo:rustc-link-search=native=libvt100");
+    println!("cargo:rustc-link-search=native={}", absdir.to_str().unwrap());
     println!("cargo:rustc-link-lib=static=vt100");
 }
 
@@ -27,7 +29,7 @@ fn glib() {
             panic!("Couldn't find required dependency glib-2.0: {}", e);
         });
     for dir in lib_def.link_paths {
-        println!("cargo:rustc-link-search=native={:?}", dir);
+        println!("cargo:rustc-link-search=native={}", dir.to_str().unwrap());
     }
     for lib in lib_def.libs {
         println!("cargo:rustc-link-lib={}", lib);
