@@ -136,7 +136,7 @@ impl Screen {
             std::mem::transmute(screen_impl)
         };
         unsafe {
-            ((*(*prefix).grid).cur.col, (*(*prefix).grid).cur.col)
+            ((*(*prefix).grid).cur.row, (*(*prefix).grid).cur.col)
         }
     }
 
