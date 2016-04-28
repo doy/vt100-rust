@@ -2,6 +2,14 @@
 name = "vt100"
 version = "0.1.0"
 authors = ["Jesse Luehrs <doy@tozt.net>"]
+
+description = "Library for parsing terminal data"
+homepage = "https://github.com/doy/vt100-rust"
+repository = "git://github.com/doy/vt100-rust"
+readme = "README.md"
+keywords = ["terminal", "vt100"]
+license = "MIT"
+
 build = "build.rs"
 
 [build-dependencies]
