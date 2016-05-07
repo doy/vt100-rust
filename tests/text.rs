@@ -91,4 +91,52 @@ fn wrap() {
     screen.assert_process(b"\x1b[5H01234567890123456789012345678901234567890123456789012345678901234567890123456789");
     screen.assert_process(b"\x1b[6H01234567890123456789012345678901234567890123456789012345678901234567890123456789");
     assert_eq!(screen.window_contents(0, 0, 23, 79), "0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789\n\n\n01234567890123456789012345678901234567890123456789012345678901234567890123456789\n01234567890123456789012345678901234567890123456789012345678901234567890123456789\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
+
+    screen.assert_process(b"\x1b[H\x1b[J");
+    screen.assert_process(b"0123456789012345678901234567890123456789012345678901234567890123456789012345678");
+    assert_eq!(screen.window_contents(0, 0, 23, 79), "0123456789012345678901234567890123456789012345678901234567890123456789012345678\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
+    assert_eq!(screen.cursor_position(), (0, 79));
+    screen.assert_process(b"9");
+    assert_eq!(screen.window_contents(0, 0, 23, 79), "01234567890123456789012345678901234567890123456789012345678901234567890123456789\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
+    assert_eq!(screen.cursor_position(), (0, 80));
+    screen.assert_process(b"a");
+    assert_eq!(screen.window_contents(0, 0, 23, 79), "01234567890123456789012345678901234567890123456789012345678901234567890123456789a\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
+    assert_eq!(screen.cursor_position(), (1, 1));
+    screen.assert_process(b"b");
+    assert_eq!(screen.window_contents(0, 0, 23, 79), "01234567890123456789012345678901234567890123456789012345678901234567890123456789ab\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
+    assert_eq!(screen.cursor_position(), (1, 2));
+
+    screen.assert_process(b"\x1b[H\x1b[J");
+    screen.assert_process(b"012345678901234567890123456789012345678901234567890123456789012345678901234567");
+    assert_eq!(screen.window_contents(0, 0, 23, 79), "012345678901234567890123456789012345678901234567890123456789012345678901234567\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
+    assert_eq!(screen.cursor_position(), (0, 78));
+    screen.assert_process("ネ".as_bytes());
+    assert_eq!(screen.window_contents(0, 0, 23, 79), "012345678901234567890123456789012345678901234567890123456789012345678901234567ネ\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
+    assert_eq!(screen.cursor_position(), (0, 80));
+    screen.assert_process(b"a");
+    assert_eq!(screen.window_contents(0, 0, 23, 79), "012345678901234567890123456789012345678901234567890123456789012345678901234567ネa\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
+    assert_eq!(screen.cursor_position(), (1, 1));
+    assert_eq!(screen.cell(0, 77).unwrap().contents(), "7");
+    assert_eq!(screen.cell(0, 78).unwrap().contents(), "ネ");
+    assert_eq!(screen.cell(0, 79).unwrap().contents(), "");
+    assert_eq!(screen.cell(1, 0).unwrap().contents(), "a");
+    assert_eq!(screen.cell(1, 1).unwrap().contents(), "");
+
+    screen.assert_process(b"\x1b[H\x1b[J");
+    screen.assert_process(b"0123456789012345678901234567890123456789012345678901234567890123456789012345678");
+    assert_eq!(screen.window_contents(0, 0, 23, 79), "0123456789012345678901234567890123456789012345678901234567890123456789012345678\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
+    assert_eq!(screen.cursor_position(), (0, 79));
+    screen.assert_process("ネ".as_bytes());
+    assert_eq!(screen.window_contents(0, 0, 23, 79), "0123456789012345678901234567890123456789012345678901234567890123456789012345678ネ\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
+    assert_eq!(screen.cursor_position(), (1, 2));
+    screen.assert_process(b"a");
+    assert_eq!(screen.window_contents(0, 0, 23, 79), "0123456789012345678901234567890123456789012345678901234567890123456789012345678ネa\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
+    assert_eq!(screen.cursor_position(), (1, 3));
+    assert_eq!(screen.cell(0, 77).unwrap().contents(), "7");
+    assert_eq!(screen.cell(0, 78).unwrap().contents(), "8");
+    assert_eq!(screen.cell(0, 79).unwrap().contents(), "");
+    assert_eq!(screen.cell(1, 0).unwrap().contents(), "ネ");
+    assert_eq!(screen.cell(1, 1).unwrap().contents(), "");
+    assert_eq!(screen.cell(1, 2).unwrap().contents(), "a");
+    assert_eq!(screen.cell(1, 3).unwrap().contents(), "");
 }
