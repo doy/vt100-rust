@@ -1,6 +1,6 @@
 [package]
 name = "vt100"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["Jesse Luehrs <doy@tozt.net>"]
 
 description = "Library for parsing terminal data"
