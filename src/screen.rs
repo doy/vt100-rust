@@ -382,15 +382,6 @@ impl Screen {
             state
         }
     }
-
-    pub fn check_dirty(&self) -> bool {
-        let Screen(screen_impl) = *self;
-        unsafe {
-            let state = ffi::vt100_wrapper_screen_dirty(screen_impl) != 0;
-            ffi::vt100_wrapper_screen_clear_dirty(screen_impl);
-            state
-        }
-    }
 }
 
 impl Drop for Screen {

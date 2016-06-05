@@ -95,4 +95,15 @@ impl Cell {
             ffi::vt100_wrapper_cell_attrs_inverse(&mut (*prefix).attrs) != 0
         }
     }
+
+    pub fn check_dirty(&self) -> bool {
+        let Cell(cell_impl) = *self;
+        let ret = unsafe {
+            ffi::vt100_wrapper_cell_was_drawn(cell_impl) == 0
+        };
+        unsafe {
+            ffi::vt100_wrapper_cell_set_was_drawn(cell_impl)
+        };
+        ret
+    }
 }

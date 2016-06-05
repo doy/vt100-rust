@@ -61,11 +61,6 @@ int vt100_wrapper_screen_update_icon_name(struct vt100_screen *screen)
     return screen->update_icon_name;
 }
 
-int vt100_wrapper_screen_dirty(struct vt100_screen *screen)
-{
-    return screen->dirty;
-}
-
 void vt100_wrapper_screen_clear_visual_bell(struct vt100_screen *screen)
 {
     screen->visual_bell = 0;
@@ -84,11 +79,6 @@ void vt100_wrapper_screen_clear_update_title(struct vt100_screen *screen)
 void vt100_wrapper_screen_clear_update_icon_name(struct vt100_screen *screen)
 {
     screen->update_icon_name = 0;
-}
-
-void vt100_wrapper_screen_clear_dirty(struct vt100_screen *screen)
-{
-    screen->dirty = 0;
 }
 
 int vt100_wrapper_cell_is_wide(struct vt100_cell *cell)
@@ -114,4 +104,14 @@ int vt100_wrapper_cell_attrs_underline(struct vt100_cell_attrs *attrs)
 int vt100_wrapper_cell_attrs_inverse(struct vt100_cell_attrs *attrs)
 {
     return attrs->inverse;
+}
+
+int vt100_wrapper_cell_was_drawn(struct vt100_cell *cell)
+{
+    return cell->was_drawn;
+}
+
+void vt100_wrapper_cell_set_was_drawn(struct vt100_cell *cell)
+{
+    cell->was_drawn = 1;
 }
