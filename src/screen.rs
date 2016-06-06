@@ -12,6 +12,12 @@ pub struct Screen(*mut types::ScreenImpl);
 struct ScreenGridPrefix {
     cur: types::Loc,
     max: types::Loc,
+    saved: types::Loc,
+    scroll_top: libc::c_int,
+    scroll_bottom: libc::c_int,
+    row_count: libc::c_int,
+    row_capacity: libc::c_int,
+    row_top: libc::c_int,
 }
 
 #[repr(C)]
@@ -79,10 +85,19 @@ impl Screen {
         col_end: i32
     ) -> String {
         let Screen(screen_impl) = *self;
+        let prefix: *mut ScreenPrefix = unsafe {
+            std::mem::transmute(screen_impl)
+        };
+
+        // XXX not super happy about this - can we maybe disable the
+        // optimization in libvt100 if no scrollback at all was requested?
+        let grid_max_row = unsafe { (*(*prefix).grid).max.row };
+        let row_count = unsafe { (*(*prefix).grid).row_count };
+
         let row_start = std::cmp::min(
             std::cmp::max(row_start, 0),
             self.rows() - 1
-        );
+        ) + row_count - grid_max_row;
         let col_start = std::cmp::min(
             std::cmp::max(col_start, 0),
             self.cols() - 1
@@ -90,7 +105,7 @@ impl Screen {
         let row_end = std::cmp::min(
             std::cmp::max(row_end, 0),
             self.rows() - 1
-        );
+        ) + row_count - grid_max_row;
         let col_end = std::cmp::min(
             std::cmp::max(col_end, 0),
             self.cols() - 1
@@ -126,10 +141,17 @@ impl Screen {
         col_end: i32
     ) -> String {
         let Screen(screen_impl) = *self;
+        let prefix: *mut ScreenPrefix = unsafe {
+            std::mem::transmute(screen_impl)
+        };
+
+        let grid_max_row = unsafe { (*(*prefix).grid).max.row };
+        let row_count = unsafe { (*(*prefix).grid).row_count };
+
         let row_start = std::cmp::min(
             std::cmp::max(row_start, 0),
             self.rows() - 1
-        );
+        ) + row_count - grid_max_row;
         let col_start = std::cmp::min(
             std::cmp::max(col_start, 0),
             self.cols() - 1
@@ -137,7 +159,7 @@ impl Screen {
         let row_end = std::cmp::min(
             std::cmp::max(row_end, 0),
             self.rows() - 1
-        );
+        ) + row_count - grid_max_row;
         let col_end = std::cmp::min(
             std::cmp::max(col_end, 0),
             self.cols() - 1
