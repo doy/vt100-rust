@@ -137,6 +137,7 @@ impl Screen {
                 len
             )
         }.to_vec();
+        unsafe { libc::free(plaintext as *mut libc::c_void) };
         std::string::String::from_utf8(rust_plaintext).unwrap()
     }
 
