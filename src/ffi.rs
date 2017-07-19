@@ -53,7 +53,7 @@ extern "C" {
     pub fn vt100_wrapper_screen_mouse_reporting_press(screen: *mut types::ScreenImpl) -> libc::c_int;
     pub fn vt100_wrapper_screen_mouse_reporting_press_release(screen: *mut types::ScreenImpl) -> libc::c_int;
     pub fn vt100_wrapper_screen_mouse_reporting_button_motion(screen: *mut types::ScreenImpl) -> libc::c_int;
-    pub fn vt100_wrapper_screen_mouse_reporting_sgr_mode(screen: *mut types::ScreenImpl) -> libc::c_int;
+    pub fn vt100_wrapper_screen_mouse_reporting_mode(screen: *mut types::ScreenImpl) -> libc::c_uchar;
     pub fn vt100_wrapper_screen_bracketed_paste(screen: *mut types::ScreenImpl) -> libc::c_int;
     pub fn vt100_wrapper_screen_visual_bell(screen: *mut types::ScreenImpl) -> libc::c_int;
     pub fn vt100_wrapper_screen_audible_bell(screen: *mut types::ScreenImpl) -> libc::c_int;

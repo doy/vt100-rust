@@ -31,9 +31,10 @@ int vt100_wrapper_screen_mouse_reporting_button_motion(struct vt100_screen *scre
     return screen->mouse_reporting_button_motion;
 }
 
-int vt100_wrapper_screen_mouse_reporting_sgr_mode(struct vt100_screen *screen)
+unsigned char vt100_wrapper_screen_mouse_reporting_mode(
+    struct vt100_screen *screen)
 {
-    return screen->mouse_reporting_sgr_mode;
+    return screen->mouse_reporting_mode;
 }
 
 int vt100_wrapper_screen_bracketed_paste(struct vt100_screen *screen)

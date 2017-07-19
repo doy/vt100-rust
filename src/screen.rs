@@ -20,15 +20,21 @@ struct ScreenGridPrefix {
     row_top: libc::c_int,
 }
 
+enum ScreenParserState {}
+
 #[repr(C)]
 struct ScreenPrefix {
     grid: *mut ScreenGridPrefix,
     alternate: *mut ScreenGridPrefix,
 
+    parser_state: *mut ScreenParserState,
+
     title: *mut libc::c_char,
     title_len: libc::size_t,
     icon_name: *mut libc::c_char,
     icon_name_len: libc::size_t,
+
+    scrollback_length: libc::c_int,
 
     attrs: types::CellAttrs,
 }
@@ -350,7 +356,7 @@ impl Screen {
     pub fn mouse_reporting_sgr_mode(&self) -> bool {
         let Screen(screen_impl) = *self;
         unsafe {
-            ffi::vt100_wrapper_screen_mouse_reporting_sgr_mode(screen_impl) != 0
+            ffi::vt100_wrapper_screen_mouse_reporting_mode(screen_impl) == 2
         }
     }
 
