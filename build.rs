@@ -1,4 +1,4 @@
-extern crate gcc;
+extern crate cc;
 extern crate pkg_config;
 
 fn libvt100() {
@@ -31,13 +31,12 @@ fn glib() {
     for dir in lib_def.link_paths {
         println!("cargo:rustc-link-search=native={}", dir.to_str().unwrap());
     }
-    for lib in lib_def.libs {
-        println!("cargo:rustc-link-lib={}", lib);
-    }
 }
 
 fn libvt100_wrappers() {
-    gcc::compile_library("libvt100wrappers.a", &["src/ffi.c"]);
+    cc::Build::new()
+        .file("src/ffi.c")
+        .compile("vt100wrappers");
 }
 
 fn main() {
