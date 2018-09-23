@@ -21,9 +21,7 @@ impl Cell {
 
     pub fn contents(&self) -> &str {
         let Cell(cell_impl) = *self;
-        let prefix: *mut CellPrefix = unsafe {
-            std::mem::transmute(cell_impl)
-        };
+        let prefix: *mut CellPrefix = cell_impl as *mut CellPrefix;
         let contents: &[u8] = unsafe {
             std::slice::from_raw_parts(
                 &(*prefix).contents as *const i8 as *const u8,
@@ -35,18 +33,14 @@ impl Cell {
 
     pub fn fgcolor(&self) -> color::Color {
         let Cell(cell_impl) = *self;
-        let prefix: *mut CellPrefix = unsafe {
-            std::mem::transmute(cell_impl)
-        };
+        let prefix: *mut CellPrefix = cell_impl as *mut CellPrefix;
         let attrs = unsafe { &(*prefix).attrs };
         color::Color::new(&attrs.fgcolor)
     }
 
     pub fn bgcolor(&self) -> color::Color {
         let Cell(cell_impl) = *self;
-        let prefix: *mut CellPrefix = unsafe {
-            std::mem::transmute(cell_impl)
-        };
+        let prefix: *mut CellPrefix = cell_impl as *mut CellPrefix;
         let attrs = unsafe { &(*prefix).attrs };
         color::Color::new(&attrs.bgcolor)
     }
@@ -58,9 +52,7 @@ impl Cell {
 
     pub fn bold(&self) -> bool {
         let Cell(cell_impl) = *self;
-        let prefix: *mut CellPrefix = unsafe {
-            std::mem::transmute(cell_impl)
-        };
+        let prefix: *mut CellPrefix = cell_impl as *mut CellPrefix;
         unsafe {
             ffi::vt100_wrapper_cell_attrs_bold(&mut (*prefix).attrs) != 0
         }
@@ -68,9 +60,7 @@ impl Cell {
 
     pub fn italic(&self) -> bool {
         let Cell(cell_impl) = *self;
-        let prefix: *mut CellPrefix = unsafe {
-            std::mem::transmute(cell_impl)
-        };
+        let prefix: *mut CellPrefix = cell_impl as *mut CellPrefix;
         unsafe {
             ffi::vt100_wrapper_cell_attrs_italic(&mut (*prefix).attrs) != 0
         }
@@ -78,9 +68,7 @@ impl Cell {
 
     pub fn underline(&self) -> bool {
         let Cell(cell_impl) = *self;
-        let prefix: *mut CellPrefix = unsafe {
-            std::mem::transmute(cell_impl)
-        };
+        let prefix: *mut CellPrefix = cell_impl as *mut CellPrefix;
         unsafe {
             ffi::vt100_wrapper_cell_attrs_underline(&mut (*prefix).attrs) != 0
         }
@@ -88,9 +76,7 @@ impl Cell {
 
     pub fn inverse(&self) -> bool {
         let Cell(cell_impl) = *self;
-        let prefix: *mut CellPrefix = unsafe {
-            std::mem::transmute(cell_impl)
-        };
+        let prefix: *mut CellPrefix = cell_impl as *mut CellPrefix;
         unsafe {
             ffi::vt100_wrapper_cell_attrs_inverse(&mut (*prefix).attrs) != 0
         }

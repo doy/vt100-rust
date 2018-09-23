@@ -49,17 +49,13 @@ impl Screen {
 
     pub fn rows(&self) -> i32 {
         let Screen(screen_impl) = *self;
-        let prefix: *mut ScreenPrefix = unsafe {
-            std::mem::transmute(screen_impl)
-        };
+        let prefix: *mut ScreenPrefix = screen_impl as *mut ScreenPrefix;
         unsafe { (*(*prefix).grid).max.row }
     }
 
     pub fn cols(&self) -> i32 {
         let Screen(screen_impl) = *self;
-        let prefix: *mut ScreenPrefix = unsafe {
-            std::mem::transmute(screen_impl)
-        };
+        let prefix: *mut ScreenPrefix = screen_impl as *mut ScreenPrefix;
         unsafe { (*(*prefix).grid).max.col }
     }
 
@@ -91,9 +87,7 @@ impl Screen {
         col_end: i32
     ) -> String {
         let Screen(screen_impl) = *self;
-        let prefix: *mut ScreenPrefix = unsafe {
-            std::mem::transmute(screen_impl)
-        };
+        let prefix: *mut ScreenPrefix = screen_impl as *mut ScreenPrefix;
 
         // XXX not super happy about this - can we maybe disable the
         // optimization in libvt100 if no scrollback at all was requested?
@@ -148,9 +142,7 @@ impl Screen {
         col_end: i32
     ) -> String {
         let Screen(screen_impl) = *self;
-        let prefix: *mut ScreenPrefix = unsafe {
-            std::mem::transmute(screen_impl)
-        };
+        let prefix: *mut ScreenPrefix = screen_impl as *mut ScreenPrefix;
 
         let grid_max_row = unsafe { (*(*prefix).grid).max.row };
         let row_count = unsafe { (*(*prefix).grid).row_count };
@@ -208,9 +200,7 @@ impl Screen {
 
     pub fn cursor_position(&self) -> (i32, i32) {
         let Screen(screen_impl) = *self;
-        let prefix: *mut ScreenPrefix = unsafe {
-            std::mem::transmute(screen_impl)
-        };
+        let prefix: *mut ScreenPrefix = screen_impl as *mut ScreenPrefix;
         unsafe {
             ((*(*prefix).grid).cur.row, (*(*prefix).grid).cur.col)
         }
@@ -218,9 +208,7 @@ impl Screen {
 
     pub fn title(&self) -> Option<&str> {
         let Screen(screen_impl) = *self;
-        let prefix: *mut ScreenPrefix = unsafe {
-            std::mem::transmute(screen_impl)
-        };
+        let prefix: *mut ScreenPrefix = screen_impl as *mut ScreenPrefix;
         if unsafe { (*prefix).title }.is_null() {
             None
         }
@@ -237,9 +225,7 @@ impl Screen {
 
     pub fn icon_name(&self) -> Option<&str> {
         let Screen(screen_impl) = *self;
-        let prefix: *mut ScreenPrefix = unsafe {
-            std::mem::transmute(screen_impl)
-        };
+        let prefix: *mut ScreenPrefix = screen_impl as *mut ScreenPrefix;
         if unsafe { (*prefix).icon_name }.is_null() {
             None
         }
@@ -256,27 +242,21 @@ impl Screen {
 
     pub fn fgcolor(&self) -> color::Color {
         let Screen(screen_impl) = *self;
-        let prefix: *mut ScreenPrefix = unsafe {
-            std::mem::transmute(screen_impl)
-        };
+        let prefix: *mut ScreenPrefix = screen_impl as *mut ScreenPrefix;
         let attrs = unsafe { &(*prefix).attrs };
         color::Color::new(&attrs.fgcolor)
     }
 
     pub fn bgcolor(&self) -> color::Color {
         let Screen(screen_impl) = *self;
-        let prefix: *mut ScreenPrefix = unsafe {
-            std::mem::transmute(screen_impl)
-        };
+        let prefix: *mut ScreenPrefix = screen_impl as *mut ScreenPrefix;
         let attrs = unsafe { &(*prefix).attrs };
         color::Color::new(&attrs.bgcolor)
     }
 
     pub fn bold(&self) -> bool {
         let Screen(screen_impl) = *self;
-        let prefix: *mut ScreenPrefix = unsafe {
-            std::mem::transmute(screen_impl)
-        };
+        let prefix: *mut ScreenPrefix = screen_impl as *mut ScreenPrefix;
         unsafe {
             ffi::vt100_wrapper_cell_attrs_bold(&mut (*prefix).attrs) != 0
         }
@@ -284,9 +264,7 @@ impl Screen {
 
     pub fn italic(&self) -> bool {
         let Screen(screen_impl) = *self;
-        let prefix: *mut ScreenPrefix = unsafe {
-            std::mem::transmute(screen_impl)
-        };
+        let prefix: *mut ScreenPrefix = screen_impl as *mut ScreenPrefix;
         unsafe {
             ffi::vt100_wrapper_cell_attrs_italic(&mut (*prefix).attrs) != 0
         }
@@ -294,9 +272,7 @@ impl Screen {
 
     pub fn underline(&self) -> bool {
         let Screen(screen_impl) = *self;
-        let prefix: *mut ScreenPrefix = unsafe {
-            std::mem::transmute(screen_impl)
-        };
+        let prefix: *mut ScreenPrefix = screen_impl as *mut ScreenPrefix;
         unsafe {
             ffi::vt100_wrapper_cell_attrs_underline(&mut (*prefix).attrs) != 0
         }
@@ -304,9 +280,7 @@ impl Screen {
 
     pub fn inverse(&self) -> bool {
         let Screen(screen_impl) = *self;
-        let prefix: *mut ScreenPrefix = unsafe {
-            std::mem::transmute(screen_impl)
-        };
+        let prefix: *mut ScreenPrefix = screen_impl as *mut ScreenPrefix;
         unsafe {
             ffi::vt100_wrapper_cell_attrs_inverse(&mut (*prefix).attrs) != 0
         }
@@ -370,10 +344,8 @@ impl Screen {
 
     pub fn alternate_buffer_active(&self) -> bool {
         let Screen(screen_impl) = *self;
-        let prefix: *mut ScreenPrefix = unsafe {
-            std::mem::transmute(screen_impl)
-        };
-        return !unsafe { (*prefix).alternate }.is_null();
+        let prefix: *mut ScreenPrefix = screen_impl as *mut ScreenPrefix;
+        !unsafe { (*prefix).alternate }.is_null()
     }
 
     pub fn check_visual_bell(&self) -> bool {
