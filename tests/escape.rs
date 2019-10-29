@@ -1,22 +1,19 @@
 #![allow(clippy::cognitive_complexity)]
 
-mod support;
-use support::TestHelpers;
-
 #[test]
 fn deckpam() {
     let mut screen = vt100::Screen::new(24, 80);
     assert!(!screen.application_keypad());
-    screen.assert_process(b"\x1b=");
+    screen.process(b"\x1b=");
     assert!(screen.application_keypad());
-    screen.assert_process(b"\x1b>");
+    screen.process(b"\x1b>");
     assert!(!screen.application_keypad());
 }
 
 #[test]
 fn ri() {
     let mut screen = vt100::Screen::new(24, 80);
-    screen.assert_process(b"foo\nbar\x1bMbaz");
+    screen.process(b"foo\nbar\x1bMbaz");
     assert_eq!(
         screen.window_contents(0, 0, 23, 79),
         "foo   baz\n   bar\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
@@ -62,7 +59,7 @@ fn ris() {
     assert!(!screen.check_visual_bell());
     assert!(!screen.check_audible_bell());
 
-    screen.assert_process(b"f\x1b[31m\x1b[47;1;3;4moo\x1b[7m\x1b[21;21H\x1b]2;window title\x07\x1b]1;window icon name\x07\x1b[?25l\x1b[?1h\x1b=\x1b[?9h\x1b[?1000h\x1b[?1002h\x1b[?1006h\x1b[?2004h\x07\x1bg");
+    screen.process(b"f\x1b[31m\x1b[47;1;3;4moo\x1b[7m\x1b[21;21H\x1b]2;window title\x07\x1b]1;window icon name\x07\x1b[?25l\x1b[?1h\x1b=\x1b[?9h\x1b[?1000h\x1b[?1002h\x1b[?1006h\x1b[?2004h\x07\x1bg");
 
     assert_eq!(screen.cursor_position(), (20, 20));
 
@@ -97,7 +94,7 @@ fn ris() {
     assert!(screen.check_visual_bell());
     assert!(screen.check_audible_bell());
 
-    screen.assert_process(b"\x1bc");
+    screen.process(b"\x1bc");
     assert_eq!(screen.cursor_position(), (0, 0));
 
     let cell = screen.cell(0, 0).unwrap();
@@ -140,7 +137,7 @@ fn ris() {
 fn vb() {
     let mut screen = vt100::Screen::new(24, 80);
     assert!(!screen.check_visual_bell());
-    screen.assert_process(b"\x1bg");
+    screen.process(b"\x1bg");
     assert!(screen.check_visual_bell());
     assert!(!screen.check_visual_bell());
 }
@@ -148,7 +145,7 @@ fn vb() {
 #[test]
 fn decsc() {
     let mut screen = vt100::Screen::new(24, 80);
-    screen.assert_process(b"foo\x1b7\r\n\r\n\r\n         bar\x1b8baz");
+    screen.process(b"foo\x1b7\r\n\r\n\r\n         bar\x1b8baz");
     assert_eq!(
         screen.window_contents(0, 0, 23, 79),
         "foobaz\n\n\n         bar\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"

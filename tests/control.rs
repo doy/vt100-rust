@@ -1,13 +1,10 @@
-mod support;
-use support::TestHelpers;
-
 #[test]
 fn bel() {
     let mut screen = vt100::Screen::new(24, 80);
 
     assert!(!screen.check_audible_bell());
 
-    screen.assert_process(b"\x07");
+    screen.process(b"\x07");
     assert!(screen.check_audible_bell());
     assert!(!screen.check_audible_bell());
 }
@@ -16,7 +13,7 @@ fn bel() {
 fn bs() {
     let mut screen = vt100::Screen::new(24, 80);
 
-    screen.assert_process(b"foo\x08\x08aa");
+    screen.process(b"foo\x08\x08aa");
     assert_eq!(screen.cell(0, 0).unwrap().contents(), "f");
     assert_eq!(screen.cell(0, 1).unwrap().contents(), "a");
     assert_eq!(screen.cell(0, 2).unwrap().contents(), "a");
@@ -27,7 +24,7 @@ fn bs() {
         "faa\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
     );
 
-    screen.assert_process(b"\r\nquux\x08\x08\x08\x08\x08\x08bar");
+    screen.process(b"\r\nquux\x08\x08\x08\x08\x08\x08bar");
     assert_eq!(screen.cell(1, 0).unwrap().contents(), "b");
     assert_eq!(screen.cell(1, 1).unwrap().contents(), "a");
     assert_eq!(screen.cell(1, 2).unwrap().contents(), "r");
@@ -44,7 +41,7 @@ fn bs() {
 fn tab() {
     let mut screen = vt100::Screen::new(24, 80);
 
-    screen.assert_process(b"foo\tbar");
+    screen.process(b"foo\tbar");
     assert_eq!(screen.cell(0, 0).unwrap().contents(), "f");
     assert_eq!(screen.cell(0, 1).unwrap().contents(), "o");
     assert_eq!(screen.cell(0, 2).unwrap().contents(), "o");
@@ -67,7 +64,7 @@ fn tab() {
 fn lf() {
     let mut screen = vt100::Screen::new(24, 80);
 
-    screen.assert_process(b"foo\nbar");
+    screen.process(b"foo\nbar");
     assert_eq!(screen.cell(0, 0).unwrap().contents(), "f");
     assert_eq!(screen.cell(0, 1).unwrap().contents(), "o");
     assert_eq!(screen.cell(0, 2).unwrap().contents(), "o");
@@ -89,7 +86,7 @@ fn lf() {
 fn cr() {
     let mut screen = vt100::Screen::new(24, 80);
 
-    screen.assert_process(b"fooo\rbar");
+    screen.process(b"fooo\rbar");
     assert_eq!(screen.cell(0, 0).unwrap().contents(), "b");
     assert_eq!(screen.cell(0, 1).unwrap().contents(), "a");
     assert_eq!(screen.cell(0, 2).unwrap().contents(), "r");

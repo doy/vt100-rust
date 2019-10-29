@@ -10,3 +10,6 @@ repository = "https://github.com/doy/vt100-rust"
 readme = "README.md"
 keywords = ["terminal", "vt100"]
 license = "MIT"
+
+[dependencies]
+vte = "0.3"

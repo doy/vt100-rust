@@ -9,13 +9,9 @@ fn get_file_contents(name: &str) -> Vec<u8> {
 
 fn write_to_screen(chunks: &mut Vec<Vec<u8>>) -> String {
     let mut screen = vt100::Screen::new(37, 193);
-    let mut full_chunk = vec![];
     for chunk in chunks.iter_mut() {
-        full_chunk.append(chunk);
-        let bytes = screen.process(&full_chunk);
-        full_chunk = full_chunk.split_off(bytes);
+        screen.process(&chunk);
     }
-    assert_eq!(full_chunk.len(), 0);
     screen.window_contents(0, 0, 36, 192)
 }
 

@@ -1,6 +1,5 @@
-pub struct Screen {
+struct State {
     size: crate::pos::Pos,
-    parser: crate::parser::Parser,
     cells: Vec<Vec<crate::cell::Cell>>,
     cursor_position: crate::pos::Pos,
     fgcolor: crate::color::Color,
@@ -11,49 +10,97 @@ pub struct Screen {
     underline: bool,
 }
 
+impl vte::Perform for State {
+    fn print(&mut self, _c: char) {}
+
+    fn execute(&mut self, _b: u8) {}
+
+    fn hook(
+        &mut self,
+        _params: &[i64],
+        _intermediates: &[u8],
+        _ignore: bool,
+    ) {
+    }
+
+    fn put(&mut self, _b: u8) {}
+
+    fn unhook(&mut self) {}
+
+    fn osc_dispatch(&mut self, _params: &[&[u8]]) {}
+
+    fn csi_dispatch(
+        &mut self,
+        _params: &[i64],
+        _intermediates: &[u8],
+        _ignore: bool,
+        _c: char,
+    ) {
+    }
+
+    fn esc_dispatch(
+        &mut self,
+        _params: &[i64],
+        _intermediates: &[u8],
+        _ignore: bool,
+        _b: u8,
+    ) {
+    }
+}
+
+pub struct Screen {
+    parser: vte::Parser,
+    state: State,
+}
+
 impl Screen {
     pub fn new(rows: u16, cols: u16) -> Self {
         Self {
-            size: crate::pos::Pos {
-                row: rows,
-                col: cols,
+            parser: vte::Parser::new(),
+            state: State {
+                size: crate::pos::Pos {
+                    row: rows,
+                    col: cols,
+                },
+                cells: vec![
+                    vec![crate::cell::Cell::default(); cols as usize];
+                    rows as usize
+                ],
+                cursor_position: crate::pos::Pos::default(),
+                fgcolor: crate::color::Color::default(),
+                bgcolor: crate::color::Color::default(),
+                bold: false,
+                italic: false,
+                inverse: false,
+                underline: false,
             },
-            parser: crate::parser::Parser::new(),
-            cells: vec![
-                vec![crate::cell::Cell::default(); cols as usize];
-                rows as usize
-            ],
-            cursor_position: crate::pos::Pos::default(),
-            fgcolor: crate::color::Color::default(),
-            bgcolor: crate::color::Color::default(),
-            bold: false,
-            italic: false,
-            inverse: false,
-            underline: false,
         }
     }
 
     pub fn rows(&self) -> u16 {
-        self.size.row
+        self.state.size.row
     }
 
     pub fn cols(&self) -> u16 {
-        self.size.col
+        self.state.size.col
     }
 
     pub fn set_window_size(&mut self, rows: u16, cols: u16) {
-        self.size = crate::pos::Pos {
+        self.state.size = crate::pos::Pos {
             row: rows,
             col: cols,
         };
     }
 
-    pub fn process(&mut self, bytes: &[u8]) -> usize {
-        unimplemented!()
+    pub fn process(&mut self, bytes: &[u8]) {
+        for byte in bytes {
+            self.parser.advance(&mut self.state, *byte);
+        }
     }
 
     pub fn cell(&self, row: u16, col: u16) -> Option<&crate::cell::Cell> {
-        self.cells
+        self.state
+            .cells
             .get(row as usize)
             .and_then(|v| v.get(col as usize))
     }
@@ -79,31 +126,34 @@ impl Screen {
     }
 
     pub fn cursor_position(&self) -> (u16, u16) {
-        (self.cursor_position.row, self.cursor_position.col)
+        (
+            self.state.cursor_position.row,
+            self.state.cursor_position.col,
+        )
     }
 
     pub fn fgcolor(&self) -> crate::color::Color {
-        self.fgcolor
+        self.state.fgcolor
     }
 
     pub fn bgcolor(&self) -> crate::color::Color {
-        self.bgcolor
+        self.state.bgcolor
     }
 
     pub fn bold(&self) -> bool {
-        self.bold
+        self.state.bold
     }
 
     pub fn italic(&self) -> bool {
-        self.italic
+        self.state.italic
     }
 
     pub fn inverse(&self) -> bool {
-        self.inverse
+        self.state.inverse
     }
 
     pub fn underline(&self) -> bool {
-        self.underline
+        self.state.underline
     }
 
     pub fn title(&self) -> Option<&str> {
