@@ -2,6 +2,7 @@
 name = "vt100"
 version = "0.1.2"
 authors = ["Jesse Luehrs <doy@tozt.net>"]
+edition = "2018"
 
 description = "Library for parsing terminal data"
 homepage = "https://github.com/doy/vt100-rust"
@@ -9,13 +10,3 @@ repository = "https://github.com/doy/vt100-rust"
 readme = "README.md"
 keywords = ["terminal", "vt100"]
 license = "MIT"
-
-build = "build.rs"
-
-[build-dependencies]
-cc = "1.0"
-pkg-config = "0.3.8"
-
-[dependencies]
-libc = "0.2.10"
-glib-sys = "0.3.0"

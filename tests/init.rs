@@ -1,8 +1,8 @@
-extern crate vt100;
+#![allow(clippy::cognitive_complexity)]
 
 #[test]
 fn init() {
-    let screen = vt100::Screen::new(24, 80);
+    let mut screen = vt100::Screen::new(24, 80);
     assert_eq!(screen.rows(), 24);
     assert_eq!(screen.cols(), 80);
     assert_eq!(screen.cursor_position(), (0, 0));
@@ -28,8 +28,8 @@ fn init() {
     assert_eq!(screen.title(), None);
     assert_eq!(screen.icon_name(), None);
 
-    assert_eq!(screen.fgcolor(), vt100::Color::ColorDefault);
-    assert_eq!(screen.bgcolor(), vt100::Color::ColorDefault);
+    assert_eq!(screen.fgcolor(), vt100::Color::Default);
+    assert_eq!(screen.bgcolor(), vt100::Color::Default);
 
     assert!(!screen.bold());
     assert!(!screen.italic());

@@ -1,5 +1,3 @@
-extern crate vt100;
-
 #[test]
 fn object_creation() {
     let screen = vt100::Screen::new(24, 80);
@@ -17,7 +15,7 @@ fn process_text() {
 
 #[test]
 fn set_window_size() {
-    let screen = vt100::Screen::new(24, 80);
+    let mut screen = vt100::Screen::new(24, 80);
     assert_eq!(screen.rows(), 24);
     assert_eq!(screen.cols(), 80);
 
@@ -46,22 +44,10 @@ fn cell_colors() {
     let input = b"foo\x1b[31m\x1b[32mb\x1b[3;7;42ma\x1b[23mr";
     screen.process(input);
 
-    assert_eq!(
-        screen.cell(0, 0).unwrap().fgcolor(),
-        vt100::Color::ColorDefault
-    );
-    assert_eq!(
-        screen.cell(0, 3).unwrap().fgcolor(),
-        vt100::Color::ColorIdx(2)
-    );
-    assert_eq!(
-        screen.cell(0, 4).unwrap().fgcolor(),
-        vt100::Color::ColorIdx(2)
-    );
-    assert_eq!(
-        screen.cell(0, 4).unwrap().bgcolor(),
-        vt100::Color::ColorIdx(2)
-    );
+    assert_eq!(screen.cell(0, 0).unwrap().fgcolor(), vt100::Color::Default);
+    assert_eq!(screen.cell(0, 3).unwrap().fgcolor(), vt100::Color::Idx(2));
+    assert_eq!(screen.cell(0, 4).unwrap().fgcolor(), vt100::Color::Idx(2));
+    assert_eq!(screen.cell(0, 4).unwrap().bgcolor(), vt100::Color::Idx(2));
 }
 
 #[test]

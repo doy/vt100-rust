@@ -1,4 +1,4 @@
-extern crate vt100;
+#![allow(clippy::cognitive_complexity)]
 
 #[test]
 fn split_escape_sequences() {

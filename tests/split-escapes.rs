@@ -1,6 +1,4 @@
-extern crate vt100;
-
-use std::io::prelude::*;
+use std::io::Read as _;
 
 fn get_file_contents(name: &str) -> Vec<u8> {
     let mut file = std::fs::File::open(name).unwrap();
@@ -14,8 +12,8 @@ fn write_to_screen(chunks: &mut Vec<Vec<u8>>) -> String {
     let mut full_chunk = vec![];
     for chunk in chunks.iter_mut() {
         full_chunk.append(chunk);
-        let bytes = screen.process(&mut full_chunk);
-        full_chunk = full_chunk.split_off(bytes as usize);
+        let bytes = screen.process(&full_chunk);
+        full_chunk = full_chunk.split_off(bytes);
     }
     assert_eq!(full_chunk.len(), 0);
     screen.window_contents(0, 0, 36, 192)

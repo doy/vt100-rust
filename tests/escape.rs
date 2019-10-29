@@ -1,4 +1,4 @@
-extern crate vt100;
+#![allow(clippy::cognitive_complexity)]
 
 mod support;
 use support::TestHelpers;
@@ -43,8 +43,8 @@ fn ris() {
     assert_eq!(screen.title(), None);
     assert_eq!(screen.icon_name(), None);
 
-    assert_eq!(screen.fgcolor(), vt100::Color::ColorDefault);
-    assert_eq!(screen.bgcolor(), vt100::Color::ColorDefault);
+    assert_eq!(screen.fgcolor(), vt100::Color::Default);
+    assert_eq!(screen.bgcolor(), vt100::Color::Default);
 
     assert!(!screen.bold());
     assert!(!screen.italic());
@@ -78,8 +78,8 @@ fn ris() {
     assert_eq!(screen.title().unwrap(), "window title");
     assert_eq!(screen.icon_name().unwrap(), "window icon name");
 
-    assert_eq!(screen.fgcolor(), vt100::Color::ColorIdx(1));
-    assert_eq!(screen.bgcolor(), vt100::Color::ColorIdx(7));
+    assert_eq!(screen.fgcolor(), vt100::Color::Idx(1));
+    assert_eq!(screen.bgcolor(), vt100::Color::Idx(7));
 
     assert!(screen.bold());
     assert!(screen.italic());
@@ -116,8 +116,8 @@ fn ris() {
     assert_eq!(screen.title().unwrap(), "window title");
     assert_eq!(screen.icon_name().unwrap(), "window icon name");
 
-    assert_eq!(screen.fgcolor(), vt100::Color::ColorDefault);
-    assert_eq!(screen.bgcolor(), vt100::Color::ColorDefault);
+    assert_eq!(screen.fgcolor(), vt100::Color::Default);
+    assert_eq!(screen.bgcolor(), vt100::Color::Default);
 
     assert!(!screen.bold());
     assert!(!screen.italic());

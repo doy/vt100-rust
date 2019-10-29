@@ -1,5 +1,3 @@
-extern crate vt100;
-
 mod support;
 use support::TestHelpers;
 

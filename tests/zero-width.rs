@@ -1,4 +1,4 @@
-extern crate vt100;
+#![allow(clippy::cognitive_complexity)]
 
 #[test]
 fn zero_width_characters() {

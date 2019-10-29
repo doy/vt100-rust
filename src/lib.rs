@@ -1,17 +1,12 @@
-#![cfg_attr(feature = "cargo-clippy", feature(tool_lints))]
-// we use empty enums to represent opaque c pointers, but we don't have a way
-// to indicate that those pointers do actually have additional alignment
-// restrictions, so casting them to their prefixes is actually safe
-#![cfg_attr(feature = "cargo-clippy", allow(clippy::cast_ptr_alignment))]
-
-extern crate libc;
+#![warn(clippy::pedantic)]
+#![warn(clippy::nursery)]
+#![allow(clippy::missing_const_for_fn)]
 
 mod cell;
-mod color;
-mod ffi;
-mod screen;
-mod types;
-
 pub use cell::Cell;
+mod color;
 pub use color::Color;
+mod parser;
+mod pos;
+mod screen;
 pub use screen::Screen;
