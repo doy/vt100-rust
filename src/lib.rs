@@ -6,6 +6,7 @@ mod attrs;
 mod cell;
 mod color;
 mod pos;
+mod row;
 mod screen;
 
 pub use cell::Cell;

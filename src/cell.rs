@@ -18,6 +18,10 @@ impl Cell {
         &self.contents
     }
 
+    pub fn has_contents(&self) -> bool {
+        self.contents != ""
+    }
+
     pub fn fgcolor(&self) -> crate::color::Color {
         self.attrs.fgcolor
     }

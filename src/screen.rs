@@ -1,6 +1,6 @@
 struct State {
     size: crate::pos::Pos,
-    cells: Vec<Vec<crate::cell::Cell>>,
+    rows: Vec<crate::row::Row>,
     cursor_position: crate::pos::Pos,
     attrs: crate::attrs::Attrs,
 }
@@ -15,32 +15,27 @@ impl State {
         };
         Self {
             size,
-            cells: Self::new_cells(size),
+            rows: Self::new_rows(size),
             cursor_position: crate::pos::Pos::default(),
             attrs: crate::attrs::Attrs::default(),
         }
     }
 
-    fn new_cells(size: crate::pos::Pos) -> Vec<Vec<crate::cell::Cell>> {
-        vec![
-            vec![crate::cell::Cell::default(); size.col as usize];
-            size.row as usize
-        ]
+    fn new_rows(size: crate::pos::Pos) -> Vec<crate::row::Row> {
+        vec![crate::row::Row::new(size.col); size.row as usize]
     }
 
     fn cell(&self, pos: crate::pos::Pos) -> Option<&crate::cell::Cell> {
-        self.cells
-            .get(pos.row as usize)
-            .and_then(|v| v.get(pos.col as usize))
+        self.rows.get(pos.row as usize).and_then(|r| r.get(pos.col))
     }
 
     fn cell_mut(
         &mut self,
         pos: crate::pos::Pos,
     ) -> Option<&mut crate::cell::Cell> {
-        self.cells
+        self.rows
             .get_mut(pos.row as usize)
-            .and_then(|v| v.get_mut(pos.col as usize))
+            .and_then(|v| v.get_mut(pos.col))
     }
 
     fn current_cell(&self) -> Option<&crate::cell::Cell> {
@@ -111,7 +106,7 @@ impl vte::Perform for State {
                 0 => {}
                 1 => {}
                 2 => {
-                    self.cells = Self::new_cells(self.size);
+                    self.rows = Self::new_rows(self.size);
                 }
                 _ => {}
             },
@@ -267,7 +262,12 @@ impl Screen {
         row_end: u16,
         col_end: u16,
     ) -> String {
-        unimplemented!()
+        let mut contents = String::new();
+        for row in row_start..=(row_end.min(self.state.size.row)) {
+            contents +=
+                &self.state.rows[row as usize].contents(col_start, col_end);
+        }
+        contents
     }
 
     pub fn window_contents_formatted(
