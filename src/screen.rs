@@ -2,16 +2,70 @@ struct State {
     size: crate::pos::Pos,
     cells: Vec<Vec<crate::cell::Cell>>,
     cursor_position: crate::pos::Pos,
-    fgcolor: crate::color::Color,
-    bgcolor: crate::color::Color,
-    bold: bool,
-    italic: bool,
-    inverse: bool,
-    underline: bool,
+    attrs: crate::attrs::Attrs,
+}
+
+impl State {
+    const DEFAULT_SGR_PARAMS: &'static [i64] = &[0];
+
+    fn new(rows: u16, cols: u16) -> Self {
+        let size = crate::pos::Pos {
+            row: rows,
+            col: cols,
+        };
+        Self {
+            size,
+            cells: Self::new_cells(size),
+            cursor_position: crate::pos::Pos::default(),
+            attrs: crate::attrs::Attrs::default(),
+        }
+    }
+
+    fn new_cells(size: crate::pos::Pos) -> Vec<Vec<crate::cell::Cell>> {
+        vec![
+            vec![crate::cell::Cell::default(); size.col as usize];
+            size.row as usize
+        ]
+    }
+
+    fn cell(&self, pos: crate::pos::Pos) -> Option<&crate::cell::Cell> {
+        self.cells
+            .get(pos.row as usize)
+            .and_then(|v| v.get(pos.col as usize))
+    }
+
+    fn cell_mut(
+        &mut self,
+        pos: crate::pos::Pos,
+    ) -> Option<&mut crate::cell::Cell> {
+        self.cells
+            .get_mut(pos.row as usize)
+            .and_then(|v| v.get_mut(pos.col as usize))
+    }
+
+    fn current_cell(&self) -> Option<&crate::cell::Cell> {
+        self.cell(self.cursor_position)
+    }
+
+    fn current_cell_mut(&mut self) -> Option<&mut crate::cell::Cell> {
+        self.cell_mut(self.cursor_position)
+    }
 }
 
 impl vte::Perform for State {
-    fn print(&mut self, _c: char) {}
+    fn print(&mut self, c: char) {
+        let attrs = self.attrs;
+        if let Some(cell) = self.current_cell_mut() {
+            cell.set(c.to_string(), attrs);
+            self.cursor_position.col += 1;
+            if self.cursor_position.col > self.size.col {
+                self.cursor_position.col = 0;
+                self.cursor_position.row += 1;
+            }
+        } else {
+            panic!("couldn't find current cell")
+        }
+    }
 
     fn execute(&mut self, _b: u8) {}
 
@@ -31,11 +85,131 @@ impl vte::Perform for State {
 
     fn csi_dispatch(
         &mut self,
-        _params: &[i64],
+        params: &[i64],
         _intermediates: &[u8],
         _ignore: bool,
-        _c: char,
+        c: char,
     ) {
+        match c {
+            'D' => {
+                let offset = params.get(0).copied().unwrap_or(1);
+                if self.cursor_position.col >= offset as u16 {
+                    self.cursor_position.col -= offset as u16;
+                }
+            }
+            'H' => {
+                let row = params.get(0).copied().unwrap_or(1);
+                let row = if row == 0 { 1 } else { row };
+                let col = params.get(1).copied().unwrap_or(1);
+                let col = if col == 0 { 1 } else { col };
+                self.cursor_position = crate::pos::Pos {
+                    row: row as u16 - 1,
+                    col: col as u16 - 1,
+                };
+            }
+            'J' => match params.get(0).copied().unwrap_or(0) {
+                0 => {}
+                1 => {}
+                2 => {
+                    self.cells = Self::new_cells(self.size);
+                }
+                _ => {}
+            },
+            'm' => {
+                let params = if params.is_empty() {
+                    Self::DEFAULT_SGR_PARAMS
+                } else {
+                    params
+                };
+                let mut i = 0;
+                while i < params.len() {
+                    match params[i] {
+                        0 => self.attrs = crate::attrs::Attrs::default(),
+                        1 => self.attrs.bold = true,
+                        3 => self.attrs.italic = true,
+                        4 => self.attrs.underline = true,
+                        7 => self.attrs.inverse = true,
+                        22 => self.attrs.bold = false,
+                        23 => self.attrs.italic = false,
+                        24 => self.attrs.underline = false,
+                        27 => self.attrs.inverse = false,
+                        n if n >= 30 && n <= 37 => {
+                            self.attrs.fgcolor =
+                                crate::color::Color::Idx((n as u8) - 30);
+                        }
+                        38 => {
+                            i += 1;
+                            if i >= params.len() {
+                                unimplemented!()
+                            }
+                            match params[i] {
+                                2 => {
+                                    i += 3;
+                                    if i >= params.len() {
+                                        unimplemented!()
+                                    }
+                                    self.attrs.fgcolor =
+                                        crate::color::Color::Rgb(
+                                            params[i - 2] as u8,
+                                            params[i - 1] as u8,
+                                            params[i] as u8,
+                                        );
+                                }
+                                5 => {
+                                    i += 1;
+                                    if i >= params.len() {
+                                        unimplemented!()
+                                    }
+                                    self.attrs.fgcolor =
+                                        crate::color::Color::Idx(
+                                            params[i] as u8,
+                                        );
+                                }
+                                _ => {}
+                            }
+                        }
+                        n if n >= 40 && n <= 47 => {
+                            self.attrs.bgcolor =
+                                crate::color::Color::Idx((n as u8) - 40);
+                        }
+                        48 => {
+                            i += 1;
+                            if i >= params.len() {
+                                unimplemented!()
+                            }
+                            match params[i] {
+                                2 => {
+                                    i += 3;
+                                    if i >= params.len() {
+                                        unimplemented!()
+                                    }
+                                    self.attrs.bgcolor =
+                                        crate::color::Color::Rgb(
+                                            params[i - 2] as u8,
+                                            params[i - 1] as u8,
+                                            params[i] as u8,
+                                        );
+                                }
+                                5 => {
+                                    i += 1;
+                                    if i >= params.len() {
+                                        unimplemented!()
+                                    }
+                                    self.attrs.bgcolor =
+                                        crate::color::Color::Idx(
+                                            params[i] as u8,
+                                        );
+                                }
+                                _ => {}
+                            }
+                        }
+                        _ => {}
+                    }
+                    i += 1;
+                }
+            }
+            _ => {}
+        }
     }
 
     fn esc_dispatch(
@@ -57,23 +231,7 @@ impl Screen {
     pub fn new(rows: u16, cols: u16) -> Self {
         Self {
             parser: vte::Parser::new(),
-            state: State {
-                size: crate::pos::Pos {
-                    row: rows,
-                    col: cols,
-                },
-                cells: vec![
-                    vec![crate::cell::Cell::default(); cols as usize];
-                    rows as usize
-                ],
-                cursor_position: crate::pos::Pos::default(),
-                fgcolor: crate::color::Color::default(),
-                bgcolor: crate::color::Color::default(),
-                bold: false,
-                italic: false,
-                inverse: false,
-                underline: false,
-            },
+            state: State::new(rows, cols),
         }
     }
 
@@ -99,10 +257,7 @@ impl Screen {
     }
 
     pub fn cell(&self, row: u16, col: u16) -> Option<&crate::cell::Cell> {
-        self.state
-            .cells
-            .get(row as usize)
-            .and_then(|v| v.get(col as usize))
+        self.state.cell(crate::pos::Pos { row, col })
     }
 
     pub fn window_contents(
@@ -133,27 +288,27 @@ impl Screen {
     }
 
     pub fn fgcolor(&self) -> crate::color::Color {
-        self.state.fgcolor
+        self.state.attrs.fgcolor
     }
 
     pub fn bgcolor(&self) -> crate::color::Color {
-        self.state.bgcolor
+        self.state.attrs.bgcolor
     }
 
     pub fn bold(&self) -> bool {
-        self.state.bold
+        self.state.attrs.bold
     }
 
     pub fn italic(&self) -> bool {
-        self.state.italic
-    }
-
-    pub fn inverse(&self) -> bool {
-        self.state.inverse
+        self.state.attrs.italic
     }
 
     pub fn underline(&self) -> bool {
-        self.state.underline
+        self.state.attrs.underline
+    }
+
+    pub fn inverse(&self) -> bool {
+        self.state.attrs.inverse
     }
 
     pub fn title(&self) -> Option<&str> {

@@ -2,10 +2,12 @@
 #![warn(clippy::nursery)]
 #![allow(clippy::missing_const_for_fn)]
 
+mod attrs;
 mod cell;
-pub use cell::Cell;
 mod color;
-pub use color::Color;
 mod pos;
 mod screen;
+
+pub use cell::Cell;
+pub use color::Color;
 pub use screen::Screen;
