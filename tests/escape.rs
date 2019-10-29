@@ -17,7 +17,10 @@ fn deckpam() {
 fn ri() {
     let mut screen = vt100::Screen::new(24, 80);
     screen.assert_process(b"foo\nbar\x1bMbaz");
-    assert_eq!(screen.window_contents(0, 0, 23, 79), "foo   baz\n   bar\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
+    assert_eq!(
+        screen.window_contents(0, 0, 23, 79),
+        "foo   baz\n   bar\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+    );
 }
 
 #[test]
@@ -28,8 +31,14 @@ fn ris() {
     let cell = screen.cell(0, 0).unwrap();
     assert_eq!(cell.contents(), "");
 
-    assert_eq!(screen.window_contents(0, 0, 23, 79), "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
-    assert_eq!(screen.window_contents_formatted(0, 0, 23, 79), "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
+    assert_eq!(
+        screen.window_contents(0, 0, 23, 79),
+        "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+    );
+    assert_eq!(
+        screen.window_contents_formatted(0, 0, 23, 79),
+        "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+    );
 
     assert_eq!(screen.title(), None);
     assert_eq!(screen.icon_name(), None);
@@ -60,7 +69,10 @@ fn ris() {
     let cell = screen.cell(0, 0).unwrap();
     assert_eq!(cell.contents(), "f");
 
-    assert_eq!(screen.window_contents(0, 0, 23, 79), "foo\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
+    assert_eq!(
+        screen.window_contents(0, 0, 23, 79),
+        "foo\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+    );
     assert_eq!(screen.window_contents_formatted(0, 0, 23, 79), "f\x1b[31;47;1;3;4moo\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
 
     assert_eq!(screen.title().unwrap(), "window title");
@@ -91,8 +103,14 @@ fn ris() {
     let cell = screen.cell(0, 0).unwrap();
     assert_eq!(cell.contents(), "");
 
-    assert_eq!(screen.window_contents(0, 0, 23, 79), "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
-    assert_eq!(screen.window_contents_formatted(0, 0, 23, 79), "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
+    assert_eq!(
+        screen.window_contents(0, 0, 23, 79),
+        "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+    );
+    assert_eq!(
+        screen.window_contents_formatted(0, 0, 23, 79),
+        "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+    );
 
     // title and icon name don't change with reset
     assert_eq!(screen.title().unwrap(), "window title");
@@ -131,5 +149,8 @@ fn vb() {
 fn decsc() {
     let mut screen = vt100::Screen::new(24, 80);
     screen.assert_process(b"foo\x1b7\r\n\r\n\r\n         bar\x1b8baz");
-    assert_eq!(screen.window_contents(0, 0, 23, 79), "foobaz\n\n\n         bar\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
+    assert_eq!(
+        screen.window_contents(0, 0, 23, 79),
+        "foobaz\n\n\n         bar\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+    );
 }

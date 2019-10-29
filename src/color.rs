@@ -2,7 +2,7 @@ use std;
 
 use types;
 
-#[derive(Eq,PartialEq,Debug)]
+#[derive(Eq, PartialEq, Debug)]
 pub enum Color {
     ColorDefault,
     ColorIdx(u8),

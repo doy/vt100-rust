@@ -25,7 +25,7 @@ impl Cell {
         let contents: &[u8] = unsafe {
             std::slice::from_raw_parts(
                 &(*prefix).contents as *const i8 as *const u8,
-                (*prefix).len
+                (*prefix).len,
             )
         };
         std::str::from_utf8(contents).unwrap()

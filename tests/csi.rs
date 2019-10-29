@@ -96,7 +96,10 @@ fn relative_movement() {
 #[test]
 fn ed() {
     let mut screen = vt100::Screen::new(24, 80);
-    assert_eq!(screen.window_contents(0, 0, 23, 79), "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
+    assert_eq!(
+        screen.window_contents(0, 0, 23, 79),
+        "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+    );
 
     screen.assert_process(b"foo\x1b[5;5Hbar\x1b[10;10Hbaz\x1b[20;20Hquux");
     assert_eq!(screen.window_contents(0, 0, 23, 79), "foo\n\n\n\n    bar\n\n\n\n\n         baz\n\n\n\n\n\n\n\n\n\n                   quux\n\n\n\n\n");
@@ -105,13 +108,22 @@ fn ed() {
     assert_eq!(screen.window_contents(0, 0, 23, 79), "foo\n\n\n\n    bar\n\n\n\n\n         ba\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
 
     screen.assert_process(b"\x1b[5;7H\x1b[1J");
-    assert_eq!(screen.window_contents(0, 0, 23, 79), "\n\n\n\n      r\n\n\n\n\n         ba\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
+    assert_eq!(
+        screen.window_contents(0, 0, 23, 79),
+        "\n\n\n\n      r\n\n\n\n\n         ba\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+    );
 
     screen.assert_process(b"\x1b[7;7H\x1b[2J");
-    assert_eq!(screen.window_contents(0, 0, 23, 79), "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
+    assert_eq!(
+        screen.window_contents(0, 0, 23, 79),
+        "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+    );
 
     screen.assert_process(b"\x1b[2J\x1b[H");
-    assert_eq!(screen.window_contents(0, 0, 23, 79), "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
+    assert_eq!(
+        screen.window_contents(0, 0, 23, 79),
+        "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+    );
 
     screen.assert_process(b"foo\x1b[5;5Hbar\x1b[10;10Hbaz\x1b[20;20Hquux");
     assert_eq!(screen.window_contents(0, 0, 23, 79), "foo\n\n\n\n    bar\n\n\n\n\n         baz\n\n\n\n\n\n\n\n\n\n                   quux\n\n\n\n\n");
@@ -120,7 +132,10 @@ fn ed() {
     assert_eq!(screen.window_contents(0, 0, 23, 79), "foo\n\n\n\n    bar\n\n\n\n\n         ba\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
 
     screen.assert_process(b"\x1b[2J\x1b[H");
-    assert_eq!(screen.window_contents(0, 0, 23, 79), "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
+    assert_eq!(
+        screen.window_contents(0, 0, 23, 79),
+        "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+    );
 
     screen.assert_process(b"foo\x1b[5;5Hbar\x1b[10;10Hbaz\x1b[20;20Hquux");
     assert_eq!(screen.window_contents(0, 0, 23, 79), "foo\n\n\n\n    bar\n\n\n\n\n         baz\n\n\n\n\n\n\n\n\n\n                   quux\n\n\n\n\n");
@@ -129,13 +144,22 @@ fn ed() {
     assert_eq!(screen.window_contents(0, 0, 23, 79), "foo\n\n\n\n    bar\n\n\n\n\n         ba\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
 
     screen.assert_process(b"\x1b[5;7H\x1b[?1J");
-    assert_eq!(screen.window_contents(0, 0, 23, 79), "\n\n\n\n      r\n\n\n\n\n         ba\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
+    assert_eq!(
+        screen.window_contents(0, 0, 23, 79),
+        "\n\n\n\n      r\n\n\n\n\n         ba\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+    );
 
     screen.assert_process(b"\x1b[7;7H\x1b[?2J");
-    assert_eq!(screen.window_contents(0, 0, 23, 79), "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
+    assert_eq!(
+        screen.window_contents(0, 0, 23, 79),
+        "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+    );
 
     screen.assert_process(b"\x1b[2J\x1b[H");
-    assert_eq!(screen.window_contents(0, 0, 23, 79), "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
+    assert_eq!(
+        screen.window_contents(0, 0, 23, 79),
+        "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+    );
 
     screen.assert_process(b"foo\x1b[5;5Hbar\x1b[10;10Hbaz\x1b[20;20Hquux");
     assert_eq!(screen.window_contents(0, 0, 23, 79), "foo\n\n\n\n    bar\n\n\n\n\n         baz\n\n\n\n\n\n\n\n\n\n                   quux\n\n\n\n\n");
@@ -147,9 +171,14 @@ fn ed() {
 #[test]
 fn el() {
     let mut screen = vt100::Screen::new(24, 80);
-    assert_eq!(screen.window_contents(0, 0, 23, 79), "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
+    assert_eq!(
+        screen.window_contents(0, 0, 23, 79),
+        "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+    );
 
-    screen.assert_process(b"foo\x1b[5;5Hbarbar\x1b[10;10Hbazbaz\x1b[20;20Hquux");
+    screen.assert_process(
+        b"foo\x1b[5;5Hbarbar\x1b[10;10Hbazbaz\x1b[20;20Hquux",
+    );
     assert_eq!(screen.window_contents(0, 0, 23, 79), "foo\n\n\n\n    barbar\n\n\n\n\n         bazbaz\n\n\n\n\n\n\n\n\n\n                   quux\n\n\n\n\n");
 
     screen.assert_process(b"\x1b[5;8H\x1b[0K");
@@ -165,9 +194,14 @@ fn el() {
     assert_eq!(screen.window_contents(0, 0, 23, 79), "f\n\n\n\n    bar\n\n\n\n\n            baz\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
 
     screen.assert_process(b"\x1b[2J\x1b[H");
-    assert_eq!(screen.window_contents(0, 0, 23, 79), "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
+    assert_eq!(
+        screen.window_contents(0, 0, 23, 79),
+        "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+    );
 
-    screen.assert_process(b"foo\x1b[5;5Hbarbar\x1b[10;10Hbazbaz\x1b[20;20Hquux");
+    screen.assert_process(
+        b"foo\x1b[5;5Hbarbar\x1b[10;10Hbazbaz\x1b[20;20Hquux",
+    );
     assert_eq!(screen.window_contents(0, 0, 23, 79), "foo\n\n\n\n    barbar\n\n\n\n\n         bazbaz\n\n\n\n\n\n\n\n\n\n                   quux\n\n\n\n\n");
 
     screen.assert_process(b"\x1b[5;8H\x1b[?0K");
@@ -186,90 +220,153 @@ fn el() {
 #[test]
 fn ich_dch_ech() {
     let mut screen = vt100::Screen::new(24, 80);
-    assert_eq!(screen.window_contents(0, 0, 23, 79), "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
+    assert_eq!(
+        screen.window_contents(0, 0, 23, 79),
+        "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+    );
 
     screen.assert_process(b"\x1b[10;10Hfoobar");
-    assert_eq!(screen.window_contents(0, 0, 23, 79), "\n\n\n\n\n\n\n\n\n         foobar\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
+    assert_eq!(
+        screen.window_contents(0, 0, 23, 79),
+        "\n\n\n\n\n\n\n\n\n         foobar\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+    );
 
     screen.assert_process(b"\x1b[10;12H\x1b[3@");
-    assert_eq!(screen.window_contents(0, 0, 23, 79), "\n\n\n\n\n\n\n\n\n         fo   obar\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
+    assert_eq!(
+        screen.window_contents(0, 0, 23, 79),
+        "\n\n\n\n\n\n\n\n\n         fo   obar\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+    );
     assert_eq!(screen.cursor_position(), (9, 11));
 
     screen.assert_process(b"\x1b[4P");
-    assert_eq!(screen.window_contents(0, 0, 23, 79), "\n\n\n\n\n\n\n\n\n         fobar\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
+    assert_eq!(
+        screen.window_contents(0, 0, 23, 79),
+        "\n\n\n\n\n\n\n\n\n         fobar\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+    );
     assert_eq!(screen.cursor_position(), (9, 11));
 
     screen.assert_process(b"\x1b[100@");
-    assert_eq!(screen.window_contents(0, 0, 23, 79), "\n\n\n\n\n\n\n\n\n         fo\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
+    assert_eq!(
+        screen.window_contents(0, 0, 23, 79),
+        "\n\n\n\n\n\n\n\n\n         fo\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+    );
     assert_eq!(screen.cursor_position(), (9, 11));
 
     screen.assert_process(b"obar");
-    assert_eq!(screen.window_contents(0, 0, 23, 79), "\n\n\n\n\n\n\n\n\n         foobar\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
+    assert_eq!(
+        screen.window_contents(0, 0, 23, 79),
+        "\n\n\n\n\n\n\n\n\n         foobar\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+    );
     assert_eq!(screen.cursor_position(), (9, 15));
 
     screen.assert_process(b"\x1b[10;12H\x1b[100P");
-    assert_eq!(screen.window_contents(0, 0, 23, 79), "\n\n\n\n\n\n\n\n\n         fo\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
+    assert_eq!(
+        screen.window_contents(0, 0, 23, 79),
+        "\n\n\n\n\n\n\n\n\n         fo\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+    );
     assert_eq!(screen.cursor_position(), (9, 11));
 
     screen.assert_process(b"obar");
-    assert_eq!(screen.window_contents(0, 0, 23, 79), "\n\n\n\n\n\n\n\n\n         foobar\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
+    assert_eq!(
+        screen.window_contents(0, 0, 23, 79),
+        "\n\n\n\n\n\n\n\n\n         foobar\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+    );
     assert_eq!(screen.cursor_position(), (9, 15));
 
     screen.assert_process(b"\x1b[10;13H\x1b[X");
-    assert_eq!(screen.window_contents(0, 0, 23, 79), "\n\n\n\n\n\n\n\n\n         foo ar\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
+    assert_eq!(
+        screen.window_contents(0, 0, 23, 79),
+        "\n\n\n\n\n\n\n\n\n         foo ar\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+    );
     assert_eq!(screen.cursor_position(), (9, 12));
 
     screen.assert_process(b"\x1b[10;11H\x1b[4X");
-    assert_eq!(screen.window_contents(0, 0, 23, 79), "\n\n\n\n\n\n\n\n\n         f    r\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
+    assert_eq!(
+        screen.window_contents(0, 0, 23, 79),
+        "\n\n\n\n\n\n\n\n\n         f    r\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+    );
     assert_eq!(screen.cursor_position(), (9, 10));
 
     screen.assert_process(b"\x1b[10;11H\x1b[400X");
-    assert_eq!(screen.window_contents(0, 0, 23, 79), "\n\n\n\n\n\n\n\n\n         f\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
+    assert_eq!(
+        screen.window_contents(0, 0, 23, 79),
+        "\n\n\n\n\n\n\n\n\n         f\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+    );
     assert_eq!(screen.cursor_position(), (9, 10));
 }
 
 #[test]
 fn il_dl() {
     let mut screen = vt100::Screen::new(24, 80);
-    assert_eq!(screen.window_contents(0, 0, 23, 79), "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
+    assert_eq!(
+        screen.window_contents(0, 0, 23, 79),
+        "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+    );
 
     screen.assert_process(b"\x1b[10;10Hfoobar\x1b[3D");
-    assert_eq!(screen.window_contents(0, 0, 23, 79), "\n\n\n\n\n\n\n\n\n         foobar\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
+    assert_eq!(
+        screen.window_contents(0, 0, 23, 79),
+        "\n\n\n\n\n\n\n\n\n         foobar\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+    );
     assert_eq!(screen.cursor_position(), (9, 12));
 
     screen.assert_process(b"\x1b[L");
-    assert_eq!(screen.window_contents(0, 0, 23, 79), "\n\n\n\n\n\n\n\n\n\n         foobar\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
+    assert_eq!(
+        screen.window_contents(0, 0, 23, 79),
+        "\n\n\n\n\n\n\n\n\n\n         foobar\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+    );
     assert_eq!(screen.cursor_position(), (9, 12));
 
     screen.assert_process(b"\x1b[3L");
-    assert_eq!(screen.window_contents(0, 0, 23, 79), "\n\n\n\n\n\n\n\n\n\n\n\n\n         foobar\n\n\n\n\n\n\n\n\n\n\n");
+    assert_eq!(
+        screen.window_contents(0, 0, 23, 79),
+        "\n\n\n\n\n\n\n\n\n\n\n\n\n         foobar\n\n\n\n\n\n\n\n\n\n\n"
+    );
     assert_eq!(screen.cursor_position(), (9, 12));
 
     screen.assert_process(b"\x1b[500L");
-    assert_eq!(screen.window_contents(0, 0, 23, 79), "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
+    assert_eq!(
+        screen.window_contents(0, 0, 23, 79),
+        "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+    );
     assert_eq!(screen.cursor_position(), (9, 12));
 
     screen.assert_process(b"\x1b[10;10Hfoobar\x1b[3D\x1b[6A");
-    assert_eq!(screen.window_contents(0, 0, 23, 79), "\n\n\n\n\n\n\n\n\n         foobar\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
+    assert_eq!(
+        screen.window_contents(0, 0, 23, 79),
+        "\n\n\n\n\n\n\n\n\n         foobar\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+    );
     assert_eq!(screen.cursor_position(), (3, 12));
 
     screen.assert_process(b"\x1b[M");
-    assert_eq!(screen.window_contents(0, 0, 23, 79), "\n\n\n\n\n\n\n\n         foobar\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
+    assert_eq!(
+        screen.window_contents(0, 0, 23, 79),
+        "\n\n\n\n\n\n\n\n         foobar\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+    );
     assert_eq!(screen.cursor_position(), (3, 12));
 
     screen.assert_process(b"\x1b[3M");
-    assert_eq!(screen.window_contents(0, 0, 23, 79), "\n\n\n\n\n         foobar\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
+    assert_eq!(
+        screen.window_contents(0, 0, 23, 79),
+        "\n\n\n\n\n         foobar\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+    );
     assert_eq!(screen.cursor_position(), (3, 12));
 
     screen.assert_process(b"\x1b[500M");
-    assert_eq!(screen.window_contents(0, 0, 23, 79), "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
+    assert_eq!(
+        screen.window_contents(0, 0, 23, 79),
+        "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+    );
     assert_eq!(screen.cursor_position(), (3, 12));
 }
 
 #[test]
 fn scroll() {
     let mut screen = vt100::Screen::new(24, 80);
-    assert_eq!(screen.window_contents(0, 0, 23, 79), "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
+    assert_eq!(
+        screen.window_contents(0, 0, 23, 79),
+        "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+    );
 
     screen.assert_process(b"1\r\n2\r\n3\r\n4\r\n5\r\n6\r\n7\r\n8\r\n9\r\n10\r\n11\r\n12\r\n13\r\n14\r\n15\r\n16\r\n17\r\n18\r\n19\r\n20\r\n21\r\n22\r\n23\r\n24");
     assert_eq!(screen.window_contents(0, 0, 23, 79), "1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n");

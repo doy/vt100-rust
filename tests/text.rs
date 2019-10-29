@@ -12,8 +12,14 @@ fn ascii() {
     assert_eq!(screen.cell(0, 2).unwrap().contents(), "o");
     assert_eq!(screen.cell(0, 3).unwrap().contents(), "");
     assert_eq!(screen.cell(1, 0).unwrap().contents(), "");
-    assert_eq!(screen.window_contents(0, 0, 23, 79), "foo\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
-    assert_eq!(screen.window_contents(0, 0, 500, 500), "foo\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
+    assert_eq!(
+        screen.window_contents(0, 0, 23, 79),
+        "foo\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+    );
+    assert_eq!(
+        screen.window_contents(0, 0, 500, 500),
+        "foo\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+    );
 }
 
 #[test]
@@ -26,8 +32,14 @@ fn utf8() {
     assert_eq!(screen.cell(0, 3).unwrap().contents(), "é");
     assert_eq!(screen.cell(0, 4).unwrap().contents(), "");
     assert_eq!(screen.cell(1, 0).unwrap().contents(), "");
-    assert_eq!(screen.window_contents(0, 0, 23, 79), "café\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
-    assert_eq!(screen.window_contents(0, 0, 500, 500), "café\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
+    assert_eq!(
+        screen.window_contents(0, 0, 23, 79),
+        "café\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+    );
+    assert_eq!(
+        screen.window_contents(0, 0, 500, 500),
+        "café\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+    );
 }
 
 #[test]
@@ -45,8 +57,14 @@ fn newlines() {
     assert_eq!(screen.cell(2, 2).unwrap().contents(), "d");
     assert_eq!(screen.cell(0, 3).unwrap().contents(), "");
     assert_eq!(screen.cell(3, 0).unwrap().contents(), "");
-    assert_eq!(screen.window_contents(0, 0, 23, 79), "f\noo\nood\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
-    assert_eq!(screen.window_contents(0, 0, 500, 500), "f\noo\nood\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
+    assert_eq!(
+        screen.window_contents(0, 0, 23, 79),
+        "f\noo\nood\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+    );
+    assert_eq!(
+        screen.window_contents(0, 0, 500, 500),
+        "f\noo\nood\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+    );
 }
 
 #[test]
@@ -61,8 +79,14 @@ fn wide() {
     assert_eq!(screen.cell(0, 5).unwrap().contents(), "");
     assert_eq!(screen.cell(0, 6).unwrap().contents(), "");
     assert_eq!(screen.cell(1, 0).unwrap().contents(), "");
-    assert_eq!(screen.window_contents(0, 0, 23, 79), "aデbネ\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
-    assert_eq!(screen.window_contents(0, 0, 500, 500), "aデbネ\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
+    assert_eq!(
+        screen.window_contents(0, 0, 23, 79),
+        "aデbネ\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+    );
+    assert_eq!(
+        screen.window_contents(0, 0, 500, 500),
+        "aデbネ\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+    );
 }
 
 #[test]

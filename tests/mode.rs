@@ -199,10 +199,16 @@ fn alternate_buffer() {
     assert_eq!(screen.window_contents(0, 0, 23, 79), "1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n");
     assert!(!screen.alternate_buffer_active());
     screen.assert_process(b"\x1b[?1049h");
-    assert_eq!(screen.window_contents(0, 0, 23, 79), "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
+    assert_eq!(
+        screen.window_contents(0, 0, 23, 79),
+        "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+    );
     assert!(screen.alternate_buffer_active());
     screen.assert_process(b"foobar");
-    assert_eq!(screen.window_contents(0, 0, 23, 79), "foobar\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
+    assert_eq!(
+        screen.window_contents(0, 0, 23, 79),
+        "foobar\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+    );
     screen.assert_process(b"\x1b[?1049l");
     assert_eq!(screen.window_contents(0, 0, 23, 79), "1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n");
     assert!(!screen.alternate_buffer_active());

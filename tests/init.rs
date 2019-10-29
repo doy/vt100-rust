@@ -16,8 +16,14 @@ fn init() {
     let cell = screen.cell(0, 80);
     assert!(cell.is_none());
 
-    assert_eq!(screen.window_contents(0, 0, 23, 79), "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
-    assert_eq!(screen.window_contents_formatted(0, 0, 23, 79), "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
+    assert_eq!(
+        screen.window_contents(0, 0, 23, 79),
+        "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+    );
+    assert_eq!(
+        screen.window_contents_formatted(0, 0, 23, 79),
+        "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+    );
 
     assert_eq!(screen.title(), None);
     assert_eq!(screen.icon_name(), None);
