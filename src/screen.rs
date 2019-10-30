@@ -1,7 +1,6 @@
 struct State {
-    size: crate::pos::Pos,
     grid: crate::grid::Grid,
-    cursor_position: crate::pos::Pos,
+    cursor_position: crate::grid::Pos,
     attrs: crate::attrs::Attrs,
     got_audible_bell: bool,
     got_visual_bell: bool,
@@ -9,27 +8,23 @@ struct State {
 
 impl State {
     fn new(rows: u16, cols: u16) -> Self {
-        let size = crate::pos::Pos {
-            row: rows,
-            col: cols,
-        };
+        let size = crate::grid::Size::new(rows, cols);
         Self {
-            size,
             grid: crate::grid::Grid::new(size),
-            cursor_position: crate::pos::Pos::default(),
+            cursor_position: crate::grid::Pos::new(0, 0, size),
             attrs: crate::attrs::Attrs::default(),
             got_audible_bell: false,
             got_visual_bell: false,
         }
     }
 
-    fn cell(&self, pos: crate::pos::Pos) -> Option<&crate::cell::Cell> {
+    fn cell(&self, pos: crate::grid::Pos) -> Option<&crate::cell::Cell> {
         self.grid.cell(pos)
     }
 
     fn cell_mut(
         &mut self,
-        pos: crate::pos::Pos,
+        pos: crate::grid::Pos,
     ) -> Option<&mut crate::cell::Cell> {
         self.grid.cell_mut(pos)
     }
@@ -40,6 +35,10 @@ impl State {
 
     fn current_cell_mut(&mut self) -> Option<&mut crate::cell::Cell> {
         self.cell_mut(self.cursor_position)
+    }
+
+    fn pos(&self, row: u16, col: u16) -> crate::grid::Pos {
+        crate::grid::Pos::new(row, col, *self.grid.size())
     }
 }
 
@@ -52,11 +51,7 @@ impl State {
         let attrs = self.attrs;
         if let Some(cell) = self.current_cell_mut() {
             cell.set(c.to_string(), attrs);
-            self.cursor_position.col += 1;
-            if self.cursor_position.col > self.size.col {
-                self.cursor_position.col = 0;
-                self.cursor_position.row += 1;
-            }
+            self.cursor_position.col_inc(1);
         } else {
             panic!("couldn't find current cell")
         }
@@ -68,23 +63,19 @@ impl State {
 
     fn bs(&mut self) {
         // XXX is this correct? is backwards wrapping a thing?
-        if self.cursor_position.col >= 1 {
-            self.cursor_position.col -= 1;
-        }
+        self.cursor_position.col_dec(1);
     }
 
     fn tab(&mut self) {
-        self.cursor_position.col -= self.cursor_position.col % 8;
-        self.cursor_position.col += 8;
+        self.cursor_position.next_tabstop();
     }
 
     fn lf(&mut self) {
-        // XXX this is not correct - scrolling past the bottom of the screen
-        self.cursor_position.row += 1;
+        self.cursor_position.row_inc(1);
     }
 
     fn cr(&mut self) {
-        self.cursor_position.col = 0;
+        self.cursor_position.col_set(0);
     }
 
     // escape codes
@@ -93,25 +84,17 @@ impl State {
 
     // CSI D
     fn cub(&mut self, params: &[i64]) {
-        // XXX is this correct? is backwards wrapping a thing?
-        // XXX need to handle parameter truncation (saturating_sub, maybe?)
         let offset = params.get(0).copied().unwrap_or(1);
-        if self.cursor_position.col >= offset as u16 {
-            self.cursor_position.col -= offset as u16;
-        }
+        self.cursor_position.col_dec(offset as u16);
     }
 
     // CSI H
     fn cup(&mut self, params: &[i64]) {
-        // XXX need to handle parameter truncation (saturating_sub, maybe?)
-        let row = params.get(0).copied().unwrap_or(1);
-        let row = if row == 0 { 1 } else { row };
-        let col = params.get(1).copied().unwrap_or(1);
-        let col = if col == 0 { 1 } else { col };
-        self.cursor_position = crate::pos::Pos {
-            row: row as u16 - 1,
-            col: col as u16 - 1,
-        };
+        // XXX need to handle value overflow
+        self.cursor_position = self.pos(
+            normalize_absolute_position(params.get(0).map(|i| *i as u16)),
+            normalize_absolute_position(params.get(1).map(|i| *i as u16)),
+        );
     }
 
     // CSI J
@@ -120,7 +103,7 @@ impl State {
             0 => unimplemented!(),
             1 => unimplemented!(),
             2 => {
-                self.grid = crate::grid::Grid::new(self.size);
+                self.grid = crate::grid::Grid::new(*self.grid.size());
             }
             _ => {}
         }
@@ -284,18 +267,18 @@ impl Screen {
     }
 
     pub fn rows(&self) -> u16 {
-        self.state.size.row
+        self.state.grid.size().rows()
     }
 
     pub fn cols(&self) -> u16 {
-        self.state.size.col
+        self.state.grid.size().cols()
     }
 
     pub fn set_window_size(&mut self, rows: u16, cols: u16) {
-        self.state.size = crate::pos::Pos {
-            row: rows,
-            col: cols,
-        };
+        self.state.grid.set_size(crate::grid::Size::new(rows, cols));
+        self.state
+            .cursor_position
+            .set_size(crate::grid::Size::new(rows, cols));
     }
 
     pub fn process(&mut self, bytes: &[u8]) {
@@ -305,7 +288,7 @@ impl Screen {
     }
 
     pub fn cell(&self, row: u16, col: u16) -> Option<&crate::cell::Cell> {
-        self.state.cell(crate::pos::Pos { row, col })
+        self.state.cell(self.state.pos(row, col))
     }
 
     pub fn window_contents(
@@ -334,8 +317,8 @@ impl Screen {
 
     pub fn cursor_position(&self) -> (u16, u16) {
         (
-            self.state.cursor_position.row,
-            self.state.cursor_position.col,
+            self.state.cursor_position.row(),
+            self.state.cursor_position.col(),
         )
     }
 
@@ -418,4 +401,17 @@ impl Screen {
         self.state.got_visual_bell = false;
         ret
     }
+}
+
+fn normalize_absolute_position(i: Option<u16>) -> u16 {
+    let i = if let Some(i) = i {
+        if i == 0 {
+            1
+        } else {
+            i
+        }
+    } else {
+        1
+    };
+    i - 1
 }
