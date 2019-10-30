@@ -1,6 +1,6 @@
 struct State {
     size: crate::pos::Pos,
-    rows: Vec<crate::row::Row>,
+    grid: crate::grid::Grid,
     cursor_position: crate::pos::Pos,
     attrs: crate::attrs::Attrs,
     got_audible_bell: bool,
@@ -8,8 +8,6 @@ struct State {
 }
 
 impl State {
-    const DEFAULT_SGR_PARAMS: &'static [i64] = &[0];
-
     fn new(rows: u16, cols: u16) -> Self {
         let size = crate::pos::Pos {
             row: rows,
@@ -17,7 +15,7 @@ impl State {
         };
         Self {
             size,
-            rows: Self::new_rows(size),
+            grid: crate::grid::Grid::new(size),
             cursor_position: crate::pos::Pos::default(),
             attrs: crate::attrs::Attrs::default(),
             got_audible_bell: false,
@@ -25,21 +23,15 @@ impl State {
         }
     }
 
-    fn new_rows(size: crate::pos::Pos) -> Vec<crate::row::Row> {
-        vec![crate::row::Row::new(size.col); size.row as usize]
-    }
-
     fn cell(&self, pos: crate::pos::Pos) -> Option<&crate::cell::Cell> {
-        self.rows.get(pos.row as usize).and_then(|r| r.get(pos.col))
+        self.grid.cell(pos)
     }
 
     fn cell_mut(
         &mut self,
         pos: crate::pos::Pos,
     ) -> Option<&mut crate::cell::Cell> {
-        self.rows
-            .get_mut(pos.row as usize)
-            .and_then(|v| v.get_mut(pos.col))
+        self.grid.cell_mut(pos)
     }
 
     fn current_cell(&self) -> Option<&crate::cell::Cell> {
@@ -51,8 +43,12 @@ impl State {
     }
 }
 
-impl vte::Perform for State {
-    fn print(&mut self, c: char) {
+impl State {
+    const DEFAULT_SGR_PARAMS: &'static [i64] = &[0];
+
+    // control codes
+
+    fn text(&mut self, c: char) {
         let attrs = self.attrs;
         if let Some(cell) = self.current_cell_mut() {
             cell.set(c.to_string(), attrs);
@@ -66,164 +62,177 @@ impl vte::Perform for State {
         }
     }
 
-    fn execute(&mut self, b: u8) {
-        match b {
-            7 => self.got_audible_bell = true,
-            8 => {
-                if self.cursor_position.col >= 1 {
-                    self.cursor_position.col -= 1;
-                }
+    fn bel(&mut self) {
+        self.got_audible_bell = true;
+    }
+
+    fn bs(&mut self) {
+        // XXX is this correct? is backwards wrapping a thing?
+        if self.cursor_position.col >= 1 {
+            self.cursor_position.col -= 1;
+        }
+    }
+
+    fn tab(&mut self) {
+        self.cursor_position.col -= self.cursor_position.col % 8;
+        self.cursor_position.col += 8;
+    }
+
+    fn lf(&mut self) {
+        // XXX this is not correct - scrolling past the bottom of the screen
+        self.cursor_position.row += 1;
+    }
+
+    fn cr(&mut self) {
+        self.cursor_position.col = 0;
+    }
+
+    // escape codes
+
+    // csi codes
+
+    // CSI D
+    fn cub(&mut self, params: &[i64]) {
+        // XXX is this correct? is backwards wrapping a thing?
+        // XXX need to handle parameter truncation (saturating_sub, maybe?)
+        let offset = params.get(0).copied().unwrap_or(1);
+        if self.cursor_position.col >= offset as u16 {
+            self.cursor_position.col -= offset as u16;
+        }
+    }
+
+    // CSI H
+    fn cup(&mut self, params: &[i64]) {
+        // XXX need to handle parameter truncation (saturating_sub, maybe?)
+        let row = params.get(0).copied().unwrap_or(1);
+        let row = if row == 0 { 1 } else { row };
+        let col = params.get(1).copied().unwrap_or(1);
+        let col = if col == 0 { 1 } else { col };
+        self.cursor_position = crate::pos::Pos {
+            row: row as u16 - 1,
+            col: col as u16 - 1,
+        };
+    }
+
+    // CSI J
+    fn ed(&mut self, params: &[i64]) {
+        match params.get(0).copied().unwrap_or(0) {
+            0 => unimplemented!(),
+            1 => unimplemented!(),
+            2 => {
+                self.grid = crate::grid::Grid::new(self.size);
             }
-            9 => {
-                self.cursor_position.col -= self.cursor_position.col % 8;
-                self.cursor_position.col += 8;
-            }
-            // XXX
-            10 => self.cursor_position.row += 1,
-            13 => self.cursor_position.col = 0,
             _ => {}
         }
     }
 
-    fn hook(
-        &mut self,
-        _params: &[i64],
-        _intermediates: &[u8],
-        _ignore: bool,
-    ) {
-    }
-
-    fn put(&mut self, _b: u8) {}
-
-    fn unhook(&mut self) {}
-
-    fn osc_dispatch(&mut self, _params: &[&[u8]]) {}
-
-    fn csi_dispatch(
-        &mut self,
-        params: &[i64],
-        _intermediates: &[u8],
-        _ignore: bool,
-        c: char,
-    ) {
-        match c {
-            'D' => {
-                let offset = params.get(0).copied().unwrap_or(1);
-                if self.cursor_position.col >= offset as u16 {
-                    self.cursor_position.col -= offset as u16;
+    // CSI m
+    fn sgr(&mut self, params: &[i64]) {
+        // XXX need to handle value overflow
+        // XXX need to handle incorrect numbers of parameters for some of the
+        // fancier options
+        let params = if params.is_empty() {
+            Self::DEFAULT_SGR_PARAMS
+        } else {
+            params
+        };
+        let mut i = 0;
+        while i < params.len() {
+            match params[i] {
+                0 => self.attrs = crate::attrs::Attrs::default(),
+                1 => self.attrs.bold = true,
+                3 => self.attrs.italic = true,
+                4 => self.attrs.underline = true,
+                7 => self.attrs.inverse = true,
+                22 => self.attrs.bold = false,
+                23 => self.attrs.italic = false,
+                24 => self.attrs.underline = false,
+                27 => self.attrs.inverse = false,
+                n if n >= 30 && n <= 37 => {
+                    self.attrs.fgcolor =
+                        crate::color::Color::Idx((n as u8) - 30);
                 }
-            }
-            'H' => {
-                let row = params.get(0).copied().unwrap_or(1);
-                let row = if row == 0 { 1 } else { row };
-                let col = params.get(1).copied().unwrap_or(1);
-                let col = if col == 0 { 1 } else { col };
-                self.cursor_position = crate::pos::Pos {
-                    row: row as u16 - 1,
-                    col: col as u16 - 1,
-                };
-            }
-            'J' => match params.get(0).copied().unwrap_or(0) {
-                0 => {}
-                1 => {}
-                2 => {
-                    self.rows = Self::new_rows(self.size);
-                }
-                _ => {}
-            },
-            'm' => {
-                let params = if params.is_empty() {
-                    Self::DEFAULT_SGR_PARAMS
-                } else {
-                    params
-                };
-                let mut i = 0;
-                while i < params.len() {
+                38 => {
+                    i += 1;
+                    if i >= params.len() {
+                        unimplemented!()
+                    }
                     match params[i] {
-                        0 => self.attrs = crate::attrs::Attrs::default(),
-                        1 => self.attrs.bold = true,
-                        3 => self.attrs.italic = true,
-                        4 => self.attrs.underline = true,
-                        7 => self.attrs.inverse = true,
-                        22 => self.attrs.bold = false,
-                        23 => self.attrs.italic = false,
-                        24 => self.attrs.underline = false,
-                        27 => self.attrs.inverse = false,
-                        n if n >= 30 && n <= 37 => {
+                        2 => {
+                            i += 3;
+                            if i >= params.len() {
+                                unimplemented!()
+                            }
+                            self.attrs.fgcolor = crate::color::Color::Rgb(
+                                params[i - 2] as u8,
+                                params[i - 1] as u8,
+                                params[i] as u8,
+                            );
+                        }
+                        5 => {
+                            i += 1;
+                            if i >= params.len() {
+                                unimplemented!()
+                            }
                             self.attrs.fgcolor =
-                                crate::color::Color::Idx((n as u8) - 30);
-                        }
-                        38 => {
-                            i += 1;
-                            if i >= params.len() {
-                                unimplemented!()
-                            }
-                            match params[i] {
-                                2 => {
-                                    i += 3;
-                                    if i >= params.len() {
-                                        unimplemented!()
-                                    }
-                                    self.attrs.fgcolor =
-                                        crate::color::Color::Rgb(
-                                            params[i - 2] as u8,
-                                            params[i - 1] as u8,
-                                            params[i] as u8,
-                                        );
-                                }
-                                5 => {
-                                    i += 1;
-                                    if i >= params.len() {
-                                        unimplemented!()
-                                    }
-                                    self.attrs.fgcolor =
-                                        crate::color::Color::Idx(
-                                            params[i] as u8,
-                                        );
-                                }
-                                _ => {}
-                            }
-                        }
-                        n if n >= 40 && n <= 47 => {
-                            self.attrs.bgcolor =
-                                crate::color::Color::Idx((n as u8) - 40);
-                        }
-                        48 => {
-                            i += 1;
-                            if i >= params.len() {
-                                unimplemented!()
-                            }
-                            match params[i] {
-                                2 => {
-                                    i += 3;
-                                    if i >= params.len() {
-                                        unimplemented!()
-                                    }
-                                    self.attrs.bgcolor =
-                                        crate::color::Color::Rgb(
-                                            params[i - 2] as u8,
-                                            params[i - 1] as u8,
-                                            params[i] as u8,
-                                        );
-                                }
-                                5 => {
-                                    i += 1;
-                                    if i >= params.len() {
-                                        unimplemented!()
-                                    }
-                                    self.attrs.bgcolor =
-                                        crate::color::Color::Idx(
-                                            params[i] as u8,
-                                        );
-                                }
-                                _ => {}
-                            }
+                                crate::color::Color::Idx(params[i] as u8);
                         }
                         _ => {}
                     }
-                    i += 1;
                 }
+                n if n >= 40 && n <= 47 => {
+                    self.attrs.bgcolor =
+                        crate::color::Color::Idx((n as u8) - 40);
+                }
+                48 => {
+                    i += 1;
+                    if i >= params.len() {
+                        unimplemented!()
+                    }
+                    match params[i] {
+                        2 => {
+                            i += 3;
+                            if i >= params.len() {
+                                unimplemented!()
+                            }
+                            self.attrs.bgcolor = crate::color::Color::Rgb(
+                                params[i - 2] as u8,
+                                params[i - 1] as u8,
+                                params[i] as u8,
+                            );
+                        }
+                        5 => {
+                            i += 1;
+                            if i >= params.len() {
+                                unimplemented!()
+                            }
+                            self.attrs.bgcolor =
+                                crate::color::Color::Idx(params[i] as u8);
+                        }
+                        _ => {}
+                    }
+                }
+                _ => {}
             }
+            i += 1;
+        }
+    }
+
+    // osc codes
+}
+
+impl vte::Perform for State {
+    fn print(&mut self, c: char) {
+        self.text(c)
+    }
+
+    fn execute(&mut self, b: u8) {
+        match b {
+            7 => self.bel(),
+            8 => self.bs(),
+            9 => self.tab(),
+            10 => self.lf(),
+            13 => self.cr(),
             _ => {}
         }
     }
@@ -236,6 +245,29 @@ impl vte::Perform for State {
         _b: u8,
     ) {
     }
+
+    fn csi_dispatch(
+        &mut self,
+        params: &[i64],
+        _intermediates: &[u8],
+        _ignore: bool,
+        c: char,
+    ) {
+        match c {
+            'D' => self.cub(params),
+            'H' => self.cup(params),
+            'J' => self.ed(params),
+            'm' => self.sgr(params),
+            _ => {}
+        }
+    }
+
+    fn osc_dispatch(&mut self, _params: &[&[u8]]) {}
+
+    // don't care
+    fn hook(&mut self, _: &[i64], _: &[u8], _: bool) {}
+    fn put(&mut self, _b: u8) {}
+    fn unhook(&mut self) {}
 }
 
 pub struct Screen {
@@ -283,12 +315,9 @@ impl Screen {
         row_end: u16,
         col_end: u16,
     ) -> String {
-        let mut contents = String::new();
-        for row in row_start..=(row_end.min(self.state.size.row)) {
-            contents +=
-                &self.state.rows[row as usize].contents(col_start, col_end);
-        }
-        contents
+        self.state
+            .grid
+            .window_contents(row_start, col_start, row_end, col_end)
     }
 
     pub fn window_contents_formatted(
@@ -298,7 +327,9 @@ impl Screen {
         row_end: u16,
         col_end: u16,
     ) -> String {
-        unimplemented!()
+        self.state
+            .grid
+            .window_contents_formatted(row_start, col_start, row_end, col_end)
     }
 
     pub fn cursor_position(&self) -> (u16, u16) {

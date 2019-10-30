@@ -6,6 +6,7 @@
 mod attrs;
 mod cell;
 mod color;
+mod grid;
 mod pos;
 mod row;
 mod screen;
