@@ -3,6 +3,8 @@ struct State {
     rows: Vec<crate::row::Row>,
     cursor_position: crate::pos::Pos,
     attrs: crate::attrs::Attrs,
+    got_audible_bell: bool,
+    got_visual_bell: bool,
 }
 
 impl State {
@@ -18,6 +20,8 @@ impl State {
             rows: Self::new_rows(size),
             cursor_position: crate::pos::Pos::default(),
             attrs: crate::attrs::Attrs::default(),
+            got_audible_bell: false,
+            got_visual_bell: false,
         }
     }
 
@@ -62,7 +66,24 @@ impl vte::Perform for State {
         }
     }
 
-    fn execute(&mut self, _b: u8) {}
+    fn execute(&mut self, b: u8) {
+        match b {
+            7 => self.got_audible_bell = true,
+            8 => {
+                if self.cursor_position.col >= 1 {
+                    self.cursor_position.col -= 1;
+                }
+            }
+            9 => {
+                self.cursor_position.col -= self.cursor_position.col % 8;
+                self.cursor_position.col += 8;
+            }
+            // XXX
+            10 => self.cursor_position.row += 1,
+            13 => self.cursor_position.col = 0,
+            _ => {}
+        }
+    }
 
     fn hook(
         &mut self,
@@ -356,10 +377,14 @@ impl Screen {
     }
 
     pub fn check_audible_bell(&mut self) -> bool {
-        unimplemented!()
+        let ret = self.state.got_audible_bell;
+        self.state.got_audible_bell = false;
+        ret
     }
 
     pub fn check_visual_bell(&mut self) -> bool {
-        unimplemented!()
+        let ret = self.state.got_visual_bell;
+        self.state.got_visual_bell = false;
+        ret
     }
 }
