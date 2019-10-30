@@ -20,7 +20,7 @@ struct State {
 
 impl State {
     fn new(rows: u16, cols: u16) -> Self {
-        let size = crate::grid::Size::new(rows, cols);
+        let size = crate::grid::Size { rows, cols };
         Self {
             grid: crate::grid::Grid::new(size),
             alternate_grid: None,
@@ -67,16 +67,8 @@ impl State {
         self.grid_mut().cell_mut(pos)
     }
 
-    fn current_cell(&self) -> Option<&crate::cell::Cell> {
-        self.grid().current_cell()
-    }
-
     fn current_cell_mut(&mut self) -> Option<&mut crate::cell::Cell> {
         self.grid_mut().current_cell_mut()
-    }
-
-    fn new_pos(&self, row: u16, col: u16) -> crate::grid::Pos {
-        self.grid().new_pos(row, col)
     }
 
     fn enter_alternate_grid(&mut self) {
@@ -100,7 +92,7 @@ impl State {
         let attrs = self.attrs;
         if let Some(cell) = self.current_cell_mut() {
             cell.set(c.to_string(), attrs);
-            self.grid_mut().pos_mut().col_inc_wrap(1);
+            self.grid_mut().col_inc_wrap(1);
         } else {
             panic!("couldn't find current cell")
         }
@@ -112,19 +104,19 @@ impl State {
 
     fn bs(&mut self) {
         // XXX is this correct? is backwards wrapping a thing?
-        self.grid_mut().pos_mut().col_dec(1);
+        self.grid_mut().col_dec(1);
     }
 
     fn tab(&mut self) {
-        self.grid_mut().pos_mut().next_tabstop();
+        self.grid_mut().col_tab();
     }
 
     fn lf(&mut self) {
-        self.grid_mut().pos_mut().row_inc(1);
+        self.grid_mut().row_inc_scroll(1);
     }
 
     fn cr(&mut self) {
-        self.grid_mut().pos_mut().col_set(0);
+        self.grid_mut().col_set(0);
     }
 
     // escape codes
@@ -151,13 +143,12 @@ impl State {
 
     // ESC M
     fn ri(&mut self) {
-        self.grid_mut().pos_mut().row_dec(1);
+        self.grid_mut().row_dec(1);
     }
 
     // ESC c
     fn ris(&mut self) {
-        *self =
-            Self::new(self.grid().size().rows(), self.grid().size().cols())
+        *self = Self::new(self.grid().size().rows, self.grid().size().cols)
     }
 
     // ESC g
@@ -177,45 +168,46 @@ impl State {
     // CSI A
     fn cuu(&mut self, params: &[i64]) {
         let offset = params.get(0).copied().unwrap_or(1);
-        self.grid_mut().pos_mut().row_dec(offset as u16);
+        self.grid_mut().row_dec(offset as u16);
     }
 
     // CSI B
     fn cud(&mut self, params: &[i64]) {
         let offset = params.get(0).copied().unwrap_or(1);
-        self.grid_mut().pos_mut().row_inc(offset as u16);
+        self.grid_mut().row_inc_clamp(offset as u16);
     }
 
     // CSI C
     fn cuf(&mut self, params: &[i64]) {
         let offset = params.get(0).copied().unwrap_or(1);
-        self.grid_mut().pos_mut().col_inc_clamp(offset as u16);
+        self.grid_mut().col_inc_clamp(offset as u16);
     }
 
     // CSI D
     fn cub(&mut self, params: &[i64]) {
         let offset = params.get(0).copied().unwrap_or(1);
-        self.grid_mut().pos_mut().col_dec(offset as u16);
+        self.grid_mut().col_dec(offset as u16);
     }
 
     // CSI G
     fn cha(&mut self, params: &[i64]) {
         // XXX need to handle value overflow
-        self.grid_mut()
-            .pos_mut()
-            .col_set(normalize_absolute_position(
-                params.get(0).map(|i| *i as u16),
-            ));
+        self.grid_mut().col_set(normalize_absolute_position(
+            params.get(0).map(|i| *i as u16),
+        ));
     }
 
     // CSI H
     fn cup(&mut self, params: &[i64]) {
         // XXX need to handle value overflow
-        self.grid_mut().set_pos(
-            normalize_absolute_position(params.get(0).map(|i| *i as u16)),
-            normalize_absolute_position(params.get(1).map(|i| *i as u16)),
-        );
-        self.grid_mut().pos_mut().clamp();
+        self.grid_mut().set_pos(crate::grid::Pos {
+            row: normalize_absolute_position(
+                params.get(0).map(|i| *i as u16),
+            ),
+            col: normalize_absolute_position(
+                params.get(1).map(|i| *i as u16),
+            ),
+        });
     }
 
     // CSI J
@@ -283,11 +275,9 @@ impl State {
     // CSI d
     fn vpa(&mut self, params: &[i64]) {
         // XXX need to handle value overflow
-        self.grid_mut()
-            .pos_mut()
-            .row_set(normalize_absolute_position(
-                params.get(0).map(|i| *i as u16),
-            ));
+        self.grid_mut().row_set(normalize_absolute_position(
+            params.get(0).map(|i| *i as u16),
+        ));
     }
 
     // CSI h
@@ -541,17 +531,17 @@ impl Screen {
     }
 
     pub fn rows(&self) -> u16 {
-        self.state.grid().size().rows()
+        self.state.grid().size().rows
     }
 
     pub fn cols(&self) -> u16 {
-        self.state.grid().size().cols()
+        self.state.grid().size().cols
     }
 
     pub fn set_window_size(&mut self, rows: u16, cols: u16) {
         self.state
             .grid_mut()
-            .set_size(crate::grid::Size::new(rows, cols));
+            .set_size(crate::grid::Size { rows, cols });
     }
 
     pub fn process(&mut self, bytes: &[u8]) {
@@ -561,7 +551,7 @@ impl Screen {
     }
 
     pub fn cell(&self, row: u16, col: u16) -> Option<&crate::cell::Cell> {
-        self.state.cell(self.state.new_pos(row, col))
+        self.state.cell(crate::grid::Pos { row, col })
     }
 
     pub fn window_contents(
@@ -589,7 +579,7 @@ impl Screen {
     }
 
     pub fn cursor_position(&self) -> (u16, u16) {
-        (self.state.grid().pos().row(), self.state.grid().pos().col())
+        (self.state.grid().pos().row, self.state.grid().pos().col)
     }
 
     pub fn fgcolor(&self) -> crate::color::Color {

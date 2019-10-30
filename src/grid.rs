@@ -9,29 +9,28 @@ impl Grid {
     pub fn new(size: Size) -> Self {
         Self {
             size,
-            pos: Pos::new(0, 0, size),
-            saved_pos: Pos::new(0, 0, size),
-            rows: vec![
-                crate::row::Row::new(size.cols());
-                size.rows() as usize
-            ],
+            pos: Pos::default(),
+            saved_pos: Pos::default(),
+            rows: vec![crate::row::Row::new(size.cols); size.rows as usize],
         }
+    }
+
+    pub fn size(&self) -> &Size {
+        &self.size
+    }
+
+    pub fn set_size(&mut self, size: Size) {
+        self.size = size;
     }
 
     pub fn pos(&self) -> &Pos {
         &self.pos
     }
 
-    pub fn pos_mut(&mut self) -> &mut Pos {
-        &mut self.pos
-    }
-
-    pub fn new_pos(&self, rows: u16, cols: u16) -> Pos {
-        Pos::new(rows, cols, self.size)
-    }
-
-    pub fn set_pos(&mut self, row: u16, col: u16) {
-        self.pos = self.new_pos(row, col);
+    pub fn set_pos(&mut self, pos: Pos) {
+        self.pos = pos;
+        self.row_clamp();
+        self.col_clamp();
     }
 
     pub fn save_pos(&mut self) {
@@ -42,30 +41,14 @@ impl Grid {
         self.pos = self.saved_pos;
     }
 
-    pub fn size(&self) -> &Size {
-        &self.size
-    }
-
-    pub fn set_size(&mut self, size: Size) {
-        self.size = size;
-        self.pos.size = size;
-        self.saved_pos.size = size;
-    }
-
     pub fn cell(&self, pos: Pos) -> Option<&crate::cell::Cell> {
-        self.rows
-            .get(pos.row() as usize)
-            .and_then(|r| r.get(pos.col()))
+        self.rows.get(pos.row as usize).and_then(|r| r.get(pos.col))
     }
 
     pub fn cell_mut(&mut self, pos: Pos) -> Option<&mut crate::cell::Cell> {
         self.rows
-            .get_mut(pos.row() as usize)
-            .and_then(|v| v.get_mut(pos.col()))
-    }
-
-    pub fn current_cell(&self) -> Option<&crate::cell::Cell> {
-        self.cell(self.pos)
+            .get_mut(pos.row as usize)
+            .and_then(|v| v.get_mut(pos.col))
     }
 
     pub fn current_cell_mut(&mut self) -> Option<&mut crate::cell::Cell> {
@@ -80,7 +63,7 @@ impl Grid {
         col_end: u16,
     ) -> String {
         let mut contents = String::new();
-        for row in row_start..=(row_end.min(self.size.rows())) {
+        for row in row_start..=(row_end.min(self.size.rows)) {
             contents += &self.rows[row as usize].contents(col_start, col_end);
         }
         contents
@@ -98,69 +81,68 @@ impl Grid {
 
     pub fn erase_all(&mut self) {
         self.rows = vec![
-            crate::row::Row::new(self.size.cols());
-            self.size.rows() as usize
+            crate::row::Row::new(self.size.cols);
+            self.size.rows as usize
         ];
     }
 
     pub fn erase_all_forward(&mut self, pos: Pos) {
-        for i in (pos.row() + 1)..self.size.rows() {
-            self.rows[i as usize] = crate::row::Row::new(self.size.cols());
+        for i in (pos.row + 1)..self.size.rows {
+            self.rows[i as usize] = crate::row::Row::new(self.size.cols);
         }
-        let row = &mut self.rows[pos.row() as usize];
-        for i in pos.col()..self.size.cols() {
+        let row = &mut self.rows[pos.row as usize];
+        for i in pos.col..self.size.cols {
             *row.get_mut(i).unwrap() = crate::cell::Cell::default();
         }
     }
 
     pub fn erase_all_backward(&mut self, pos: Pos) {
-        for i in 0..pos.row() {
-            self.rows[i as usize] = crate::row::Row::new(self.size.cols());
+        for i in 0..pos.row {
+            self.rows[i as usize] = crate::row::Row::new(self.size.cols);
         }
-        let row = &mut self.rows[pos.row() as usize];
-        for i in 0..pos.col() {
+        let row = &mut self.rows[pos.row as usize];
+        for i in 0..pos.col {
             *row.get_mut(i).unwrap() = crate::cell::Cell::default();
         }
     }
 
     pub fn erase_row(&mut self, pos: Pos) {
-        self.rows[pos.row() as usize] =
-            crate::row::Row::new(self.size.cols());
+        self.rows[pos.row as usize] = crate::row::Row::new(self.size.cols);
     }
 
     pub fn erase_row_forward(&mut self, pos: Pos) {
-        let row = &mut self.rows[pos.row() as usize];
-        for i in pos.col()..self.size.cols() {
+        let row = &mut self.rows[pos.row as usize];
+        for i in pos.col..self.size.cols {
             *row.get_mut(i).unwrap() = crate::cell::Cell::default();
         }
     }
 
     pub fn erase_row_backward(&mut self, pos: Pos) {
-        let row = &mut self.rows[pos.row() as usize];
-        for i in 0..pos.col() {
+        let row = &mut self.rows[pos.row as usize];
+        for i in 0..pos.col {
             *row.get_mut(i).unwrap() = crate::cell::Cell::default();
         }
     }
 
     pub fn insert_cells(&mut self, pos: Pos, count: u16) {
-        let row = &mut self.rows[pos.row() as usize];
+        let row = &mut self.rows[pos.row as usize];
         for _ in 0..count {
-            row.insert(pos.col() as usize, crate::cell::Cell::default());
+            row.insert(pos.col as usize, crate::cell::Cell::default());
         }
-        row.truncate(pos.size.cols() as usize);
+        row.truncate(self.size.cols as usize);
     }
 
     pub fn delete_cells(&mut self, pos: Pos, count: u16) {
-        let row = &mut self.rows[pos.row() as usize];
-        for _ in 0..(count.min(pos.size.cols() - pos.col())) {
-            row.remove(pos.col() as usize);
+        let row = &mut self.rows[pos.row as usize];
+        for _ in 0..(count.min(self.size.cols - pos.col)) {
+            row.remove(pos.col as usize);
         }
-        row.resize(pos.size.cols() as usize, crate::cell::Cell::default());
+        row.resize(self.size.cols as usize, crate::cell::Cell::default());
     }
 
     pub fn erase_cells(&mut self, pos: Pos, count: u16) {
-        let row = &mut self.rows[pos.row() as usize];
-        for i in pos.col()..(pos.col() + count).min(pos.size.cols() - 1) {
+        let row = &mut self.rows[pos.row as usize];
+        for i in pos.col..(pos.col + count).min(self.size.cols - 1) {
             *row.get_mut(i).unwrap() = crate::cell::Cell::default();
         }
     }
@@ -168,136 +150,108 @@ impl Grid {
     pub fn insert_lines(&mut self, pos: Pos, count: u16) {
         for _ in 0..count {
             self.rows.insert(
-                pos.row() as usize,
-                crate::row::Row::new(pos.size.cols()),
+                pos.row as usize,
+                crate::row::Row::new(self.size.cols),
             );
         }
-        self.rows.truncate(pos.size.rows() as usize)
+        self.rows.truncate(self.size.rows as usize)
     }
 
     pub fn delete_lines(&mut self, pos: Pos, count: u16) {
-        for _ in 0..(count.min(pos.size.rows() - pos.row())) {
-            self.rows.remove(pos.row() as usize);
+        for _ in 0..(count.min(self.size.rows - pos.row)) {
+            self.rows.remove(pos.row as usize);
         }
         self.rows.resize(
-            pos.size.rows() as usize,
-            crate::row::Row::new(pos.size.cols()),
+            self.size.rows as usize,
+            crate::row::Row::new(self.size.cols),
         )
     }
 
     pub fn scroll_up(&mut self, count: u16) {
-        self.delete_lines(self.new_pos(0, 0), count);
+        self.delete_lines(Pos { row: 0, col: 0 }, count);
     }
 
     pub fn scroll_down(&mut self, count: u16) {
-        self.insert_lines(self.new_pos(0, 0), count);
+        self.insert_lines(Pos { row: 0, col: 0 }, count);
+    }
+
+    pub fn row_inc_clamp(&mut self, count: u16) {
+        self.pos.row = self.pos.row.saturating_add(count);
+        self.row_clamp();
+    }
+
+    pub fn row_inc_scroll(&mut self, count: u16) {
+        self.pos.row = self.pos.row.saturating_add(count);
+        let lines = self.row_clamp();
+        self.scroll_up(lines);
+    }
+
+    pub fn row_dec(&mut self, count: u16) {
+        self.pos.row = self.pos.row.saturating_sub(count);
+    }
+
+    pub fn row_set(&mut self, i: u16) {
+        self.pos.row = i;
+        self.row_clamp();
+    }
+
+    pub fn col_inc_clamp(&mut self, count: u16) {
+        self.pos.col = self.pos.col.saturating_add(count);
+        self.col_clamp();
+    }
+
+    pub fn col_inc_wrap(&mut self, count: u16) {
+        self.pos.col = self.pos.col.saturating_add(count);
+        self.col_wrap();
+    }
+
+    pub fn col_dec(&mut self, count: u16) {
+        self.pos.col = self.pos.col.saturating_sub(count);
+    }
+
+    pub fn col_tab(&mut self) {
+        self.pos.col -= self.pos.col % 8;
+        self.pos.col += 8;
+        self.col_clamp();
+    }
+
+    pub fn col_set(&mut self, i: u16) {
+        self.pos.col = i;
+        self.col_clamp();
+    }
+
+    fn row_clamp(&mut self) -> u16 {
+        if self.pos.row > self.size.rows - 1 {
+            let rows = self.pos.row - (self.size.rows - 1);
+            self.pos.row = self.size.rows - 1;
+            rows
+        } else {
+            0
+        }
+    }
+
+    fn col_clamp(&mut self) {
+        if self.pos.col > self.size.cols - 1 {
+            self.pos.col = self.size.cols - 1;
+        }
+    }
+
+    fn col_wrap(&mut self) {
+        if self.pos.col > self.size.cols - 1 {
+            self.pos.col = 0;
+            self.row_inc_scroll(1);
+        }
     }
 }
 
 #[derive(Copy, Clone, Debug, Default, Eq, PartialEq)]
 pub struct Size {
-    rows: u16,
-    cols: u16,
+    pub rows: u16,
+    pub cols: u16,
 }
 
-impl Size {
-    pub fn new(rows: u16, cols: u16) -> Self {
-        Self { rows, cols }
-    }
-
-    pub fn rows(self) -> u16 {
-        self.rows
-    }
-
-    pub fn cols(self) -> u16 {
-        self.cols
-    }
-}
-
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Default, Eq, PartialEq)]
 pub struct Pos {
-    row: u16,
-    col: u16,
-    size: Size,
-}
-
-impl Pos {
-    pub fn new(row: u16, col: u16, size: Size) -> Self {
-        Self { row, col, size }
-    }
-
-    pub fn set_size(&mut self, size: Size) {
-        self.size = size;
-    }
-
-    pub fn clamp(&mut self) {
-        self.row_clamp();
-        self.col_clamp();
-    }
-
-    pub fn row(self) -> u16 {
-        self.row
-    }
-
-    pub fn row_inc(&mut self, count: u16) {
-        self.row = self.row.saturating_add(count);
-        self.row_clamp();
-    }
-
-    pub fn row_dec(&mut self, count: u16) {
-        self.row = self.row.saturating_sub(count);
-    }
-
-    pub fn row_set(&mut self, i: u16) {
-        self.row = i;
-        self.row_clamp();
-    }
-
-    fn row_clamp(&mut self) {
-        if self.row > self.size.rows() - 1 {
-            self.row = self.size.rows() - 1;
-        }
-    }
-
-    pub fn col(self) -> u16 {
-        self.col
-    }
-
-    pub fn col_inc_wrap(&mut self, count: u16) {
-        self.col = self.col.saturating_add(count);
-        self.col_wrap();
-    }
-
-    pub fn col_inc_clamp(&mut self, count: u16) {
-        self.col = self.col.saturating_add(count);
-        self.col_clamp();
-    }
-
-    pub fn col_dec(&mut self, count: u16) {
-        self.col = self.col.saturating_sub(count);
-    }
-
-    pub fn col_set(&mut self, i: u16) {
-        self.col = i;
-        self.col_clamp();
-    }
-
-    fn col_clamp(&mut self) {
-        if self.col > self.size.cols() - 1 {
-            self.col = self.size.cols() - 1;
-        }
-    }
-
-    fn col_wrap(&mut self) {
-        if self.col > self.size.cols() - 1 {
-            self.col = 0;
-            self.row_inc(1);
-        }
-    }
-
-    pub fn next_tabstop(&mut self) {
-        self.col -= self.col % 8;
-        self.col += 8;
-        self.col_clamp();
-    }
+    pub row: u16,
+    pub col: u16,
 }
