@@ -3,9 +3,19 @@ struct State {
     cursor_position: crate::grid::Pos,
     stored_cursor_position: crate::grid::Pos,
     attrs: crate::attrs::Attrs,
+    title: Option<String>,
+    icon_name: Option<String>,
     got_audible_bell: bool,
     got_visual_bell: bool,
+    hide_cursor: bool,
+    alternate_buffer_active: bool,
+    application_cursor: bool,
     keypad_application_mode: bool,
+    bracketed_paste: bool,
+    mouse_reporting_button_motion: bool,
+    mouse_reporting_sgr_mode: bool,
+    mouse_reporting_press: bool,
+    mouse_reporting_press_release: bool,
 }
 
 impl State {
@@ -16,9 +26,19 @@ impl State {
             cursor_position: crate::grid::Pos::new(0, 0, size),
             stored_cursor_position: crate::grid::Pos::new(0, 0, size),
             attrs: crate::attrs::Attrs::default(),
+            title: None,
+            icon_name: None,
             got_audible_bell: false,
             got_visual_bell: false,
+            hide_cursor: false,
+            alternate_buffer_active: false,
+            application_cursor: false,
             keypad_application_mode: false,
+            bracketed_paste: false,
+            mouse_reporting_button_motion: false,
+            mouse_reporting_sgr_mode: false,
+            mouse_reporting_press: false,
+            mouse_reporting_press_release: false,
         }
     }
 
@@ -166,6 +186,7 @@ impl State {
             normalize_absolute_position(params.get(0).map(|i| *i as u16)),
             normalize_absolute_position(params.get(1).map(|i| *i as u16)),
         );
+        self.cursor_position.clamp();
     }
 
     // CSI J
@@ -496,23 +517,23 @@ impl Screen {
     }
 
     pub fn title(&self) -> Option<&str> {
-        unimplemented!()
+        self.state.title.as_ref().map(|s| s.as_str())
     }
 
     pub fn icon_name(&self) -> Option<&str> {
-        unimplemented!()
+        self.state.icon_name.as_ref().map(|s| s.as_str())
     }
 
     pub fn hide_cursor(&self) -> bool {
-        unimplemented!()
+        self.state.hide_cursor
     }
 
     pub fn alternate_buffer_active(&self) -> bool {
-        unimplemented!()
+        self.state.alternate_buffer_active
     }
 
     pub fn application_cursor(&self) -> bool {
-        unimplemented!()
+        self.state.application_cursor
     }
 
     pub fn application_keypad(&self) -> bool {
@@ -520,23 +541,23 @@ impl Screen {
     }
 
     pub fn bracketed_paste(&self) -> bool {
-        unimplemented!()
+        self.state.bracketed_paste
     }
 
     pub fn mouse_reporting_button_motion(&self) -> bool {
-        unimplemented!()
+        self.state.mouse_reporting_button_motion
     }
 
     pub fn mouse_reporting_sgr_mode(&self) -> bool {
-        unimplemented!()
+        self.state.mouse_reporting_sgr_mode
     }
 
     pub fn mouse_reporting_press(&self) -> bool {
-        unimplemented!()
+        self.state.mouse_reporting_press
     }
 
     pub fn mouse_reporting_press_release(&self) -> bool {
-        unimplemented!()
+        self.state.mouse_reporting_press_release
     }
 
     pub fn check_audible_bell(&mut self) -> bool {

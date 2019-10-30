@@ -189,14 +189,16 @@ pub struct Pos {
 
 impl Pos {
     pub fn new(row: u16, col: u16, size: Size) -> Self {
-        let mut self_ = Self { row, col, size };
-        self_.row_clamp();
-        self_.col_clamp();
-        self_
+        Self { row, col, size }
     }
 
     pub fn set_size(&mut self, size: Size) {
         self.size = size;
+    }
+
+    pub fn clamp(&mut self) {
+        self.row_clamp();
+        self.col_clamp();
     }
 
     pub fn row(self) -> u16 {
