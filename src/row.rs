@@ -20,6 +20,22 @@ impl Row {
         self.cells.get_mut(col as usize)
     }
 
+    pub fn insert(&mut self, i: usize, cell: crate::cell::Cell) {
+        self.cells.insert(i, cell);
+    }
+
+    pub fn remove(&mut self, i: usize) {
+        self.cells.remove(i);
+    }
+
+    pub fn truncate(&mut self, len: usize) {
+        self.cells.truncate(len);
+    }
+
+    pub fn resize(&mut self, len: usize, cell: crate::cell::Cell) {
+        self.cells.resize(len, cell);
+    }
+
     pub fn contents(&self, col_start: u16, col_end: u16) -> String {
         // XXX very inefficient
         let mut max_col = None;

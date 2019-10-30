@@ -38,7 +38,7 @@ impl State {
     }
 
     fn pos(&self, row: u16, col: u16) -> crate::grid::Pos {
-        crate::grid::Pos::new(row, col, *self.grid.size())
+        self.grid.pos(row, col)
     }
 }
 
@@ -51,7 +51,7 @@ impl State {
         let attrs = self.attrs;
         if let Some(cell) = self.current_cell_mut() {
             cell.set(c.to_string(), attrs);
-            self.cursor_position.col_inc(1);
+            self.cursor_position.col_inc_wrap(1);
         } else {
             panic!("couldn't find current cell")
         }
@@ -82,10 +82,42 @@ impl State {
 
     // csi codes
 
+    // CSI @
+    fn ich(&mut self, params: &[i64]) {
+        let count = params.get(0).copied().unwrap_or(1);
+        self.grid.insert_cells(self.cursor_position, count as u16);
+    }
+
+    // CSI A
+    fn cuu(&mut self, params: &[i64]) {
+        let offset = params.get(0).copied().unwrap_or(1);
+        self.cursor_position.row_dec(offset as u16);
+    }
+
+    // CSI B
+    fn cud(&mut self, params: &[i64]) {
+        let offset = params.get(0).copied().unwrap_or(1);
+        self.cursor_position.row_inc(offset as u16);
+    }
+
+    // CSI C
+    fn cuf(&mut self, params: &[i64]) {
+        let offset = params.get(0).copied().unwrap_or(1);
+        self.cursor_position.col_inc_clamp(offset as u16);
+    }
+
     // CSI D
     fn cub(&mut self, params: &[i64]) {
         let offset = params.get(0).copied().unwrap_or(1);
         self.cursor_position.col_dec(offset as u16);
+    }
+
+    // CSI G
+    fn cha(&mut self, params: &[i64]) {
+        // XXX need to handle value overflow
+        self.cursor_position.col_set(normalize_absolute_position(
+            params.get(0).map(|i| *i as u16),
+        ));
     }
 
     // CSI H
@@ -100,13 +132,65 @@ impl State {
     // CSI J
     fn ed(&mut self, params: &[i64]) {
         match params.get(0).copied().unwrap_or(0) {
-            0 => unimplemented!(),
-            1 => unimplemented!(),
-            2 => {
-                self.grid = crate::grid::Grid::new(*self.grid.size());
-            }
+            0 => self.grid.erase_all_forward(self.cursor_position),
+            1 => self.grid.erase_all_backward(self.cursor_position),
+            2 => self.grid.erase_all(),
             _ => {}
         }
+    }
+
+    // CSI K
+    fn el(&mut self, params: &[i64]) {
+        match params.get(0).copied().unwrap_or(0) {
+            0 => self.grid.erase_row_forward(self.cursor_position),
+            1 => self.grid.erase_row_backward(self.cursor_position),
+            2 => self.grid.erase_row(self.cursor_position),
+            _ => {}
+        }
+    }
+
+    // CSI L
+    fn il(&mut self, params: &[i64]) {
+        let count = params.get(0).copied().unwrap_or(1);
+        self.grid.insert_lines(self.cursor_position, count as u16);
+    }
+
+    // CSI M
+    fn dl(&mut self, params: &[i64]) {
+        let count = params.get(0).copied().unwrap_or(1);
+        self.grid.delete_lines(self.cursor_position, count as u16);
+    }
+
+    // CSI P
+    fn dch(&mut self, params: &[i64]) {
+        let count = params.get(0).copied().unwrap_or(1);
+        self.grid.delete_cells(self.cursor_position, count as u16);
+    }
+
+    // CSI S
+    fn su(&mut self, params: &[i64]) {
+        let count = params.get(0).copied().unwrap_or(1);
+        self.grid.scroll_up(count as u16);
+    }
+
+    // CSI T
+    fn sd(&mut self, params: &[i64]) {
+        let count = params.get(0).copied().unwrap_or(1);
+        self.grid.scroll_down(count as u16);
+    }
+
+    // CSI X
+    fn ech(&mut self, params: &[i64]) {
+        let count = params.get(0).copied().unwrap_or(1);
+        self.grid.erase_cells(self.cursor_position, count as u16);
+    }
+
+    // CSI d
+    fn vpa(&mut self, params: &[i64]) {
+        // XXX need to handle value overflow
+        self.cursor_position.row_set(normalize_absolute_position(
+            params.get(0).map(|i| *i as u16),
+        ));
     }
 
     // CSI m
@@ -237,9 +321,22 @@ impl vte::Perform for State {
         c: char,
     ) {
         match c {
+            '@' => self.ich(params),
+            'A' => self.cuu(params),
+            'B' => self.cud(params),
+            'C' => self.cuf(params),
             'D' => self.cub(params),
+            'G' => self.cha(params),
             'H' => self.cup(params),
             'J' => self.ed(params),
+            'K' => self.el(params),
+            'L' => self.il(params),
+            'M' => self.dl(params),
+            'P' => self.dch(params),
+            'S' => self.su(params),
+            'T' => self.sd(params),
+            'X' => self.ech(params),
+            'd' => self.vpa(params),
             'm' => self.sgr(params),
             _ => {}
         }
