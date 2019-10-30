@@ -88,7 +88,10 @@ pub struct Pos {
 
 impl Pos {
     pub fn new(row: u16, col: u16, size: Size) -> Self {
-        Self { row, col, size }
+        let mut self_ = Self { row, col, size };
+        self_.row_clamp();
+        self_.col_clamp();
+        self_
     }
 
     pub fn set_size(&mut self, size: Size) {
@@ -100,17 +103,23 @@ impl Pos {
     }
 
     pub fn row_inc(&mut self, count: u16) {
-        // XXX this is not correct - scrolling past the bottom of the screen
-        self.row += count;
+        self.row = self.row.saturating_add(count);
+        self.row_clamp();
     }
 
     pub fn row_dec(&mut self, count: u16) {
-        // XXX this is not correct - scrolling past the top of the screen
-        self.row -= count;
+        self.row = self.row.saturating_sub(count);
     }
 
     pub fn row_set(&mut self, i: u16) {
         self.row = i;
+        self.row_clamp();
+    }
+
+    fn row_clamp(&mut self) {
+        if self.row > self.size.rows() - 1 {
+            self.row = self.size.rows() - 1;
+        }
     }
 
     pub fn col(self) -> u16 {
@@ -118,29 +127,35 @@ impl Pos {
     }
 
     pub fn col_inc(&mut self, count: u16) {
-        // XXX handle overflow
-        self.col += count;
-        if self.col > self.size.cols() {
-            self.col = 0;
-            self.row += 1;
-        }
+        self.col = self.col.saturating_add(count);
+        self.col_wrap();
     }
 
     pub fn col_dec(&mut self, count: u16) {
-        // XXX are there any cases where i need to wrap backwards?
-        if count > self.col {
-            self.col = 0;
-        } else {
-            self.col -= count;
-        }
+        self.col = self.col.saturating_sub(count);
     }
 
     pub fn col_set(&mut self, i: u16) {
         self.col = i;
+        self.col_clamp();
+    }
+
+    fn col_clamp(&mut self) {
+        if self.col > self.size.cols() - 1 {
+            self.col = self.size.cols() - 1;
+        }
+    }
+
+    fn col_wrap(&mut self) {
+        if self.col > self.size.cols() - 1 {
+            self.col = 0;
+            self.row_inc(1);
+        }
     }
 
     pub fn next_tabstop(&mut self) {
         self.col -= self.col % 8;
         self.col += 8;
+        self.col_clamp();
     }
 }
