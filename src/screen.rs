@@ -143,7 +143,7 @@ impl State {
 
     // ESC M
     fn ri(&mut self) {
-        self.grid_mut().row_dec(1);
+        self.grid_mut().row_dec_scroll(1);
     }
 
     // ESC c
@@ -168,7 +168,7 @@ impl State {
     // CSI A
     fn cuu(&mut self, params: &[i64]) {
         let offset = params.get(0).copied().unwrap_or(1);
-        self.grid_mut().row_dec(offset as u16);
+        self.grid_mut().row_dec_clamp(offset as u16);
     }
 
     // CSI B
@@ -416,6 +416,27 @@ impl State {
         }
     }
 
+    // CSI r
+    fn csr(&mut self, params: &[i64]) {
+        let top = if let Some(top) = params.get(0).map(|i| *i as u16) {
+            top as u16 - 1
+        } else {
+            return;
+        };
+        let bottom = if let Some(bottom) = params.get(1).map(|i| *i as u16) {
+            bottom as u16 - 1
+        } else {
+            return;
+        };
+        let left = params.get(2).map(|i| *i as u16).unwrap_or(1) - 1;
+        let right = params
+            .get(3)
+            .map(|i| *i as u16)
+            .unwrap_or(self.grid().size().cols)
+            - 1;
+        self.grid_mut().set_scroll_region(top, bottom, left, right);
+    }
+
     // osc codes
 
     fn osc0(&mut self, s: &[u8]) {
@@ -498,6 +519,7 @@ impl vte::Perform for State {
             'h' => self.sm(intermediates.get(0).copied(), params),
             'l' => self.rm(intermediates.get(0).copied(), params),
             'm' => self.sgr(params),
+            'r' => self.csr(params),
             _ => {}
         }
     }

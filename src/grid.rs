@@ -3,6 +3,8 @@ pub struct Grid {
     pos: Pos,
     saved_pos: Pos,
     rows: Vec<crate::row::Row>,
+    scroll_top: u16,
+    scroll_bottom: u16,
 }
 
 impl Grid {
@@ -12,6 +14,8 @@ impl Grid {
             pos: Pos::default(),
             saved_pos: Pos::default(),
             rows: vec![crate::row::Row::new(size.cols); size.rows as usize],
+            scroll_top: 0,
+            scroll_bottom: size.rows - 1,
         }
     }
 
@@ -29,7 +33,8 @@ impl Grid {
 
     pub fn set_pos(&mut self, pos: Pos) {
         self.pos = pos;
-        self.row_clamp();
+        self.row_clamp_top();
+        self.row_clamp_bottom();
         self.col_clamp();
     }
 
@@ -149,50 +154,90 @@ impl Grid {
 
     pub fn insert_lines(&mut self, pos: Pos, count: u16) {
         for _ in 0..count {
+            self.rows.remove(self.scroll_bottom as usize);
             self.rows.insert(
                 pos.row as usize,
                 crate::row::Row::new(self.size.cols),
             );
         }
-        self.rows.truncate(self.size.rows as usize)
     }
 
     pub fn delete_lines(&mut self, pos: Pos, count: u16) {
         for _ in 0..(count.min(self.size.rows - pos.row)) {
+            self.rows.insert(
+                self.scroll_bottom as usize + 1,
+                crate::row::Row::new(self.size.cols),
+            );
             self.rows.remove(pos.row as usize);
         }
-        self.rows.resize(
-            self.size.rows as usize,
-            crate::row::Row::new(self.size.cols),
-        )
     }
 
     pub fn scroll_up(&mut self, count: u16) {
-        self.delete_lines(Pos { row: 0, col: 0 }, count);
+        self.delete_lines(
+            Pos {
+                row: self.scroll_top,
+                col: 0,
+            },
+            count,
+        );
     }
 
     pub fn scroll_down(&mut self, count: u16) {
-        self.insert_lines(Pos { row: 0, col: 0 }, count);
+        self.insert_lines(
+            Pos {
+                row: self.scroll_top,
+                col: 0,
+            },
+            count,
+        );
+    }
+
+    // TODO: left/right
+    pub fn set_scroll_region(
+        &mut self,
+        top: u16,
+        bottom: u16,
+        _left: u16,
+        _right: u16,
+    ) {
+        let bottom = bottom.min(self.size().rows - 1);
+        if top < bottom {
+            self.scroll_top = top;
+            self.scroll_bottom = bottom;
+        } else {
+            self.scroll_top = 0;
+            self.scroll_bottom = self.size().rows - 1;
+        }
+        self.pos.row = self.scroll_top;
+        self.pos.col = 0;
     }
 
     pub fn row_inc_clamp(&mut self, count: u16) {
         self.pos.row = self.pos.row.saturating_add(count);
-        self.row_clamp();
+        self.row_clamp_bottom();
     }
 
     pub fn row_inc_scroll(&mut self, count: u16) {
         self.pos.row = self.pos.row.saturating_add(count);
-        let lines = self.row_clamp();
+        let lines = self.row_clamp_bottom();
         self.scroll_up(lines);
     }
 
-    pub fn row_dec(&mut self, count: u16) {
+    pub fn row_dec_clamp(&mut self, count: u16) {
         self.pos.row = self.pos.row.saturating_sub(count);
+        self.row_clamp_top();
+    }
+
+    pub fn row_dec_scroll(&mut self, count: u16) {
+        self.pos.row = self.pos.row.saturating_sub(count);
+        let lines = self.row_clamp_top();
+        self.scroll_down(lines);
     }
 
     pub fn row_set(&mut self, i: u16) {
         self.pos.row = i;
-        self.row_clamp();
+        self.row_clamp_top();
+        self.row_clamp_bottom();
     }
 
     pub fn col_inc_clamp(&mut self, count: u16) {
@@ -220,10 +265,20 @@ impl Grid {
         self.col_clamp();
     }
 
-    fn row_clamp(&mut self) -> u16 {
-        if self.pos.row > self.size.rows - 1 {
-            let rows = self.pos.row - (self.size.rows - 1);
-            self.pos.row = self.size.rows - 1;
+    fn row_clamp_top(&mut self) -> u16 {
+        if self.pos.row < self.scroll_top {
+            let rows = self.scroll_top - self.pos.row;
+            self.pos.row = self.scroll_top;
+            rows
+        } else {
+            0
+        }
+    }
+
+    fn row_clamp_bottom(&mut self) -> u16 {
+        if self.pos.row > self.scroll_bottom {
+            let rows = self.pos.row - self.scroll_bottom;
+            self.pos.row = self.scroll_bottom;
             rows
         } else {
             0
