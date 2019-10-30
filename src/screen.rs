@@ -1,14 +1,14 @@
 struct State {
     grid: crate::grid::Grid,
-    cursor_position: crate::grid::Pos,
-    stored_cursor_position: crate::grid::Pos,
+    alternate_grid: Option<crate::grid::Grid>,
     attrs: crate::attrs::Attrs,
+
     title: Option<String>,
     icon_name: Option<String>,
+
     got_audible_bell: bool,
     got_visual_bell: bool,
     hide_cursor: bool,
-    alternate_buffer_active: bool,
     application_cursor: bool,
     keypad_application_mode: bool,
     bracketed_paste: bool,
@@ -23,15 +23,13 @@ impl State {
         let size = crate::grid::Size::new(rows, cols);
         Self {
             grid: crate::grid::Grid::new(size),
-            cursor_position: crate::grid::Pos::new(0, 0, size),
-            stored_cursor_position: crate::grid::Pos::new(0, 0, size),
+            alternate_grid: None,
             attrs: crate::attrs::Attrs::default(),
             title: None,
             icon_name: None,
             got_audible_bell: false,
             got_visual_bell: false,
             hide_cursor: false,
-            alternate_buffer_active: false,
             application_cursor: false,
             keypad_application_mode: false,
             bracketed_paste: false,
@@ -42,27 +40,54 @@ impl State {
         }
     }
 
+    fn grid(&self) -> &crate::grid::Grid {
+        if let Some(grid) = &self.alternate_grid {
+            grid
+        } else {
+            &self.grid
+        }
+    }
+
+    fn grid_mut(&mut self) -> &mut crate::grid::Grid {
+        if let Some(grid) = &mut self.alternate_grid {
+            grid
+        } else {
+            &mut self.grid
+        }
+    }
+
     fn cell(&self, pos: crate::grid::Pos) -> Option<&crate::cell::Cell> {
-        self.grid.cell(pos)
+        self.grid().cell(pos)
     }
 
     fn cell_mut(
         &mut self,
         pos: crate::grid::Pos,
     ) -> Option<&mut crate::cell::Cell> {
-        self.grid.cell_mut(pos)
+        self.grid_mut().cell_mut(pos)
     }
 
     fn current_cell(&self) -> Option<&crate::cell::Cell> {
-        self.cell(self.cursor_position)
+        self.grid().current_cell()
     }
 
     fn current_cell_mut(&mut self) -> Option<&mut crate::cell::Cell> {
-        self.cell_mut(self.cursor_position)
+        self.grid_mut().current_cell_mut()
     }
 
-    fn pos(&self, row: u16, col: u16) -> crate::grid::Pos {
-        self.grid.pos(row, col)
+    fn new_pos(&self, row: u16, col: u16) -> crate::grid::Pos {
+        self.grid().new_pos(row, col)
+    }
+
+    fn enter_alternate_grid(&mut self) {
+        if self.alternate_grid.is_none() {
+            self.alternate_grid =
+                Some(crate::grid::Grid::new(*self.grid.size()));
+        }
+    }
+
+    fn exit_alternate_grid(&mut self) {
+        self.alternate_grid = None;
     }
 }
 
@@ -75,7 +100,7 @@ impl State {
         let attrs = self.attrs;
         if let Some(cell) = self.current_cell_mut() {
             cell.set(c.to_string(), attrs);
-            self.cursor_position.col_inc_wrap(1);
+            self.grid_mut().pos_mut().col_inc_wrap(1);
         } else {
             panic!("couldn't find current cell")
         }
@@ -87,31 +112,31 @@ impl State {
 
     fn bs(&mut self) {
         // XXX is this correct? is backwards wrapping a thing?
-        self.cursor_position.col_dec(1);
+        self.grid_mut().pos_mut().col_dec(1);
     }
 
     fn tab(&mut self) {
-        self.cursor_position.next_tabstop();
+        self.grid_mut().pos_mut().next_tabstop();
     }
 
     fn lf(&mut self) {
-        self.cursor_position.row_inc(1);
+        self.grid_mut().pos_mut().row_inc(1);
     }
 
     fn cr(&mut self) {
-        self.cursor_position.col_set(0);
+        self.grid_mut().pos_mut().col_set(0);
     }
 
     // escape codes
 
     // ESC 7
     fn decsc(&mut self) {
-        self.stored_cursor_position = self.cursor_position;
+        self.grid_mut().save_pos();
     }
 
     // ESC 8
     fn decrc(&mut self) {
-        self.cursor_position = self.stored_cursor_position;
+        self.grid_mut().restore_pos();
     }
 
     // ESC =
@@ -126,12 +151,13 @@ impl State {
 
     // ESC M
     fn ri(&mut self) {
-        self.cursor_position.row_dec(1);
+        self.grid_mut().pos_mut().row_dec(1);
     }
 
     // ESC c
     fn ris(&mut self) {
-        *self = Self::new(self.grid.size().rows(), self.grid.size().cols())
+        *self =
+            Self::new(self.grid().size().rows(), self.grid().size().cols())
     }
 
     // ESC g
@@ -144,67 +170,72 @@ impl State {
     // CSI @
     fn ich(&mut self, params: &[i64]) {
         let count = params.get(0).copied().unwrap_or(1);
-        self.grid.insert_cells(self.cursor_position, count as u16);
+        let pos = *self.grid().pos();
+        self.grid_mut().insert_cells(pos, count as u16);
     }
 
     // CSI A
     fn cuu(&mut self, params: &[i64]) {
         let offset = params.get(0).copied().unwrap_or(1);
-        self.cursor_position.row_dec(offset as u16);
+        self.grid_mut().pos_mut().row_dec(offset as u16);
     }
 
     // CSI B
     fn cud(&mut self, params: &[i64]) {
         let offset = params.get(0).copied().unwrap_or(1);
-        self.cursor_position.row_inc(offset as u16);
+        self.grid_mut().pos_mut().row_inc(offset as u16);
     }
 
     // CSI C
     fn cuf(&mut self, params: &[i64]) {
         let offset = params.get(0).copied().unwrap_or(1);
-        self.cursor_position.col_inc_clamp(offset as u16);
+        self.grid_mut().pos_mut().col_inc_clamp(offset as u16);
     }
 
     // CSI D
     fn cub(&mut self, params: &[i64]) {
         let offset = params.get(0).copied().unwrap_or(1);
-        self.cursor_position.col_dec(offset as u16);
+        self.grid_mut().pos_mut().col_dec(offset as u16);
     }
 
     // CSI G
     fn cha(&mut self, params: &[i64]) {
         // XXX need to handle value overflow
-        self.cursor_position.col_set(normalize_absolute_position(
-            params.get(0).map(|i| *i as u16),
-        ));
+        self.grid_mut()
+            .pos_mut()
+            .col_set(normalize_absolute_position(
+                params.get(0).map(|i| *i as u16),
+            ));
     }
 
     // CSI H
     fn cup(&mut self, params: &[i64]) {
         // XXX need to handle value overflow
-        self.cursor_position = self.pos(
+        self.grid_mut().set_pos(
             normalize_absolute_position(params.get(0).map(|i| *i as u16)),
             normalize_absolute_position(params.get(1).map(|i| *i as u16)),
         );
-        self.cursor_position.clamp();
+        self.grid_mut().pos_mut().clamp();
     }
 
     // CSI J
     fn ed(&mut self, params: &[i64]) {
+        let pos = *self.grid().pos();
         match params.get(0).copied().unwrap_or(0) {
-            0 => self.grid.erase_all_forward(self.cursor_position),
-            1 => self.grid.erase_all_backward(self.cursor_position),
-            2 => self.grid.erase_all(),
+            0 => self.grid_mut().erase_all_forward(pos),
+            1 => self.grid_mut().erase_all_backward(pos),
+            2 => self.grid_mut().erase_all(),
             _ => {}
         }
     }
 
     // CSI K
     fn el(&mut self, params: &[i64]) {
+        let pos = *self.grid().pos();
         match params.get(0).copied().unwrap_or(0) {
-            0 => self.grid.erase_row_forward(self.cursor_position),
-            1 => self.grid.erase_row_backward(self.cursor_position),
-            2 => self.grid.erase_row(self.cursor_position),
+            0 => self.grid_mut().erase_row_forward(pos),
+            1 => self.grid_mut().erase_row_backward(pos),
+            2 => self.grid_mut().erase_row(pos),
             _ => {}
         }
     }
@@ -212,45 +243,95 @@ impl State {
     // CSI L
     fn il(&mut self, params: &[i64]) {
         let count = params.get(0).copied().unwrap_or(1);
-        self.grid.insert_lines(self.cursor_position, count as u16);
+        let pos = *self.grid().pos();
+        self.grid_mut().insert_lines(pos, count as u16);
     }
 
     // CSI M
     fn dl(&mut self, params: &[i64]) {
         let count = params.get(0).copied().unwrap_or(1);
-        self.grid.delete_lines(self.cursor_position, count as u16);
+        let pos = *self.grid().pos();
+        self.grid_mut().delete_lines(pos, count as u16);
     }
 
     // CSI P
     fn dch(&mut self, params: &[i64]) {
         let count = params.get(0).copied().unwrap_or(1);
-        self.grid.delete_cells(self.cursor_position, count as u16);
+        let pos = *self.grid().pos();
+        self.grid_mut().delete_cells(pos, count as u16);
     }
 
     // CSI S
     fn su(&mut self, params: &[i64]) {
         let count = params.get(0).copied().unwrap_or(1);
-        self.grid.scroll_up(count as u16);
+        self.grid_mut().scroll_up(count as u16);
     }
 
     // CSI T
     fn sd(&mut self, params: &[i64]) {
         let count = params.get(0).copied().unwrap_or(1);
-        self.grid.scroll_down(count as u16);
+        self.grid_mut().scroll_down(count as u16);
     }
 
     // CSI X
     fn ech(&mut self, params: &[i64]) {
         let count = params.get(0).copied().unwrap_or(1);
-        self.grid.erase_cells(self.cursor_position, count as u16);
+        let pos = *self.grid().pos();
+        self.grid_mut().erase_cells(pos, count as u16);
     }
 
     // CSI d
     fn vpa(&mut self, params: &[i64]) {
         // XXX need to handle value overflow
-        self.cursor_position.row_set(normalize_absolute_position(
-            params.get(0).map(|i| *i as u16),
-        ));
+        self.grid_mut()
+            .pos_mut()
+            .row_set(normalize_absolute_position(
+                params.get(0).map(|i| *i as u16),
+            ));
+    }
+
+    // CSI h
+    fn sm(&mut self, intermediate: Option<u8>, params: &[i64]) {
+        match intermediate {
+            Some(b'?') => {
+                for param in params {
+                    match param {
+                        1 => self.application_cursor = true,
+                        9 => self.mouse_reporting_press = true,
+                        25 => self.hide_cursor = false,
+                        1000 => self.mouse_reporting_press_release = true,
+                        1002 => self.mouse_reporting_button_motion = true,
+                        1006 => self.mouse_reporting_sgr_mode = true,
+                        1049 => self.enter_alternate_grid(),
+                        2004 => self.bracketed_paste = true,
+                        _ => {}
+                    }
+                }
+            }
+            _ => {}
+        }
+    }
+
+    // CSI l
+    fn rm(&mut self, intermediate: Option<u8>, params: &[i64]) {
+        match intermediate {
+            Some(b'?') => {
+                for param in params {
+                    match param {
+                        1 => self.application_cursor = false,
+                        9 => self.mouse_reporting_press = false,
+                        25 => self.hide_cursor = true,
+                        1000 => self.mouse_reporting_press_release = false,
+                        1002 => self.mouse_reporting_button_motion = false,
+                        1006 => self.mouse_reporting_sgr_mode = false,
+                        1049 => self.exit_alternate_grid(),
+                        2004 => self.bracketed_paste = false,
+                        _ => {}
+                    }
+                }
+            }
+            _ => {}
+        }
     }
 
     // CSI m
@@ -403,7 +484,7 @@ impl vte::Perform for State {
     fn csi_dispatch(
         &mut self,
         params: &[i64],
-        _intermediates: &[u8],
+        intermediates: &[u8],
         _ignore: bool,
         c: char,
     ) {
@@ -424,6 +505,8 @@ impl vte::Perform for State {
             'T' => self.sd(params),
             'X' => self.ech(params),
             'd' => self.vpa(params),
+            'h' => self.sm(intermediates.get(0).copied(), params),
+            'l' => self.rm(intermediates.get(0).copied(), params),
             'm' => self.sgr(params),
             _ => {}
         }
@@ -458,20 +541,16 @@ impl Screen {
     }
 
     pub fn rows(&self) -> u16 {
-        self.state.grid.size().rows()
+        self.state.grid().size().rows()
     }
 
     pub fn cols(&self) -> u16 {
-        self.state.grid.size().cols()
+        self.state.grid().size().cols()
     }
 
     pub fn set_window_size(&mut self, rows: u16, cols: u16) {
-        self.state.grid.set_size(crate::grid::Size::new(rows, cols));
         self.state
-            .cursor_position
-            .set_size(crate::grid::Size::new(rows, cols));
-        self.state
-            .stored_cursor_position
+            .grid_mut()
             .set_size(crate::grid::Size::new(rows, cols));
     }
 
@@ -482,7 +561,7 @@ impl Screen {
     }
 
     pub fn cell(&self, row: u16, col: u16) -> Option<&crate::cell::Cell> {
-        self.state.cell(self.state.pos(row, col))
+        self.state.cell(self.state.new_pos(row, col))
     }
 
     pub fn window_contents(
@@ -493,7 +572,7 @@ impl Screen {
         col_end: u16,
     ) -> String {
         self.state
-            .grid
+            .grid()
             .window_contents(row_start, col_start, row_end, col_end)
     }
 
@@ -505,15 +584,12 @@ impl Screen {
         col_end: u16,
     ) -> String {
         self.state
-            .grid
+            .grid()
             .window_contents_formatted(row_start, col_start, row_end, col_end)
     }
 
     pub fn cursor_position(&self) -> (u16, u16) {
-        (
-            self.state.cursor_position.row(),
-            self.state.cursor_position.col(),
-        )
+        (self.state.grid().pos().row(), self.state.grid().pos().col())
     }
 
     pub fn fgcolor(&self) -> crate::color::Color {
@@ -553,7 +629,7 @@ impl Screen {
     }
 
     pub fn alternate_buffer_active(&self) -> bool {
-        self.state.alternate_buffer_active
+        self.state.alternate_grid.is_some()
     }
 
     pub fn application_cursor(&self) -> bool {

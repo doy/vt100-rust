@@ -1,5 +1,7 @@
 pub struct Grid {
     size: Size,
+    pos: Pos,
+    saved_pos: Pos,
     rows: Vec<crate::row::Row>,
 }
 
@@ -7,6 +9,8 @@ impl Grid {
     pub fn new(size: Size) -> Self {
         Self {
             size,
+            pos: Pos::new(0, 0, size),
+            saved_pos: Pos::new(0, 0, size),
             rows: vec![
                 crate::row::Row::new(size.cols());
                 size.rows() as usize
@@ -14,8 +18,28 @@ impl Grid {
         }
     }
 
-    pub fn pos(&self, rows: u16, cols: u16) -> Pos {
+    pub fn pos(&self) -> &Pos {
+        &self.pos
+    }
+
+    pub fn pos_mut(&mut self) -> &mut Pos {
+        &mut self.pos
+    }
+
+    pub fn new_pos(&self, rows: u16, cols: u16) -> Pos {
         Pos::new(rows, cols, self.size)
+    }
+
+    pub fn set_pos(&mut self, row: u16, col: u16) {
+        self.pos = self.new_pos(row, col);
+    }
+
+    pub fn save_pos(&mut self) {
+        self.saved_pos = self.pos;
+    }
+
+    pub fn restore_pos(&mut self) {
+        self.pos = self.saved_pos;
     }
 
     pub fn size(&self) -> &Size {
@@ -24,6 +48,8 @@ impl Grid {
 
     pub fn set_size(&mut self, size: Size) {
         self.size = size;
+        self.pos.size = size;
+        self.saved_pos.size = size;
     }
 
     pub fn cell(&self, pos: Pos) -> Option<&crate::cell::Cell> {
@@ -36,6 +62,14 @@ impl Grid {
         self.rows
             .get_mut(pos.row() as usize)
             .and_then(|v| v.get_mut(pos.col()))
+    }
+
+    pub fn current_cell(&self) -> Option<&crate::cell::Cell> {
+        self.cell(self.pos)
+    }
+
+    pub fn current_cell_mut(&mut self) -> Option<&mut crate::cell::Cell> {
+        self.cell_mut(self.pos)
     }
 
     pub fn window_contents(
@@ -152,11 +186,11 @@ impl Grid {
     }
 
     pub fn scroll_up(&mut self, count: u16) {
-        self.delete_lines(self.pos(0, 0), count);
+        self.delete_lines(self.new_pos(0, 0), count);
     }
 
     pub fn scroll_down(&mut self, count: u16) {
-        self.insert_lines(self.pos(0, 0), count);
+        self.insert_lines(self.new_pos(0, 0), count);
     }
 }
 
