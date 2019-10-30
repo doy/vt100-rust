@@ -1,9 +1,11 @@
 struct State {
     grid: crate::grid::Grid,
     cursor_position: crate::grid::Pos,
+    stored_cursor_position: crate::grid::Pos,
     attrs: crate::attrs::Attrs,
     got_audible_bell: bool,
     got_visual_bell: bool,
+    keypad_application_mode: bool,
 }
 
 impl State {
@@ -12,9 +14,11 @@ impl State {
         Self {
             grid: crate::grid::Grid::new(size),
             cursor_position: crate::grid::Pos::new(0, 0, size),
+            stored_cursor_position: crate::grid::Pos::new(0, 0, size),
             attrs: crate::attrs::Attrs::default(),
             got_audible_bell: false,
             got_visual_bell: false,
+            keypad_application_mode: false,
         }
     }
 
@@ -79,6 +83,41 @@ impl State {
     }
 
     // escape codes
+
+    // ESC 7
+    fn decsc(&mut self) {
+        self.stored_cursor_position = self.cursor_position;
+    }
+
+    // ESC 8
+    fn decrc(&mut self) {
+        self.cursor_position = self.stored_cursor_position;
+    }
+
+    // ESC =
+    fn deckpam(&mut self) {
+        self.keypad_application_mode = true;
+    }
+
+    // ESC >
+    fn deckpnm(&mut self) {
+        self.keypad_application_mode = false;
+    }
+
+    // ESC M
+    fn ri(&mut self) {
+        self.cursor_position.row_dec(1);
+    }
+
+    // ESC c
+    fn ris(&mut self) {
+        *self = Self::new(self.grid.size().rows(), self.grid.size().cols())
+    }
+
+    // ESC g
+    fn vb(&mut self) {
+        self.got_visual_bell = true;
+    }
 
     // csi codes
 
@@ -309,8 +348,18 @@ impl vte::Perform for State {
         _params: &[i64],
         _intermediates: &[u8],
         _ignore: bool,
-        _b: u8,
+        b: u8,
     ) {
+        match b {
+            b'7' => self.decsc(),
+            b'8' => self.decrc(),
+            b'=' => self.deckpam(),
+            b'>' => self.deckpnm(),
+            b'M' => self.ri(),
+            b'c' => self.ris(),
+            b'g' => self.vb(),
+            _ => {}
+        }
     }
 
     fn csi_dispatch(
@@ -375,6 +424,9 @@ impl Screen {
         self.state.grid.set_size(crate::grid::Size::new(rows, cols));
         self.state
             .cursor_position
+            .set_size(crate::grid::Size::new(rows, cols));
+        self.state
+            .stored_cursor_position
             .set_size(crate::grid::Size::new(rows, cols));
     }
 
@@ -464,7 +516,7 @@ impl Screen {
     }
 
     pub fn application_keypad(&self) -> bool {
-        unimplemented!()
+        self.state.keypad_application_mode
     }
 
     pub fn bracketed_paste(&self) -> bool {
