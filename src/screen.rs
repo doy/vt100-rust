@@ -346,6 +346,23 @@ impl State {
     }
 
     // osc codes
+
+    fn osc0(&mut self, s: &[u8]) {
+        self.osc1(s);
+        self.osc2(s);
+    }
+
+    fn osc1(&mut self, s: &[u8]) {
+        if let Some(s) = std::str::from_utf8(s).ok() {
+            self.icon_name = Some(s.to_string())
+        }
+    }
+
+    fn osc2(&mut self, s: &[u8]) {
+        if let Some(s) = std::str::from_utf8(s).ok() {
+            self.title = Some(s.to_string())
+        }
+    }
 }
 
 impl vte::Perform for State {
@@ -412,7 +429,14 @@ impl vte::Perform for State {
         }
     }
 
-    fn osc_dispatch(&mut self, _params: &[&[u8]]) {}
+    fn osc_dispatch(&mut self, params: &[&[u8]]) {
+        match params[0] {
+            b"0" => self.osc0(params[1]),
+            b"1" => self.osc1(params[1]),
+            b"2" => self.osc2(params[1]),
+            _ => {}
+        }
+    }
 
     // don't care
     fn hook(&mut self, _: &[i64], _: &[u8], _: bool) {}
