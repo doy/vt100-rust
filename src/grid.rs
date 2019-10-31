@@ -68,7 +68,7 @@ impl Grid {
         col_end: u16,
     ) -> String {
         let mut contents = String::new();
-        for row in row_start..=(row_end.min(self.size.rows)) {
+        for row in row_start..=(row_end.min(self.size.rows - 1)) {
             contents += &self.rows[row as usize].contents(col_start, col_end);
         }
         contents
