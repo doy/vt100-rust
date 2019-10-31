@@ -40,25 +40,39 @@ impl Row {
         self.wrapped = wrap;
     }
 
+    pub fn wrapped(&self) -> bool {
+        self.wrapped
+    }
+
     pub fn contents(&self, col_start: u16, col_end: u16) -> String {
+        let mut prev_was_wide = false;
         // XXX very inefficient
         let mut max_col = None;
         for (col, cell) in self.cells.iter().enumerate() {
-            if cell.has_contents() {
+            if cell.has_contents() || prev_was_wide {
                 max_col = Some(col);
+                prev_was_wide = cell.is_wide();
             }
         }
 
+        prev_was_wide = false;
         let mut contents = String::new();
         if let Some(max_col) = max_col {
             for col in col_start..=(col_end.min(max_col as u16)) {
-                let cell_contents = self.cells[col as usize].contents();
+                if prev_was_wide {
+                    prev_was_wide = false;
+                    continue;
+                }
+
+                let cell = &self.cells[col as usize];
+                let cell_contents = cell.contents();
                 let cell_contents = if cell_contents == "" {
                     " "
                 } else {
                     cell_contents
                 };
                 contents += cell_contents;
+                prev_was_wide = cell.is_wide();
             }
         }
         if !self.wrapped {

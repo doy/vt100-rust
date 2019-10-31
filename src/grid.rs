@@ -276,8 +276,8 @@ impl Grid {
         self.col_clamp();
     }
 
-    pub fn col_wrap(&mut self) {
-        if self.pos.col > self.size.cols - 1 {
+    pub fn col_wrap(&mut self, width: u16) {
+        if self.pos.col > self.size.cols - width {
             self.current_row_mut().unwrap().wrap(true);
             self.pos.col = 0;
             self.row_inc_scroll(1);

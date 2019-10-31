@@ -14,12 +14,25 @@ impl Cell {
         self.attrs = a;
     }
 
+    pub(crate) fn append(&mut self, c: char) {
+        self.contents.push(c);
+    }
+
+    pub(crate) fn reset(&mut self) {
+        self.contents = String::new();
+        self.attrs = crate::attrs::Attrs::default();
+    }
+
     pub fn contents(&self) -> &str {
         &self.contents
     }
 
     pub fn has_contents(&self) -> bool {
         self.contents != ""
+    }
+
+    pub fn is_wide(&self) -> bool {
+        crate::unicode::str_width(&self.contents) > 1
     }
 
     pub fn fgcolor(&self) -> crate::color::Color {

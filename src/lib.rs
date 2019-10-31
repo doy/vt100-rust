@@ -9,6 +9,7 @@ mod color;
 mod grid;
 mod row;
 mod screen;
+mod unicode;
 
 pub use cell::Cell;
 pub use color::Color;

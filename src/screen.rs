@@ -56,6 +56,10 @@ impl State {
         }
     }
 
+    fn row(&self, pos: crate::grid::Pos) -> Option<&crate::row::Row> {
+        self.grid().row(pos)
+    }
+
     fn cell(&self, pos: crate::grid::Pos) -> Option<&crate::cell::Cell> {
         self.grid().cell(pos)
     }
@@ -89,11 +93,53 @@ impl State {
     // control codes
 
     fn text(&mut self, c: char) {
+        let pos = *self.grid().pos();
+        if pos.col > 0 {
+            let prev_cell = self
+                .cell_mut(crate::grid::Pos {
+                    row: pos.row,
+                    col: pos.col - 1,
+                })
+                .unwrap();
+            if prev_cell.is_wide() {
+                prev_cell.reset();
+            }
+        }
+
+        let width = crate::unicode::char_width(c);
         let attrs = self.attrs;
-        self.grid_mut().col_wrap();
+        self.grid_mut().col_wrap(width as u16);
         if let Some(cell) = self.current_cell_mut() {
-            cell.set(c.to_string(), attrs);
-            self.grid_mut().col_inc(1);
+            if width == 0 {
+                if pos.col > 0 {
+                    let prev_cell = self
+                        .cell_mut(crate::grid::Pos {
+                            row: pos.row,
+                            col: pos.col - 1,
+                        })
+                        .unwrap();
+                    prev_cell.append(c);
+                } else if pos.row > 0 {
+                    let prev_row = self
+                        .row(crate::grid::Pos {
+                            row: pos.row - 1,
+                            col: 0,
+                        })
+                        .unwrap();
+                    if prev_row.wrapped() {
+                        let prev_cell = self
+                            .cell_mut(crate::grid::Pos {
+                                row: pos.row - 1,
+                                col: self.grid().size().cols - 1,
+                            })
+                            .unwrap();
+                        prev_cell.append(c);
+                    }
+                }
+            } else {
+                cell.set(c.to_string(), attrs);
+                self.grid_mut().col_inc(width as u16);
+            }
         } else {
             panic!("couldn't find current cell")
         }
