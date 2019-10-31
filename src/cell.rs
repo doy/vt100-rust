@@ -43,6 +43,10 @@ impl Cell {
         crate::unicode::str_width(&self.contents) > 1
     }
 
+    pub(crate) fn attrs(&self) -> &crate::attrs::Attrs {
+        &self.attrs
+    }
+
     pub fn fgcolor(&self) -> crate::color::Color {
         self.attrs.fgcolor
     }

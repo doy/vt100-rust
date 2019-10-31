@@ -86,12 +86,20 @@ impl Grid {
 
     pub fn window_contents_formatted(
         &self,
-        _row_start: u16,
-        _col_start: u16,
-        _row_end: u16,
-        _col_end: u16,
+        row_start: u16,
+        col_start: u16,
+        row_end: u16,
+        col_end: u16,
     ) -> String {
-        unimplemented!()
+        let mut contents = String::new();
+        let mut prev_attrs = crate::attrs::Attrs::default();
+        for row in row_start..=(row_end.min(self.size.rows - 1)) {
+            let (new_contents, new_attrs) = &self.rows[row as usize]
+                .contents_formatted(col_start, col_end, prev_attrs);
+            contents += new_contents;
+            prev_attrs = *new_attrs;
+        }
+        contents
     }
 
     pub fn erase_all(&mut self) {

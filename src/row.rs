@@ -46,18 +46,8 @@ impl Row {
 
     pub fn contents(&self, col_start: u16, col_end: u16) -> String {
         let mut prev_was_wide = false;
-        // XXX very inefficient
-        let mut max_col = None;
-        for (col, cell) in self.cells.iter().enumerate() {
-            if cell.has_contents() || prev_was_wide {
-                max_col = Some(col);
-                prev_was_wide = cell.is_wide();
-            }
-        }
-
-        prev_was_wide = false;
         let mut contents = String::new();
-        if let Some(max_col) = max_col {
+        if let Some(max_col) = self.max_col() {
             for col in col_start..=(col_end.min(max_col as u16)) {
                 if prev_was_wide {
                     prev_was_wide = false;
@@ -79,5 +69,59 @@ impl Row {
             contents += "\n";
         }
         contents
+    }
+
+    pub fn contents_formatted(
+        &self,
+        col_start: u16,
+        col_end: u16,
+        attrs: crate::attrs::Attrs,
+    ) -> (String, crate::attrs::Attrs) {
+        let mut prev_was_wide = false;
+        let mut contents = String::new();
+        let mut prev_attrs = attrs;
+        if let Some(max_col) = self.max_col() {
+            for col in col_start..=(col_end.min(max_col as u16)) {
+                if prev_was_wide {
+                    prev_was_wide = false;
+                    continue;
+                }
+
+                let cell = &self.cells[col as usize];
+
+                let attrs = cell.attrs();
+                if &prev_attrs != attrs {
+                    contents += &attrs.escape_code_diff(&prev_attrs);
+                    prev_attrs = *attrs;
+                }
+
+                let cell_contents = cell.contents();
+                let cell_contents = if cell_contents == "" {
+                    " "
+                } else {
+                    cell_contents
+                };
+                contents += cell_contents;
+
+                prev_was_wide = cell.is_wide();
+            }
+        }
+        if !self.wrapped {
+            contents += "\n";
+        }
+        (contents, prev_attrs)
+    }
+
+    fn max_col(&self) -> Option<u16> {
+        let mut prev_was_wide = false;
+        // XXX very inefficient
+        let mut max_col = None;
+        for (col, cell) in self.cells.iter().enumerate() {
+            if cell.has_contents() || prev_was_wide {
+                max_col = Some(col as u16);
+                prev_was_wide = cell.is_wide();
+            }
+        }
+        max_col
     }
 }
