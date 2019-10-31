@@ -36,6 +36,10 @@ impl Row {
         self.cells.resize(len, cell);
     }
 
+    pub fn wrap(&mut self, wrap: bool) {
+        self.wrapped = wrap;
+    }
+
     pub fn contents(&self, col_start: u16, col_end: u16) -> String {
         // XXX very inefficient
         let mut max_col = None;

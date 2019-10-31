@@ -46,14 +46,24 @@ impl Grid {
         self.pos = self.saved_pos;
     }
 
+    pub fn row(&self, pos: Pos) -> Option<&crate::row::Row> {
+        self.rows.get(pos.row as usize)
+    }
+
+    pub fn row_mut(&mut self, pos: Pos) -> Option<&mut crate::row::Row> {
+        self.rows.get_mut(pos.row as usize)
+    }
+
+    pub fn current_row_mut(&mut self) -> Option<&mut crate::row::Row> {
+        self.row_mut(self.pos)
+    }
+
     pub fn cell(&self, pos: Pos) -> Option<&crate::cell::Cell> {
-        self.rows.get(pos.row as usize).and_then(|r| r.get(pos.col))
+        self.row(pos).and_then(|r| r.get(pos.col))
     }
 
     pub fn cell_mut(&mut self, pos: Pos) -> Option<&mut crate::cell::Cell> {
-        self.rows
-            .get_mut(pos.row as usize)
-            .and_then(|v| v.get_mut(pos.col))
+        self.row_mut(pos).and_then(|r| r.get_mut(pos.col))
     }
 
     pub fn current_cell_mut(&mut self) -> Option<&mut crate::cell::Cell> {
@@ -96,6 +106,7 @@ impl Grid {
             self.rows[i as usize] = crate::row::Row::new(self.size.cols);
         }
         let row = &mut self.rows[pos.row as usize];
+        row.wrap(false);
         for i in pos.col..self.size.cols {
             *row.get_mut(i).unwrap() = crate::cell::Cell::default();
         }
@@ -117,6 +128,7 @@ impl Grid {
 
     pub fn erase_row_forward(&mut self, pos: Pos) {
         let row = &mut self.rows[pos.row as usize];
+        row.wrap(false);
         for i in pos.col..self.size.cols {
             *row.get_mut(i).unwrap() = crate::cell::Cell::default();
         }
@@ -240,14 +252,13 @@ impl Grid {
         self.row_clamp_bottom();
     }
 
+    pub fn col_inc(&mut self, count: u16) {
+        self.pos.col = self.pos.col.saturating_add(count);
+    }
+
     pub fn col_inc_clamp(&mut self, count: u16) {
         self.pos.col = self.pos.col.saturating_add(count);
         self.col_clamp();
-    }
-
-    pub fn col_inc_wrap(&mut self, count: u16) {
-        self.pos.col = self.pos.col.saturating_add(count);
-        self.col_wrap();
     }
 
     pub fn col_dec(&mut self, count: u16) {
@@ -263,6 +274,14 @@ impl Grid {
     pub fn col_set(&mut self, i: u16) {
         self.pos.col = i;
         self.col_clamp();
+    }
+
+    pub fn col_wrap(&mut self) {
+        if self.pos.col > self.size.cols - 1 {
+            self.current_row_mut().unwrap().wrap(true);
+            self.pos.col = 0;
+            self.row_inc_scroll(1);
+        }
     }
 
     fn row_clamp_top(&mut self) -> u16 {
@@ -288,13 +307,6 @@ impl Grid {
     fn col_clamp(&mut self) {
         if self.pos.col > self.size.cols - 1 {
             self.pos.col = self.size.cols - 1;
-        }
-    }
-
-    fn col_wrap(&mut self) {
-        if self.pos.col > self.size.cols - 1 {
-            self.pos.col = 0;
-            self.row_inc_scroll(1);
         }
     }
 }

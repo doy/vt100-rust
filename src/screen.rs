@@ -90,9 +90,10 @@ impl State {
 
     fn text(&mut self, c: char) {
         let attrs = self.attrs;
+        self.grid_mut().col_wrap();
         if let Some(cell) = self.current_cell_mut() {
             cell.set(c.to_string(), attrs);
-            self.grid_mut().col_inc_wrap(1);
+            self.grid_mut().col_inc(1);
         } else {
             panic!("couldn't find current cell")
         }
