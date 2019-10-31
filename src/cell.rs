@@ -1,3 +1,5 @@
+use unicode_normalization::UnicodeNormalization as _;
+
 #[derive(Clone, Debug, Default)]
 pub struct Cell {
     contents: String,
@@ -16,6 +18,12 @@ impl Cell {
 
     pub(crate) fn append(&mut self, c: char) {
         self.contents.push(c);
+        // some fonts have combined characters but can't render combining
+        // characters correctly, so try to prefer precombined characters when
+        // possible
+        if !unicode_normalization::is_nfc(&self.contents) {
+            self.contents = self.contents.nfc().collect();
+        }
     }
 
     pub(crate) fn reset(&mut self) {

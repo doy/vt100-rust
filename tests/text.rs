@@ -94,9 +94,9 @@ fn combining() {
     screen.process("\u{0301}".as_bytes());
     assert_eq!(screen.cell(0, 0).unwrap().contents(), "á");
     screen.process(b"\x1b[20;20Habcdefg");
-    assert_eq!(screen.window_contents(19, 19, 19, 26), "abcdefg");
+    assert_eq!(screen.window_contents(19, 19, 19, 26), "abcdefg\n");
     screen.process("\x1b[20;25H\u{0301}".as_bytes());
-    assert_eq!(screen.window_contents(19, 19, 19, 26), "abcdéfg");
+    assert_eq!(screen.window_contents(19, 19, 19, 26), "abcdéfg\n");
     screen.process(b"\x1b[10;78Haaa");
     assert_eq!(screen.cell(9, 79).unwrap().contents(), "a");
     screen.process("\r\n\u{0301}".as_bytes());
