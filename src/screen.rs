@@ -195,7 +195,14 @@ impl State {
 
     // ESC c
     fn ris(&mut self) {
-        *self = Self::new(self.grid().size().rows, self.grid().size().cols)
+        let size = self.grid().size();
+        let title = self.title.clone();
+        let icon_name = self.icon_name.clone();
+
+        *self = Self::new(size.rows, size.cols);
+
+        self.title = title;
+        self.icon_name = icon_name;
     }
 
     // ESC g
