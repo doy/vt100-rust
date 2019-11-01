@@ -46,6 +46,10 @@ impl State {
         }
     }
 
+    fn new_grid(&self) -> crate::grid::Grid {
+        crate::grid::Grid::new(*self.grid().size())
+    }
+
     fn grid(&self) -> &crate::grid::Grid {
         if let Some(grid) = &self.alternate_grid {
             grid
@@ -83,8 +87,7 @@ impl State {
 
     fn enter_alternate_grid(&mut self) {
         if self.alternate_grid.is_none() {
-            self.alternate_grid =
-                Some(crate::grid::Grid::new(*self.grid.size()));
+            self.alternate_grid = Some(self.new_grid());
         }
     }
 
@@ -233,7 +236,7 @@ impl State {
 
     // ESC c
     fn ris(&mut self) {
-        self.grid = crate::grid::Grid::new(*self.grid().size());
+        self.grid = self.new_grid();
         self.alternate_grid = None;
         self.attrs = crate::attrs::Attrs::default();
         self.state = STATE_DEFAULT;
