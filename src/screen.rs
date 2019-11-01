@@ -494,13 +494,13 @@ impl State {
     }
 
     fn osc1(&mut self, s: &[u8]) {
-        if let Some(s) = std::str::from_utf8(s).ok() {
+        if let Ok(s) = std::str::from_utf8(s) {
             self.icon_name = Some(s.to_string())
         }
     }
 
     fn osc2(&mut self, s: &[u8]) {
-        if let Some(s) = std::str::from_utf8(s).ok() {
+        if let Ok(s) = std::str::from_utf8(s) {
             self.title = Some(s.to_string())
         }
     }
