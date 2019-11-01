@@ -2,24 +2,31 @@ use std::convert::TryInto as _;
 
 const DEFAULT_MULTI_PARAMS: &[i64] = &[0];
 
+const OUTPUT_DEFAULT: u16 = 0x0000;
+const OUTPUT_AUDIBLE_BELL: u16 = 0x0001;
+const OUTPUT_VISUAL_BELL: u16 = 0x0002;
+
+const STATE_DEFAULT: u16 = 0x0000;
+const STATE_HIDE_CURSOR: u16 = 0x0001;
+const STATE_APPLICATION_CURSOR: u16 = 0x0002;
+const STATE_KEYPAD_APPLICATION_MODE: u16 = 0x0004;
+const STATE_BRACKETED_PASTE: u16 = 0x0008;
+const STATE_MOUSE_REPORTING_BUTTON_MOTION: u16 = 0x0010;
+const STATE_MOUSE_REPORTING_SGR_MODE: u16 = 0x0020;
+const STATE_MOUSE_REPORTING_PRESS: u16 = 0x0040;
+const STATE_MOUSE_REPORTING_PRESS_RELEASE: u16 = 0x0080;
+
 struct State {
     grid: crate::grid::Grid,
     alternate_grid: Option<crate::grid::Grid>,
+
     attrs: crate::attrs::Attrs,
 
     title: String,
     icon_name: String,
 
-    got_audible_bell: bool,
-    got_visual_bell: bool,
-    hide_cursor: bool,
-    application_cursor: bool,
-    keypad_application_mode: bool,
-    bracketed_paste: bool,
-    mouse_reporting_button_motion: bool,
-    mouse_reporting_sgr_mode: bool,
-    mouse_reporting_press: bool,
-    mouse_reporting_press_release: bool,
+    outputs: u16,
+    state: u16,
 }
 
 impl State {
@@ -28,19 +35,14 @@ impl State {
         Self {
             grid: crate::grid::Grid::new(size),
             alternate_grid: None,
+
             attrs: crate::attrs::Attrs::default(),
+
             title: String::default(),
             icon_name: String::default(),
-            got_audible_bell: false,
-            got_visual_bell: false,
-            hide_cursor: false,
-            application_cursor: false,
-            keypad_application_mode: false,
-            bracketed_paste: false,
-            mouse_reporting_button_motion: false,
-            mouse_reporting_sgr_mode: false,
-            mouse_reporting_press: false,
-            mouse_reporting_press_release: false,
+
+            outputs: OUTPUT_DEFAULT,
+            state: STATE_DEFAULT,
         }
     }
 
@@ -88,6 +90,32 @@ impl State {
 
     fn exit_alternate_grid(&mut self) {
         self.alternate_grid = None;
+    }
+
+    fn set_output(&mut self, output: u16) {
+        self.outputs |= output;
+    }
+
+    fn clear_output(&mut self, output: u16) {
+        self.outputs &= !output;
+    }
+
+    fn check_output(&mut self, output: u16) -> bool {
+        let ret = (self.outputs & output) != 0;
+        self.clear_output(output);
+        ret
+    }
+
+    fn set_state(&mut self, state: u16) {
+        self.state |= state;
+    }
+
+    fn clear_state(&mut self, state: u16) {
+        self.state &= !state;
+    }
+
+    fn state(&self, state: u16) -> bool {
+        (self.state & state) != 0
     }
 }
 
@@ -148,7 +176,7 @@ impl State {
     // control codes
 
     fn bel(&mut self) {
-        self.got_audible_bell = true;
+        self.set_output(OUTPUT_AUDIBLE_BELL);
     }
 
     fn bs(&mut self) {
@@ -190,12 +218,12 @@ impl State {
 
     // ESC =
     fn deckpam(&mut self) {
-        self.keypad_application_mode = true;
+        self.set_state(STATE_KEYPAD_APPLICATION_MODE);
     }
 
     // ESC >
     fn deckpnm(&mut self) {
-        self.keypad_application_mode = false;
+        self.clear_state(STATE_KEYPAD_APPLICATION_MODE);
     }
 
     // ESC M
@@ -217,7 +245,7 @@ impl State {
 
     // ESC g
     fn vb(&mut self) {
-        self.got_visual_bell = true;
+        self.set_output(OUTPUT_VISUAL_BELL);
     }
 
     // csi codes
@@ -341,14 +369,14 @@ impl State {
     fn decset(&mut self, params: &[i64]) {
         for param in params {
             match param {
-                1 => self.application_cursor = true,
-                9 => self.mouse_reporting_press = true,
-                25 => self.hide_cursor = false,
-                1000 => self.mouse_reporting_press_release = true,
-                1002 => self.mouse_reporting_button_motion = true,
-                1006 => self.mouse_reporting_sgr_mode = true,
+                1 => self.set_state(STATE_APPLICATION_CURSOR),
+                9 => self.set_state(STATE_MOUSE_REPORTING_PRESS),
+                25 => self.clear_state(STATE_HIDE_CURSOR),
+                1000 => self.set_state(STATE_MOUSE_REPORTING_PRESS_RELEASE),
+                1002 => self.set_state(STATE_MOUSE_REPORTING_BUTTON_MOTION),
+                1006 => self.set_state(STATE_MOUSE_REPORTING_SGR_MODE),
                 1049 => self.enter_alternate_grid(),
-                2004 => self.bracketed_paste = true,
+                2004 => self.set_state(STATE_BRACKETED_PASTE),
                 _ => {}
             }
         }
@@ -363,14 +391,14 @@ impl State {
     fn decrst(&mut self, params: &[i64]) {
         for param in params {
             match param {
-                1 => self.application_cursor = false,
-                9 => self.mouse_reporting_press = false,
-                25 => self.hide_cursor = true,
-                1000 => self.mouse_reporting_press_release = false,
-                1002 => self.mouse_reporting_button_motion = false,
-                1006 => self.mouse_reporting_sgr_mode = false,
+                1 => self.clear_state(STATE_APPLICATION_CURSOR),
+                9 => self.clear_state(STATE_MOUSE_REPORTING_PRESS),
+                25 => self.set_state(STATE_HIDE_CURSOR),
+                1000 => self.clear_state(STATE_MOUSE_REPORTING_PRESS_RELEASE),
+                1002 => self.clear_state(STATE_MOUSE_REPORTING_BUTTON_MOTION),
+                1006 => self.clear_state(STATE_MOUSE_REPORTING_SGR_MODE),
                 1049 => self.exit_alternate_grid(),
-                2004 => self.bracketed_paste = false,
+                2004 => self.clear_state(STATE_BRACKETED_PASTE),
                 _ => {}
             }
         }
@@ -704,7 +732,7 @@ impl Screen {
     }
 
     pub fn hide_cursor(&self) -> bool {
-        self.state.hide_cursor
+        self.state.state(STATE_HIDE_CURSOR)
     }
 
     pub fn alternate_buffer_active(&self) -> bool {
@@ -712,43 +740,39 @@ impl Screen {
     }
 
     pub fn application_cursor(&self) -> bool {
-        self.state.application_cursor
+        self.state.state(STATE_APPLICATION_CURSOR)
     }
 
     pub fn application_keypad(&self) -> bool {
-        self.state.keypad_application_mode
+        self.state.state(STATE_KEYPAD_APPLICATION_MODE)
     }
 
     pub fn bracketed_paste(&self) -> bool {
-        self.state.bracketed_paste
+        self.state.state(STATE_BRACKETED_PASTE)
     }
 
     pub fn mouse_reporting_button_motion(&self) -> bool {
-        self.state.mouse_reporting_button_motion
+        self.state.state(STATE_MOUSE_REPORTING_BUTTON_MOTION)
     }
 
     pub fn mouse_reporting_sgr_mode(&self) -> bool {
-        self.state.mouse_reporting_sgr_mode
+        self.state.state(STATE_MOUSE_REPORTING_SGR_MODE)
     }
 
     pub fn mouse_reporting_press(&self) -> bool {
-        self.state.mouse_reporting_press
+        self.state.state(STATE_MOUSE_REPORTING_PRESS)
     }
 
     pub fn mouse_reporting_press_release(&self) -> bool {
-        self.state.mouse_reporting_press_release
+        self.state.state(STATE_MOUSE_REPORTING_PRESS_RELEASE)
     }
 
     pub fn check_audible_bell(&mut self) -> bool {
-        let ret = self.state.got_audible_bell;
-        self.state.got_audible_bell = false;
-        ret
+        self.state.check_output(OUTPUT_AUDIBLE_BELL)
     }
 
     pub fn check_visual_bell(&mut self) -> bool {
-        let ret = self.state.got_visual_bell;
-        self.state.got_visual_bell = false;
-        ret
+        self.state.check_output(OUTPUT_VISUAL_BELL)
     }
 }
 
