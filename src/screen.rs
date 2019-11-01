@@ -233,14 +233,10 @@ impl State {
 
     // ESC c
     fn ris(&mut self) {
-        let size = self.grid().size();
-        let title = self.title.clone();
-        let icon_name = self.icon_name.clone();
-
-        *self = Self::new(size.rows, size.cols);
-
-        self.title = title;
-        self.icon_name = icon_name;
+        self.grid = crate::grid::Grid::new(*self.grid().size());
+        self.alternate_grid = None;
+        self.attrs = crate::attrs::Attrs::default();
+        self.state = STATE_DEFAULT;
     }
 
     // ESC g
