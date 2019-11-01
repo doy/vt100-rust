@@ -696,11 +696,14 @@ impl Screen {
     }
 
     pub fn title(&self) -> Option<&str> {
-        self.state.title.as_ref().map(|s| s.as_str())
+        self.state.title.as_ref().map(std::string::String::as_str)
     }
 
     pub fn icon_name(&self) -> Option<&str> {
-        self.state.icon_name.as_ref().map(|s| s.as_str())
+        self.state
+            .icon_name
+            .as_ref()
+            .map(std::string::String::as_str)
     }
 
     pub fn hide_cursor(&self) -> bool {
