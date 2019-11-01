@@ -60,11 +60,12 @@ fn tab() {
     );
 }
 
-#[test]
-fn lf() {
+fn lf_with(b: u8) {
     let mut screen = vt100::Screen::new(24, 80);
 
-    screen.process(b"foo\nbar");
+    screen.process(b"foo");
+    screen.process(&[b]);
+    screen.process(b"bar");
     assert_eq!(screen.cell(0, 0).unwrap().contents(), "f");
     assert_eq!(screen.cell(0, 1).unwrap().contents(), "o");
     assert_eq!(screen.cell(0, 2).unwrap().contents(), "o");
@@ -80,6 +81,21 @@ fn lf() {
         screen.window_contents(0, 0, 23, 79),
         "foo\n   bar\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
     );
+}
+
+#[test]
+fn lf() {
+    lf_with(b'\x0a');
+}
+
+#[test]
+fn vt() {
+    lf_with(b'\x0b');
+}
+
+#[test]
+fn ff() {
+    lf_with(b'\x0c');
 }
 
 #[test]

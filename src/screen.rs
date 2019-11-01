@@ -162,6 +162,14 @@ impl State {
         self.grid_mut().row_inc_scroll(1);
     }
 
+    fn vt(&mut self) {
+        self.lf();
+    }
+
+    fn ff(&mut self) {
+        self.lf();
+    }
+
     fn cr(&mut self) {
         self.grid_mut().col_set(0);
     }
@@ -522,6 +530,8 @@ impl vte::Perform for State {
             8 => self.bs(),
             9 => self.tab(),
             10 => self.lf(),
+            11 => self.vt(),
+            12 => self.ff(),
             13 => self.cr(),
             _ => {}
         }
