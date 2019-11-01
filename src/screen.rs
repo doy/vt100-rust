@@ -90,8 +90,6 @@ impl State {
 impl State {
     const DEFAULT_SGR_PARAMS: &'static [i64] = &[0];
 
-    // control codes
-
     fn text(&mut self, c: char) {
         let pos = *self.grid().pos();
         if pos.col > 0 {
@@ -144,6 +142,8 @@ impl State {
             panic!("couldn't find current cell")
         }
     }
+
+    // control codes
 
     fn bel(&mut self) {
         self.got_audible_bell = true;
