@@ -343,46 +343,46 @@ impl State {
     }
 
     // CSI h
-    fn sm(&mut self, intermediate: Option<u8>, params: &[i64]) {
-        match intermediate {
-            Some(b'?') => {
-                for param in params {
-                    match param {
-                        1 => self.application_cursor = true,
-                        9 => self.mouse_reporting_press = true,
-                        25 => self.hide_cursor = false,
-                        1000 => self.mouse_reporting_press_release = true,
-                        1002 => self.mouse_reporting_button_motion = true,
-                        1006 => self.mouse_reporting_sgr_mode = true,
-                        1049 => self.enter_alternate_grid(),
-                        2004 => self.bracketed_paste = true,
-                        _ => {}
-                    }
-                }
+    fn sm(&mut self, _params: &[i64]) {
+        // nothing, i think?
+    }
+
+    // CSI ? h
+    fn decset(&mut self, params: &[i64]) {
+        for param in params {
+            match param {
+                1 => self.application_cursor = true,
+                9 => self.mouse_reporting_press = true,
+                25 => self.hide_cursor = false,
+                1000 => self.mouse_reporting_press_release = true,
+                1002 => self.mouse_reporting_button_motion = true,
+                1006 => self.mouse_reporting_sgr_mode = true,
+                1049 => self.enter_alternate_grid(),
+                2004 => self.bracketed_paste = true,
+                _ => {}
             }
-            _ => {}
         }
     }
 
     // CSI l
-    fn rm(&mut self, intermediate: Option<u8>, params: &[i64]) {
-        match intermediate {
-            Some(b'?') => {
-                for param in params {
-                    match param {
-                        1 => self.application_cursor = false,
-                        9 => self.mouse_reporting_press = false,
-                        25 => self.hide_cursor = true,
-                        1000 => self.mouse_reporting_press_release = false,
-                        1002 => self.mouse_reporting_button_motion = false,
-                        1006 => self.mouse_reporting_sgr_mode = false,
-                        1049 => self.exit_alternate_grid(),
-                        2004 => self.bracketed_paste = false,
-                        _ => {}
-                    }
-                }
+    fn rm(&mut self, _params: &[i64]) {
+        // nothing, i think?
+    }
+
+    // CSI ? l
+    fn decrst(&mut self, params: &[i64]) {
+        for param in params {
+            match param {
+                1 => self.application_cursor = false,
+                9 => self.mouse_reporting_press = false,
+                25 => self.hide_cursor = true,
+                1000 => self.mouse_reporting_press_release = false,
+                1002 => self.mouse_reporting_button_motion = false,
+                1006 => self.mouse_reporting_sgr_mode = false,
+                1049 => self.exit_alternate_grid(),
+                2004 => self.bracketed_paste = false,
+                _ => {}
             }
-            _ => {}
         }
     }
 
@@ -540,18 +540,21 @@ impl vte::Perform for State {
     fn esc_dispatch(
         &mut self,
         _params: &[i64],
-        _intermediates: &[u8],
+        intermediates: &[u8],
         _ignore: bool,
         b: u8,
     ) {
-        match b {
-            b'7' => self.decsc(),
-            b'8' => self.decrc(),
-            b'=' => self.deckpam(),
-            b'>' => self.deckpnm(),
-            b'M' => self.ri(),
-            b'c' => self.ris(),
-            b'g' => self.vb(),
+        match intermediates.get(0) {
+            None => match b {
+                b'7' => self.decsc(),
+                b'8' => self.decrc(),
+                b'=' => self.deckpam(),
+                b'>' => self.deckpnm(),
+                b'M' => self.ri(),
+                b'c' => self.ris(),
+                b'g' => self.vb(),
+                _ => {}
+            },
             _ => {}
         }
     }
@@ -563,27 +566,35 @@ impl vte::Perform for State {
         _ignore: bool,
         c: char,
     ) {
-        match c {
-            '@' => self.ich(params),
-            'A' => self.cuu(params),
-            'B' => self.cud(params),
-            'C' => self.cuf(params),
-            'D' => self.cub(params),
-            'G' => self.cha(params),
-            'H' => self.cup(params),
-            'J' => self.ed(params),
-            'K' => self.el(params),
-            'L' => self.il(params),
-            'M' => self.dl(params),
-            'P' => self.dch(params),
-            'S' => self.su(params),
-            'T' => self.sd(params),
-            'X' => self.ech(params),
-            'd' => self.vpa(params),
-            'h' => self.sm(intermediates.get(0).copied(), params),
-            'l' => self.rm(intermediates.get(0).copied(), params),
-            'm' => self.sgr(params),
-            'r' => self.csr(params),
+        match intermediates.get(0) {
+            None => match c {
+                '@' => self.ich(params),
+                'A' => self.cuu(params),
+                'B' => self.cud(params),
+                'C' => self.cuf(params),
+                'D' => self.cub(params),
+                'G' => self.cha(params),
+                'H' => self.cup(params),
+                'J' => self.ed(params),
+                'K' => self.el(params),
+                'L' => self.il(params),
+                'M' => self.dl(params),
+                'P' => self.dch(params),
+                'S' => self.su(params),
+                'T' => self.sd(params),
+                'X' => self.ech(params),
+                'd' => self.vpa(params),
+                'h' => self.sm(params),
+                'l' => self.rm(params),
+                'm' => self.sgr(params),
+                'r' => self.csr(params),
+                _ => {}
+            },
+            Some(b'?') => match c {
+                'h' => self.decset(params),
+                'l' => self.decrst(params),
+                _ => {}
+            },
             _ => {}
         }
     }
