@@ -283,6 +283,11 @@ impl State {
         }
     }
 
+    // CSI ? J
+    fn decsed(&mut self, params: &[i64]) {
+        self.ed(params);
+    }
+
     // CSI K
     fn el(&mut self, params: &[i64]) {
         let pos = *self.grid().pos();
@@ -292,6 +297,11 @@ impl State {
             2 => self.grid_mut().erase_row(pos),
             _ => {}
         }
+    }
+
+    // CSI ? K
+    fn decsel(&mut self, params: &[i64]) {
+        self.el(params);
     }
 
     // CSI L
@@ -591,6 +601,8 @@ impl vte::Perform for State {
                 _ => {}
             },
             Some(b'?') => match c {
+                'J' => self.decsed(params),
+                'K' => self.decsel(params),
                 'h' => self.decset(params),
                 'l' => self.decrst(params),
                 _ => {}
