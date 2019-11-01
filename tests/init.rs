@@ -25,8 +25,8 @@ fn init() {
         "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
     );
 
-    assert_eq!(screen.title(), None);
-    assert_eq!(screen.icon_name(), None);
+    assert_eq!(screen.title(), "");
+    assert_eq!(screen.icon_name(), "");
 
     assert_eq!(screen.fgcolor(), vt100::Color::Default);
     assert_eq!(screen.bgcolor(), vt100::Color::Default);

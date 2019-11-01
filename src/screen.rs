@@ -7,8 +7,8 @@ struct State {
     alternate_grid: Option<crate::grid::Grid>,
     attrs: crate::attrs::Attrs,
 
-    title: Option<String>,
-    icon_name: Option<String>,
+    title: String,
+    icon_name: String,
 
     got_audible_bell: bool,
     got_visual_bell: bool,
@@ -29,8 +29,8 @@ impl State {
             grid: crate::grid::Grid::new(size),
             alternate_grid: None,
             attrs: crate::attrs::Attrs::default(),
-            title: None,
-            icon_name: None,
+            title: String::default(),
+            icon_name: String::default(),
             got_audible_bell: false,
             got_visual_bell: false,
             hide_cursor: false,
@@ -495,13 +495,13 @@ impl State {
 
     fn osc1(&mut self, s: &[u8]) {
         if let Ok(s) = std::str::from_utf8(s) {
-            self.icon_name = Some(s.to_string())
+            self.icon_name = s.to_string();
         }
     }
 
     fn osc2(&mut self, s: &[u8]) {
         if let Ok(s) = std::str::from_utf8(s) {
-            self.title = Some(s.to_string())
+            self.title = s.to_string();
         }
     }
 }
@@ -695,15 +695,12 @@ impl Screen {
         self.state.attrs.inverse
     }
 
-    pub fn title(&self) -> Option<&str> {
-        self.state.title.as_ref().map(std::string::String::as_str)
+    pub fn title(&self) -> &str {
+        &self.state.title
     }
 
-    pub fn icon_name(&self) -> Option<&str> {
-        self.state
-            .icon_name
-            .as_ref()
-            .map(std::string::String::as_str)
+    pub fn icon_name(&self) -> &str {
+        &self.state.icon_name
     }
 
     pub fn hide_cursor(&self) -> bool {

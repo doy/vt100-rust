@@ -1,40 +1,40 @@
 #[test]
 fn title() {
     let mut screen = vt100::Screen::new(24, 80);
-    assert!(screen.title().is_none());
-    assert!(screen.icon_name().is_none());
+    assert_eq!(screen.title(), "");
+    assert_eq!(screen.icon_name(), "");
     screen.process(b"\x1b]2;it's a title\x07");
-    assert_eq!(screen.title().unwrap(), "it's a title");
-    assert!(screen.icon_name().is_none());
+    assert_eq!(screen.title(), "it's a title");
+    assert_eq!(screen.icon_name(), "");
     screen.process(b"\x1b]2;\x07");
-    assert_eq!(screen.title().unwrap(), "");
-    assert!(screen.icon_name().is_none());
+    assert_eq!(screen.title(), "");
+    assert_eq!(screen.icon_name(), "");
 }
 
 #[test]
 fn icon_name() {
     let mut screen = vt100::Screen::new(24, 80);
-    assert!(screen.title().is_none());
-    assert!(screen.icon_name().is_none());
+    assert_eq!(screen.title(), "");
+    assert_eq!(screen.icon_name(), "");
     screen.process(b"\x1b]1;it's an icon name\x07");
-    assert!(screen.title().is_none());
-    assert_eq!(screen.icon_name().unwrap(), "it's an icon name");
+    assert_eq!(screen.title(), "");
+    assert_eq!(screen.icon_name(), "it's an icon name");
     screen.process(b"\x1b]1;\x07");
-    assert!(screen.title().is_none());
-    assert_eq!(screen.icon_name().unwrap(), "");
+    assert_eq!(screen.title(), "");
+    assert_eq!(screen.icon_name(), "");
 }
 
 #[test]
 fn title_icon_name() {
     let mut screen = vt100::Screen::new(24, 80);
-    assert!(screen.title().is_none());
-    assert!(screen.icon_name().is_none());
+    assert_eq!(screen.title(), "");
+    assert_eq!(screen.icon_name(), "");
     screen.process(b"\x1b]0;it's both\x07");
-    assert_eq!(screen.title().unwrap(), "it's both");
-    assert_eq!(screen.icon_name().unwrap(), "it's both");
+    assert_eq!(screen.title(), "it's both");
+    assert_eq!(screen.icon_name(), "it's both");
     screen.process(b"\x1b]0;\x07");
-    assert_eq!(screen.title().unwrap(), "");
-    assert_eq!(screen.icon_name().unwrap(), "");
+    assert_eq!(screen.title(), "");
+    assert_eq!(screen.icon_name(), "");
 }
 
 #[test]

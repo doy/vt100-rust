@@ -37,8 +37,8 @@ fn ris() {
         "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
     );
 
-    assert_eq!(screen.title(), None);
-    assert_eq!(screen.icon_name(), None);
+    assert_eq!(screen.title(), "");
+    assert_eq!(screen.icon_name(), "");
 
     assert_eq!(screen.fgcolor(), vt100::Color::Default);
     assert_eq!(screen.bgcolor(), vt100::Color::Default);
@@ -72,8 +72,8 @@ fn ris() {
     );
     assert_eq!(screen.window_contents_formatted(0, 0, 23, 79), "f\x1b[31;47;1;3;4moo\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
 
-    assert_eq!(screen.title().unwrap(), "window title");
-    assert_eq!(screen.icon_name().unwrap(), "window icon name");
+    assert_eq!(screen.title(), "window title");
+    assert_eq!(screen.icon_name(), "window icon name");
 
     assert_eq!(screen.fgcolor(), vt100::Color::Idx(1));
     assert_eq!(screen.bgcolor(), vt100::Color::Idx(7));
@@ -110,8 +110,8 @@ fn ris() {
     );
 
     // title and icon name don't change with reset
-    assert_eq!(screen.title().unwrap(), "window title");
-    assert_eq!(screen.icon_name().unwrap(), "window icon name");
+    assert_eq!(screen.title(), "window title");
+    assert_eq!(screen.icon_name(), "window icon name");
 
     assert_eq!(screen.fgcolor(), vt100::Color::Default);
     assert_eq!(screen.bgcolor(), vt100::Color::Default);
