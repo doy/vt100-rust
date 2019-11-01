@@ -1,3 +1,7 @@
+use std::convert::TryInto as _;
+
+const DEFAULT_MULTI_PARAMS: &[i64] = &[0];
+
 struct State {
     grid: crate::grid::Grid,
     alternate_grid: Option<crate::grid::Grid>,
@@ -88,8 +92,6 @@ impl State {
 }
 
 impl State {
-    const DEFAULT_SGR_PARAMS: &'static [i64] = &[0];
-
     fn text(&mut self, c: char) {
         let pos = *self.grid().pos();
         if pos.col > 0 {
@@ -221,61 +223,48 @@ impl State {
     // csi codes
 
     // CSI @
-    fn ich(&mut self, params: &[i64]) {
-        let count = params.get(0).copied().unwrap_or(1);
+    fn ich(&mut self, count: u16) {
         let pos = *self.grid().pos();
-        self.grid_mut().insert_cells(pos, count as u16);
+        self.grid_mut().insert_cells(pos, count);
     }
 
     // CSI A
-    fn cuu(&mut self, params: &[i64]) {
-        let offset = params.get(0).copied().unwrap_or(1);
-        self.grid_mut().row_dec_clamp(offset as u16);
+    fn cuu(&mut self, offset: u16) {
+        self.grid_mut().row_dec_clamp(offset);
     }
 
     // CSI B
-    fn cud(&mut self, params: &[i64]) {
-        let offset = params.get(0).copied().unwrap_or(1);
-        self.grid_mut().row_inc_clamp(offset as u16);
+    fn cud(&mut self, offset: u16) {
+        self.grid_mut().row_inc_clamp(offset);
     }
 
     // CSI C
-    fn cuf(&mut self, params: &[i64]) {
-        let offset = params.get(0).copied().unwrap_or(1);
-        self.grid_mut().col_inc_clamp(offset as u16);
+    fn cuf(&mut self, offset: u16) {
+        self.grid_mut().col_inc_clamp(offset);
     }
 
     // CSI D
-    fn cub(&mut self, params: &[i64]) {
-        let offset = params.get(0).copied().unwrap_or(1);
-        self.grid_mut().col_dec(offset as u16);
+    fn cub(&mut self, offset: u16) {
+        self.grid_mut().col_dec(offset);
     }
 
     // CSI G
-    fn cha(&mut self, params: &[i64]) {
-        // XXX need to handle value overflow
-        self.grid_mut().col_set(normalize_absolute_position(
-            params.get(0).map(|i| *i as u16),
-        ));
+    fn cha(&mut self, col: u16) {
+        self.grid_mut().col_set(col - 1);
     }
 
     // CSI H
-    fn cup(&mut self, params: &[i64]) {
-        // XXX need to handle value overflow
+    fn cup(&mut self, (row, col): (u16, u16)) {
         self.grid_mut().set_pos(crate::grid::Pos {
-            row: normalize_absolute_position(
-                params.get(0).map(|i| *i as u16),
-            ),
-            col: normalize_absolute_position(
-                params.get(1).map(|i| *i as u16),
-            ),
+            row: row - 1,
+            col: col - 1,
         });
     }
 
     // CSI J
-    fn ed(&mut self, params: &[i64]) {
+    fn ed(&mut self, mode: u16) {
         let pos = *self.grid().pos();
-        match params.get(0).copied().unwrap_or(0) {
+        match mode {
             0 => self.grid_mut().erase_all_forward(pos),
             1 => self.grid_mut().erase_all_backward(pos),
             2 => self.grid_mut().erase_all(),
@@ -284,14 +273,14 @@ impl State {
     }
 
     // CSI ? J
-    fn decsed(&mut self, params: &[i64]) {
-        self.ed(params);
+    fn decsed(&mut self, mode: u16) {
+        self.ed(mode);
     }
 
     // CSI K
-    fn el(&mut self, params: &[i64]) {
+    fn el(&mut self, mode: u16) {
         let pos = *self.grid().pos();
-        match params.get(0).copied().unwrap_or(0) {
+        match mode {
             0 => self.grid_mut().erase_row_forward(pos),
             1 => self.grid_mut().erase_row_backward(pos),
             2 => self.grid_mut().erase_row(pos),
@@ -300,56 +289,47 @@ impl State {
     }
 
     // CSI ? K
-    fn decsel(&mut self, params: &[i64]) {
-        self.el(params);
+    fn decsel(&mut self, mode: u16) {
+        self.el(mode);
     }
 
     // CSI L
-    fn il(&mut self, params: &[i64]) {
-        let count = params.get(0).copied().unwrap_or(1);
+    fn il(&mut self, count: u16) {
         let pos = *self.grid().pos();
-        self.grid_mut().insert_lines(pos, count as u16);
+        self.grid_mut().insert_lines(pos, count);
     }
 
     // CSI M
-    fn dl(&mut self, params: &[i64]) {
-        let count = params.get(0).copied().unwrap_or(1);
+    fn dl(&mut self, count: u16) {
         let pos = *self.grid().pos();
-        self.grid_mut().delete_lines(pos, count as u16);
+        self.grid_mut().delete_lines(pos, count);
     }
 
     // CSI P
-    fn dch(&mut self, params: &[i64]) {
-        let count = params.get(0).copied().unwrap_or(1);
+    fn dch(&mut self, count: u16) {
         let pos = *self.grid().pos();
-        self.grid_mut().delete_cells(pos, count as u16);
+        self.grid_mut().delete_cells(pos, count);
     }
 
     // CSI S
-    fn su(&mut self, params: &[i64]) {
-        let count = params.get(0).copied().unwrap_or(1);
-        self.grid_mut().scroll_up(count as u16);
+    fn su(&mut self, count: u16) {
+        self.grid_mut().scroll_up(count);
     }
 
     // CSI T
-    fn sd(&mut self, params: &[i64]) {
-        let count = params.get(0).copied().unwrap_or(1);
-        self.grid_mut().scroll_down(count as u16);
+    fn sd(&mut self, count: u16) {
+        self.grid_mut().scroll_down(count);
     }
 
     // CSI X
-    fn ech(&mut self, params: &[i64]) {
-        let count = params.get(0).copied().unwrap_or(1);
+    fn ech(&mut self, count: u16) {
         let pos = *self.grid().pos();
-        self.grid_mut().erase_cells(pos, count as u16);
+        self.grid_mut().erase_cells(pos, count);
     }
 
     // CSI d
-    fn vpa(&mut self, params: &[i64]) {
-        // XXX need to handle value overflow
-        self.grid_mut().row_set(normalize_absolute_position(
-            params.get(0).map(|i| *i as u16),
-        ));
+    fn vpa(&mut self, row: u16) {
+        self.grid_mut().row_set(row - 1);
     }
 
     // CSI h
@@ -398,14 +378,8 @@ impl State {
 
     // CSI m
     fn sgr(&mut self, params: &[i64]) {
-        // XXX need to handle value overflow
         // XXX need to handle incorrect numbers of parameters for some of the
         // fancier options
-        let params = if params.is_empty() {
-            Self::DEFAULT_SGR_PARAMS
-        } else {
-            params
-        };
         let mut i = 0;
         while i < params.len() {
             match params[i] {
@@ -503,24 +477,13 @@ impl State {
     }
 
     // CSI r
-    fn csr(&mut self, params: &[i64]) {
-        let top = if let Some(top) = params.get(0).map(|i| *i as u16) {
-            top as u16 - 1
-        } else {
-            return;
-        };
-        let bottom = if let Some(bottom) = params.get(1).map(|i| *i as u16) {
-            bottom as u16 - 1
-        } else {
-            return;
-        };
-        let left = params.get(2).map(|i| *i as u16).unwrap_or(1) - 1;
-        let right = params
-            .get(3)
-            .map(|i| *i as u16)
-            .unwrap_or(self.grid().size().cols)
-            - 1;
-        self.grid_mut().set_scroll_region(top, bottom, left, right);
+    fn csr(&mut self, (top, bottom, left, right): (u16, u16, u16, u16)) {
+        self.grid_mut().set_scroll_region(
+            top - 1,
+            bottom - 1,
+            left - 1,
+            right - 1,
+        );
     }
 
     // osc codes
@@ -592,33 +555,36 @@ impl vte::Perform for State {
     ) {
         match intermediates.get(0) {
             None => match c {
-                '@' => self.ich(params),
-                'A' => self.cuu(params),
-                'B' => self.cud(params),
-                'C' => self.cuf(params),
-                'D' => self.cub(params),
-                'G' => self.cha(params),
-                'H' => self.cup(params),
-                'J' => self.ed(params),
-                'K' => self.el(params),
-                'L' => self.il(params),
-                'M' => self.dl(params),
-                'P' => self.dch(params),
-                'S' => self.su(params),
-                'T' => self.sd(params),
-                'X' => self.ech(params),
-                'd' => self.vpa(params),
-                'h' => self.sm(params),
-                'l' => self.rm(params),
-                'm' => self.sgr(params),
-                'r' => self.csr(params),
+                '@' => self.ich(canonicalize_params_1(params, 1)),
+                'A' => self.cuu(canonicalize_params_1(params, 1)),
+                'B' => self.cud(canonicalize_params_1(params, 1)),
+                'C' => self.cuf(canonicalize_params_1(params, 1)),
+                'D' => self.cub(canonicalize_params_1(params, 1)),
+                'G' => self.cha(canonicalize_params_1(params, 1)),
+                'H' => self.cup(canonicalize_params_2(params, 1, 1)),
+                'J' => self.ed(canonicalize_params_1(params, 0)),
+                'K' => self.el(canonicalize_params_1(params, 0)),
+                'L' => self.il(canonicalize_params_1(params, 1)),
+                'M' => self.dl(canonicalize_params_1(params, 1)),
+                'P' => self.dch(canonicalize_params_1(params, 1)),
+                'S' => self.su(canonicalize_params_1(params, 1)),
+                'T' => self.sd(canonicalize_params_1(params, 1)),
+                'X' => self.ech(canonicalize_params_1(params, 1)),
+                'd' => self.vpa(canonicalize_params_1(params, 1)),
+                'h' => self.sm(canonicalize_params_multi(params)),
+                'l' => self.rm(canonicalize_params_multi(params)),
+                'm' => self.sgr(canonicalize_params_multi(params)),
+                'r' => self.csr(canonicalize_params_csr(
+                    params,
+                    *self.grid().size(),
+                )),
                 _ => {}
             },
             Some(b'?') => match c {
-                'J' => self.decsed(params),
-                'K' => self.decsel(params),
-                'h' => self.decset(params),
-                'l' => self.decrst(params),
+                'J' => self.decsed(canonicalize_params_1(params, 0)),
+                'K' => self.decsel(canonicalize_params_1(params, 0)),
+                'h' => self.decset(canonicalize_params_multi(params)),
+                'l' => self.decrst(canonicalize_params_multi(params)),
                 _ => {}
             },
             _ => {}
@@ -786,15 +752,78 @@ impl Screen {
     }
 }
 
-fn normalize_absolute_position(i: Option<u16>) -> u16 {
-    let i = if let Some(i) = i {
-        if i == 0 {
-            1
-        } else {
-            i
-        }
+fn canonicalize_params_1(params: &[i64], default: u16) -> u16 {
+    let first = params.get(0).copied().unwrap_or(0);
+    if first == 0 {
+        default
     } else {
-        1
+        i64_to_u16(first)
+    }
+}
+
+fn canonicalize_params_2(
+    params: &[i64],
+    default1: u16,
+    default2: u16,
+) -> (u16, u16) {
+    let first = params.get(0).copied().unwrap_or(0);
+    let first = if first == 0 {
+        default1
+    } else {
+        i64_to_u16(first)
     };
-    i - 1
+
+    let second = params.get(1).copied().unwrap_or(0);
+    let second = if second == 0 {
+        default2
+    } else {
+        i64_to_u16(second)
+    };
+
+    (first, second)
+}
+
+fn canonicalize_params_multi(params: &[i64]) -> &[i64] {
+    if params.is_empty() {
+        DEFAULT_MULTI_PARAMS
+    } else {
+        params
+    }
+}
+
+fn canonicalize_params_csr(
+    params: &[i64],
+    size: crate::grid::Size,
+) -> (u16, u16, u16, u16) {
+    let top = params.get(0).copied().unwrap_or(0);
+    let top = if top == 0 { 1 } else { i64_to_u16(top) };
+
+    let bottom = params.get(1).copied().unwrap_or(0);
+    let bottom = if bottom == 0 {
+        size.rows
+    } else {
+        i64_to_u16(bottom)
+    };
+
+    let left = params.get(2).copied().unwrap_or(0);
+    let left = if left == 0 { 1 } else { i64_to_u16(left) };
+
+    let right = params.get(3).copied().unwrap_or(0);
+    let right = if right == 0 {
+        size.cols
+    } else {
+        i64_to_u16(right)
+    };
+
+    (top, bottom, left, right)
+}
+
+fn i64_to_u16(i: i64) -> u16 {
+    if i < 0 {
+        0
+    } else if i > i64::from(u16::max_value()) {
+        u16::max_value()
+    } else {
+        i.try_into().unwrap()
+    }
 }
