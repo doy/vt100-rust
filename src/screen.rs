@@ -612,10 +612,10 @@ impl vte::Perform for State {
     }
 
     fn osc_dispatch(&mut self, params: &[&[u8]]) {
-        match params[0] {
-            b"0" => self.osc0(params[1]),
-            b"1" => self.osc1(params[1]),
-            b"2" => self.osc2(params[1]),
+        match (params.get(0), params.get(1)) {
+            (Some(&b"0"), Some(s)) => self.osc0(s),
+            (Some(&b"1"), Some(s)) => self.osc1(s),
+            (Some(&b"2"), Some(s)) => self.osc2(s),
             _ => {}
         }
     }
