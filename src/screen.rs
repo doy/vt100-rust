@@ -450,6 +450,9 @@ impl State {
                         _ => {}
                     }
                 }
+                39 => {
+                    self.attrs.fgcolor = crate::color::Color::Default;
+                }
                 n if n >= 40 && n <= 47 => {
                     self.attrs.bgcolor =
                         crate::color::Color::Idx((n as u8) - 40);
@@ -481,6 +484,17 @@ impl State {
                         }
                         _ => {}
                     }
+                }
+                49 => {
+                    self.attrs.bgcolor = crate::color::Color::Default;
+                }
+                n if n >= 90 && n <= 97 => {
+                    self.attrs.fgcolor =
+                        crate::color::Color::Idx(n as u8 - 82);
+                }
+                n if n >= 100 && n <= 107 => {
+                    self.attrs.bgcolor =
+                        crate::color::Color::Idx(n as u8 - 92);
                 }
                 _ => {}
             }

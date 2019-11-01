@@ -110,6 +110,33 @@ fn colors() {
 
     assert_eq!(screen.cell(0, 1).unwrap().fgcolor(), vt100::Color::Idx(2));
     assert_eq!(screen.cell(0, 1).unwrap().bgcolor(), vt100::Color::Idx(7));
+
+    screen.process(b"\x1b[2J\x1b[H");
+    screen.process(b"\x1b[39mfoo");
+
+    assert_eq!(screen.fgcolor(), vt100::Color::Default);
+    assert_eq!(screen.bgcolor(), vt100::Color::Idx(7));
+
+    assert_eq!(screen.cell(0, 1).unwrap().fgcolor(), vt100::Color::Default);
+    assert_eq!(screen.cell(0, 1).unwrap().bgcolor(), vt100::Color::Idx(7));
+
+    screen.process(b"\x1b[2J\x1b[H");
+    screen.process(b"\x1b[49mfoo");
+
+    assert_eq!(screen.fgcolor(), vt100::Color::Default);
+    assert_eq!(screen.bgcolor(), vt100::Color::Default);
+
+    assert_eq!(screen.cell(0, 1).unwrap().fgcolor(), vt100::Color::Default);
+    assert_eq!(screen.cell(0, 1).unwrap().bgcolor(), vt100::Color::Default);
+
+    screen.process(b"\x1b[m\x1b[2J\x1b[H");
+    screen.process(b"\x1b[92;107mfoo");
+
+    assert_eq!(screen.fgcolor(), vt100::Color::Idx(10));
+    assert_eq!(screen.bgcolor(), vt100::Color::Idx(15));
+
+    assert_eq!(screen.cell(0, 1).unwrap().fgcolor(), vt100::Color::Idx(10));
+    assert_eq!(screen.cell(0, 1).unwrap().bgcolor(), vt100::Color::Idx(15));
 }
 
 #[test]
