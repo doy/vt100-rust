@@ -197,7 +197,7 @@ impl State {
         let width = crate::unicode::char_width(c);
         let attrs = self.attrs;
 
-        self.grid_mut().col_wrap(width as u16);
+        self.grid_mut().col_wrap(width);
         let cell = self.current_cell_mut();
 
         if width == 0 {
@@ -228,7 +228,7 @@ impl State {
             }
         } else {
             cell.set(c.to_string(), attrs);
-            self.grid_mut().col_inc(width as u16);
+            self.grid_mut().col_inc(width);
         }
     }
 
