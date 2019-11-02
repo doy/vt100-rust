@@ -50,7 +50,7 @@ impl Row {
         let mut prev_was_wide = false;
         let mut contents = String::new();
         if let Some(max_col) = self.max_col() {
-            for col in col_start..=(col_end.min(max_col as u16)) {
+            for col in col_start..=(col_end.min(max_col)) {
                 if prev_was_wide {
                     prev_was_wide = false;
                     continue;
@@ -83,7 +83,7 @@ impl Row {
         let mut contents = String::new();
         let mut prev_attrs = attrs;
         if let Some(max_col) = self.max_col() {
-            for col in col_start..=(col_end.min(max_col as u16)) {
+            for col in col_start..=(col_end.min(max_col)) {
                 if prev_was_wide {
                     prev_was_wide = false;
                     continue;
