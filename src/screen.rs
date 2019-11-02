@@ -487,11 +487,23 @@ impl State {
 
     // CSI m
     fn sgr(&mut self, params: &[i64]) {
-        // XXX need to handle incorrect numbers of parameters for some of the
-        // fancier options
         let mut i = 0;
-        while i < params.len() {
-            match params[i] {
+
+        macro_rules! next_param {
+            () => {
+                if i >= params.len() {
+                    return;
+                } else if let Some(n) = i64_to_u8(params[i]) {
+                    i += 1;
+                    n
+                } else {
+                    return;
+                }
+            };
+        }
+
+        loop {
+            match next_param!() {
                 0 => self.attrs = crate::attrs::Attrs::default(),
                 1 => self.attrs.bold = true,
                 3 => self.attrs.italic = true,
@@ -502,86 +514,53 @@ impl State {
                 24 => self.attrs.underline = false,
                 27 => self.attrs.inverse = false,
                 n if n >= 30 && n <= 37 => {
-                    self.attrs.fgcolor =
-                        crate::color::Color::Idx((n as u8) - 30);
+                    self.attrs.fgcolor = crate::color::Color::Idx(n - 30);
                 }
-                38 => {
-                    i += 1;
-                    if i >= params.len() {
-                        return;
+                38 => match next_param!() {
+                    2 => {
+                        let r = next_param!();
+                        let g = next_param!();
+                        let b = next_param!();
+                        self.attrs.fgcolor =
+                            crate::color::Color::Rgb(r, g, b);
                     }
-                    match params[i] {
-                        2 => {
-                            i += 3;
-                            if i >= params.len() {
-                                return;
-                            }
-                            self.attrs.fgcolor = crate::color::Color::Rgb(
-                                params[i - 2] as u8,
-                                params[i - 1] as u8,
-                                params[i] as u8,
-                            );
-                        }
-                        5 => {
-                            i += 1;
-                            if i >= params.len() {
-                                return;
-                            }
-                            self.attrs.fgcolor =
-                                crate::color::Color::Idx(params[i] as u8);
-                        }
-                        _ => {}
+                    5 => {
+                        self.attrs.fgcolor =
+                            crate::color::Color::Idx(next_param!());
                     }
-                }
+                    _ => {}
+                },
                 39 => {
                     self.attrs.fgcolor = crate::color::Color::Default;
                 }
                 n if n >= 40 && n <= 47 => {
-                    self.attrs.bgcolor =
-                        crate::color::Color::Idx((n as u8) - 40);
+                    self.attrs.bgcolor = crate::color::Color::Idx(n - 40);
                 }
-                48 => {
-                    i += 1;
-                    if i >= params.len() {
-                        return;
+                48 => match next_param!() {
+                    2 => {
+                        let r = next_param!();
+                        let g = next_param!();
+                        let b = next_param!();
+                        self.attrs.bgcolor =
+                            crate::color::Color::Rgb(r, g, b);
                     }
-                    match params[i] {
-                        2 => {
-                            i += 3;
-                            if i >= params.len() {
-                                return;
-                            }
-                            self.attrs.bgcolor = crate::color::Color::Rgb(
-                                params[i - 2] as u8,
-                                params[i - 1] as u8,
-                                params[i] as u8,
-                            );
-                        }
-                        5 => {
-                            i += 1;
-                            if i >= params.len() {
-                                return;
-                            }
-                            self.attrs.bgcolor =
-                                crate::color::Color::Idx(params[i] as u8);
-                        }
-                        _ => {}
+                    5 => {
+                        self.attrs.bgcolor =
+                            crate::color::Color::Idx(next_param!());
                     }
-                }
+                    _ => {}
+                },
                 49 => {
                     self.attrs.bgcolor = crate::color::Color::Default;
                 }
                 n if n >= 90 && n <= 97 => {
-                    self.attrs.fgcolor =
-                        crate::color::Color::Idx(n as u8 - 82);
+                    self.attrs.fgcolor = crate::color::Color::Idx(n - 82);
                 }
                 n if n >= 100 && n <= 107 => {
-                    self.attrs.bgcolor =
-                        crate::color::Color::Idx(n as u8 - 92);
+                    self.attrs.bgcolor = crate::color::Color::Idx(n - 92);
                 }
                 _ => {}
             }
-            i += 1;
         }
     }
 
@@ -992,6 +971,14 @@ fn i64_to_u16(i: i64) -> u16 {
         u16::max_value()
     } else {
         i.try_into().unwrap()
+    }
+}
+
+fn i64_to_u8(i: i64) -> Option<u8> {
+    if i < 0 || i > i64::from(u8::max_value()) {
+        None
+    } else {
+        Some(i.try_into().unwrap())
     }
 }
 
