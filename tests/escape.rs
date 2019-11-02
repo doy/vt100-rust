@@ -59,7 +59,7 @@ fn ris() {
     assert!(!screen.check_visual_bell());
     assert!(!screen.check_audible_bell());
 
-    screen.process(b"f\x1b[31m\x1b[47;1;3;4moo\x1b[7m\x1b[21;21H\x1b]2;window title\x07\x1b]1;window icon name\x07\x1b[?25l\x1b[?1h\x1b=\x1b[?9h\x1b[?1000h\x1b[?1002h\x1b[?1006h\x1b[?2004h\x07\x1bg");
+    screen.process(b"f\x1b[31m\x1b[47;1;3;4moo\x1b[7m\x1b[21;21H\x1b]2;window title\x07\x1b]1;window icon name\x07\x1b[?25l\x1b[?1h\x1b=\x1b[?9h\x1b[?1000h\x1b[?1006h\x1b[?2004h\x07\x1bg");
 
     assert_eq!(screen.cursor_position(), (20, 20));
 
@@ -86,10 +86,12 @@ fn ris() {
     assert!(screen.hide_cursor());
     assert!(screen.application_keypad());
     assert!(screen.application_cursor());
-    assert!(screen.mouse_reporting_press());
+    assert!(!screen.mouse_reporting_press());
     assert!(screen.mouse_reporting_press_release());
-    assert!(screen.mouse_reporting_button_motion());
+    assert!(!screen.mouse_reporting_button_motion());
+    assert!(!screen.mouse_reporting_any_motion());
     assert!(screen.mouse_reporting_sgr_mode());
+    assert!(!screen.mouse_reporting_utf8_mode());
     assert!(screen.bracketed_paste());
     assert!(screen.check_visual_bell());
     assert!(screen.check_audible_bell());
@@ -127,6 +129,8 @@ fn ris() {
     assert!(!screen.mouse_reporting_press());
     assert!(!screen.mouse_reporting_press_release());
     assert!(!screen.mouse_reporting_button_motion());
+    assert!(!screen.mouse_reporting_any_motion());
+    assert!(!screen.mouse_reporting_utf8_mode());
     assert!(!screen.mouse_reporting_sgr_mode());
     assert!(!screen.bracketed_paste());
     assert!(!screen.check_visual_bell());

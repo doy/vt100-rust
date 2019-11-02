@@ -9,6 +9,8 @@ fn modes() {
     assert!(!screen.mouse_reporting_press());
     assert!(!screen.mouse_reporting_press_release());
     assert!(!screen.mouse_reporting_button_motion());
+    assert!(!screen.mouse_reporting_any_motion());
+    assert!(!screen.mouse_reporting_utf8_mode());
     assert!(!screen.mouse_reporting_sgr_mode());
     assert!(!screen.bracketed_paste());
 
@@ -20,6 +22,8 @@ fn modes() {
     assert!(!screen.mouse_reporting_press());
     assert!(!screen.mouse_reporting_press_release());
     assert!(!screen.mouse_reporting_button_motion());
+    assert!(!screen.mouse_reporting_any_motion());
+    assert!(!screen.mouse_reporting_utf8_mode());
     assert!(!screen.mouse_reporting_sgr_mode());
     assert!(!screen.bracketed_paste());
 
@@ -31,6 +35,8 @@ fn modes() {
     assert!(screen.mouse_reporting_press());
     assert!(!screen.mouse_reporting_press_release());
     assert!(!screen.mouse_reporting_button_motion());
+    assert!(!screen.mouse_reporting_any_motion());
+    assert!(!screen.mouse_reporting_utf8_mode());
     assert!(!screen.mouse_reporting_sgr_mode());
     assert!(!screen.bracketed_paste());
 
@@ -42,6 +48,8 @@ fn modes() {
     assert!(screen.mouse_reporting_press());
     assert!(!screen.mouse_reporting_press_release());
     assert!(!screen.mouse_reporting_button_motion());
+    assert!(!screen.mouse_reporting_any_motion());
+    assert!(!screen.mouse_reporting_utf8_mode());
     assert!(!screen.mouse_reporting_sgr_mode());
     assert!(!screen.bracketed_paste());
 
@@ -50,9 +58,11 @@ fn modes() {
     assert!(screen.hide_cursor());
     assert!(!screen.application_keypad());
     assert!(screen.application_cursor());
-    assert!(screen.mouse_reporting_press());
+    assert!(!screen.mouse_reporting_press());
     assert!(screen.mouse_reporting_press_release());
     assert!(!screen.mouse_reporting_button_motion());
+    assert!(!screen.mouse_reporting_any_motion());
+    assert!(!screen.mouse_reporting_utf8_mode());
     assert!(!screen.mouse_reporting_sgr_mode());
     assert!(!screen.bracketed_paste());
 
@@ -61,9 +71,37 @@ fn modes() {
     assert!(screen.hide_cursor());
     assert!(!screen.application_keypad());
     assert!(screen.application_cursor());
-    assert!(screen.mouse_reporting_press());
-    assert!(screen.mouse_reporting_press_release());
+    assert!(!screen.mouse_reporting_press());
+    assert!(!screen.mouse_reporting_press_release());
     assert!(screen.mouse_reporting_button_motion());
+    assert!(!screen.mouse_reporting_any_motion());
+    assert!(!screen.mouse_reporting_utf8_mode());
+    assert!(!screen.mouse_reporting_sgr_mode());
+    assert!(!screen.bracketed_paste());
+
+    screen.process(b"\x1b[?1003h");
+
+    assert!(screen.hide_cursor());
+    assert!(!screen.application_keypad());
+    assert!(screen.application_cursor());
+    assert!(!screen.mouse_reporting_press());
+    assert!(!screen.mouse_reporting_press_release());
+    assert!(!screen.mouse_reporting_button_motion());
+    assert!(screen.mouse_reporting_any_motion());
+    assert!(!screen.mouse_reporting_utf8_mode());
+    assert!(!screen.mouse_reporting_sgr_mode());
+    assert!(!screen.bracketed_paste());
+
+    screen.process(b"\x1b[?1005h");
+
+    assert!(screen.hide_cursor());
+    assert!(!screen.application_keypad());
+    assert!(screen.application_cursor());
+    assert!(!screen.mouse_reporting_press());
+    assert!(!screen.mouse_reporting_press_release());
+    assert!(!screen.mouse_reporting_button_motion());
+    assert!(screen.mouse_reporting_any_motion());
+    assert!(screen.mouse_reporting_utf8_mode());
     assert!(!screen.mouse_reporting_sgr_mode());
     assert!(!screen.bracketed_paste());
 
@@ -72,9 +110,11 @@ fn modes() {
     assert!(screen.hide_cursor());
     assert!(!screen.application_keypad());
     assert!(screen.application_cursor());
-    assert!(screen.mouse_reporting_press());
-    assert!(screen.mouse_reporting_press_release());
-    assert!(screen.mouse_reporting_button_motion());
+    assert!(!screen.mouse_reporting_press());
+    assert!(!screen.mouse_reporting_press_release());
+    assert!(!screen.mouse_reporting_button_motion());
+    assert!(screen.mouse_reporting_any_motion());
+    assert!(!screen.mouse_reporting_utf8_mode());
     assert!(screen.mouse_reporting_sgr_mode());
     assert!(!screen.bracketed_paste());
 
@@ -83,9 +123,11 @@ fn modes() {
     assert!(screen.hide_cursor());
     assert!(!screen.application_keypad());
     assert!(screen.application_cursor());
-    assert!(screen.mouse_reporting_press());
-    assert!(screen.mouse_reporting_press_release());
-    assert!(screen.mouse_reporting_button_motion());
+    assert!(!screen.mouse_reporting_press());
+    assert!(!screen.mouse_reporting_press_release());
+    assert!(!screen.mouse_reporting_button_motion());
+    assert!(screen.mouse_reporting_any_motion());
+    assert!(!screen.mouse_reporting_utf8_mode());
     assert!(screen.mouse_reporting_sgr_mode());
     assert!(screen.bracketed_paste());
 
@@ -94,9 +136,11 @@ fn modes() {
     assert!(screen.hide_cursor());
     assert!(screen.application_keypad());
     assert!(screen.application_cursor());
-    assert!(screen.mouse_reporting_press());
-    assert!(screen.mouse_reporting_press_release());
-    assert!(screen.mouse_reporting_button_motion());
+    assert!(!screen.mouse_reporting_press());
+    assert!(!screen.mouse_reporting_press_release());
+    assert!(!screen.mouse_reporting_button_motion());
+    assert!(screen.mouse_reporting_any_motion());
+    assert!(!screen.mouse_reporting_utf8_mode());
     assert!(screen.mouse_reporting_sgr_mode());
     assert!(screen.bracketed_paste());
 
@@ -105,9 +149,11 @@ fn modes() {
     assert!(screen.hide_cursor());
     assert!(screen.application_keypad());
     assert!(!screen.application_cursor());
-    assert!(screen.mouse_reporting_press());
-    assert!(screen.mouse_reporting_press_release());
-    assert!(screen.mouse_reporting_button_motion());
+    assert!(!screen.mouse_reporting_press());
+    assert!(!screen.mouse_reporting_press_release());
+    assert!(!screen.mouse_reporting_button_motion());
+    assert!(screen.mouse_reporting_any_motion());
+    assert!(!screen.mouse_reporting_utf8_mode());
     assert!(screen.mouse_reporting_sgr_mode());
     assert!(screen.bracketed_paste());
 
@@ -117,8 +163,10 @@ fn modes() {
     assert!(screen.application_keypad());
     assert!(!screen.application_cursor());
     assert!(!screen.mouse_reporting_press());
-    assert!(screen.mouse_reporting_press_release());
-    assert!(screen.mouse_reporting_button_motion());
+    assert!(!screen.mouse_reporting_press_release());
+    assert!(!screen.mouse_reporting_button_motion());
+    assert!(screen.mouse_reporting_any_motion());
+    assert!(!screen.mouse_reporting_utf8_mode());
     assert!(screen.mouse_reporting_sgr_mode());
     assert!(screen.bracketed_paste());
 
@@ -128,8 +176,10 @@ fn modes() {
     assert!(screen.application_keypad());
     assert!(!screen.application_cursor());
     assert!(!screen.mouse_reporting_press());
-    assert!(screen.mouse_reporting_press_release());
-    assert!(screen.mouse_reporting_button_motion());
+    assert!(!screen.mouse_reporting_press_release());
+    assert!(!screen.mouse_reporting_button_motion());
+    assert!(screen.mouse_reporting_any_motion());
+    assert!(!screen.mouse_reporting_utf8_mode());
     assert!(screen.mouse_reporting_sgr_mode());
     assert!(screen.bracketed_paste());
 
@@ -140,7 +190,9 @@ fn modes() {
     assert!(!screen.application_cursor());
     assert!(!screen.mouse_reporting_press());
     assert!(!screen.mouse_reporting_press_release());
-    assert!(screen.mouse_reporting_button_motion());
+    assert!(!screen.mouse_reporting_button_motion());
+    assert!(screen.mouse_reporting_any_motion());
+    assert!(!screen.mouse_reporting_utf8_mode());
     assert!(screen.mouse_reporting_sgr_mode());
     assert!(screen.bracketed_paste());
 
@@ -152,6 +204,34 @@ fn modes() {
     assert!(!screen.mouse_reporting_press());
     assert!(!screen.mouse_reporting_press_release());
     assert!(!screen.mouse_reporting_button_motion());
+    assert!(screen.mouse_reporting_any_motion());
+    assert!(!screen.mouse_reporting_utf8_mode());
+    assert!(screen.mouse_reporting_sgr_mode());
+    assert!(screen.bracketed_paste());
+
+    screen.process(b"\x1b[?1003l");
+
+    assert!(!screen.hide_cursor());
+    assert!(screen.application_keypad());
+    assert!(!screen.application_cursor());
+    assert!(!screen.mouse_reporting_press());
+    assert!(!screen.mouse_reporting_press_release());
+    assert!(!screen.mouse_reporting_button_motion());
+    assert!(!screen.mouse_reporting_any_motion());
+    assert!(!screen.mouse_reporting_utf8_mode());
+    assert!(screen.mouse_reporting_sgr_mode());
+    assert!(screen.bracketed_paste());
+
+    screen.process(b"\x1b[?1005l");
+
+    assert!(!screen.hide_cursor());
+    assert!(screen.application_keypad());
+    assert!(!screen.application_cursor());
+    assert!(!screen.mouse_reporting_press());
+    assert!(!screen.mouse_reporting_press_release());
+    assert!(!screen.mouse_reporting_button_motion());
+    assert!(!screen.mouse_reporting_any_motion());
+    assert!(!screen.mouse_reporting_utf8_mode());
     assert!(screen.mouse_reporting_sgr_mode());
     assert!(screen.bracketed_paste());
 
@@ -163,6 +243,8 @@ fn modes() {
     assert!(!screen.mouse_reporting_press());
     assert!(!screen.mouse_reporting_press_release());
     assert!(!screen.mouse_reporting_button_motion());
+    assert!(!screen.mouse_reporting_any_motion());
+    assert!(!screen.mouse_reporting_utf8_mode());
     assert!(!screen.mouse_reporting_sgr_mode());
     assert!(screen.bracketed_paste());
 
@@ -174,6 +256,8 @@ fn modes() {
     assert!(!screen.mouse_reporting_press());
     assert!(!screen.mouse_reporting_press_release());
     assert!(!screen.mouse_reporting_button_motion());
+    assert!(!screen.mouse_reporting_any_motion());
+    assert!(!screen.mouse_reporting_utf8_mode());
     assert!(!screen.mouse_reporting_sgr_mode());
     assert!(!screen.bracketed_paste());
 
@@ -185,6 +269,8 @@ fn modes() {
     assert!(!screen.mouse_reporting_press());
     assert!(!screen.mouse_reporting_press_release());
     assert!(!screen.mouse_reporting_button_motion());
+    assert!(!screen.mouse_reporting_any_motion());
+    assert!(!screen.mouse_reporting_utf8_mode());
     assert!(!screen.mouse_reporting_sgr_mode());
     assert!(!screen.bracketed_paste());
 }

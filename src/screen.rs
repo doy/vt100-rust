@@ -12,12 +12,39 @@ enum Output {
 enum Mode {
     KeypadApplication,
     ApplicationCursor,
-    MouseReportingPress,
     HideCursor,
-    MouseReportingPressRelease,
-    MouseReportingButtonMotion,
-    MouseReportingSgr,
     BracketedPaste,
+}
+
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+enum MouseProtocolMode {
+    None,
+    Press,
+    PressRelease,
+    // Highlight,
+    ButtonMotion,
+    AnyMotion,
+    // DecLocator,
+}
+
+impl Default for MouseProtocolMode {
+    fn default() -> Self {
+        Self::None
+    }
+}
+
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+enum MouseProtocolEncoding {
+    Default,
+    Utf8,
+    Sgr,
+    // Urxvt,
+}
+
+impl Default for MouseProtocolEncoding {
+    fn default() -> Self {
+        Self::Default
+    }
 }
 
 struct State {
@@ -31,6 +58,8 @@ struct State {
 
     outputs: enumset::EnumSet<Output>,
     modes: enumset::EnumSet<Mode>,
+    mouse_protocol_mode: MouseProtocolMode,
+    mouse_protocol_encoding: MouseProtocolEncoding,
 }
 
 impl State {
@@ -47,6 +76,8 @@ impl State {
 
             outputs: enumset::EnumSet::default(),
             modes: enumset::EnumSet::default(),
+            mouse_protocol_mode: MouseProtocolMode::default(),
+            mouse_protocol_encoding: MouseProtocolEncoding::default(),
         }
     }
 
@@ -123,6 +154,26 @@ impl State {
 
     fn mode(&self, mode: Mode) -> bool {
         self.modes.contains(mode)
+    }
+
+    fn set_mouse_mode(&mut self, mode: MouseProtocolMode) {
+        self.mouse_protocol_mode = mode;
+    }
+
+    fn clear_mouse_mode(&mut self, mode: MouseProtocolMode) {
+        if self.mouse_protocol_mode == mode {
+            self.mouse_protocol_mode = MouseProtocolMode::default();
+        }
+    }
+
+    fn set_mouse_encoding(&mut self, encoding: MouseProtocolEncoding) {
+        self.mouse_protocol_encoding = encoding;
+    }
+
+    fn clear_mouse_encoding(&mut self, encoding: MouseProtocolEncoding) {
+        if self.mouse_protocol_encoding == encoding {
+            self.mouse_protocol_encoding = MouseProtocolEncoding::default();
+        }
     }
 }
 
@@ -244,6 +295,8 @@ impl State {
         self.alternate_grid = None;
         self.attrs = crate::attrs::Attrs::default();
         self.modes = enumset::EnumSet::default();
+        self.mouse_protocol_mode = MouseProtocolMode::default();
+        self.mouse_protocol_encoding = MouseProtocolEncoding::default();
     }
 
     // ESC g
@@ -374,11 +427,13 @@ impl State {
             match param {
                 1 => self.set_mode(Mode::ApplicationCursor),
                 6 => self.grid_mut().set_origin_mode(true),
-                9 => self.set_mode(Mode::MouseReportingPress),
+                9 => self.set_mouse_mode(MouseProtocolMode::Press),
                 25 => self.clear_mode(Mode::HideCursor),
-                1000 => self.set_mode(Mode::MouseReportingPressRelease),
-                1002 => self.set_mode(Mode::MouseReportingButtonMotion),
-                1006 => self.set_mode(Mode::MouseReportingSgr),
+                1000 => self.set_mouse_mode(MouseProtocolMode::PressRelease),
+                1002 => self.set_mouse_mode(MouseProtocolMode::ButtonMotion),
+                1003 => self.set_mouse_mode(MouseProtocolMode::AnyMotion),
+                1005 => self.set_mouse_encoding(MouseProtocolEncoding::Utf8),
+                1006 => self.set_mouse_encoding(MouseProtocolEncoding::Sgr),
                 1049 => self.enter_alternate_grid(),
                 2004 => self.set_mode(Mode::BracketedPaste),
                 _ => {}
@@ -397,11 +452,19 @@ impl State {
             match param {
                 1 => self.clear_mode(Mode::ApplicationCursor),
                 6 => self.grid_mut().set_origin_mode(false),
-                9 => self.clear_mode(Mode::MouseReportingPress),
+                9 => self.clear_mouse_mode(MouseProtocolMode::Press),
                 25 => self.set_mode(Mode::HideCursor),
-                1000 => self.clear_mode(Mode::MouseReportingPressRelease),
-                1002 => self.clear_mode(Mode::MouseReportingButtonMotion),
-                1006 => self.clear_mode(Mode::MouseReportingSgr),
+                1000 => {
+                    self.clear_mouse_mode(MouseProtocolMode::PressRelease)
+                }
+                1002 => {
+                    self.clear_mouse_mode(MouseProtocolMode::ButtonMotion)
+                }
+                1003 => self.clear_mouse_mode(MouseProtocolMode::AnyMotion),
+                1005 => {
+                    self.clear_mouse_encoding(MouseProtocolEncoding::Utf8)
+                }
+                1006 => self.clear_mouse_encoding(MouseProtocolEncoding::Sgr),
                 1049 => self.exit_alternate_grid(),
                 2004 => self.clear_mode(Mode::BracketedPaste),
                 _ => {}
@@ -756,20 +819,28 @@ impl Screen {
         self.state.mode(Mode::BracketedPaste)
     }
 
-    pub fn mouse_reporting_button_motion(&self) -> bool {
-        self.state.mode(Mode::MouseReportingButtonMotion)
-    }
-
-    pub fn mouse_reporting_sgr_mode(&self) -> bool {
-        self.state.mode(Mode::MouseReportingSgr)
-    }
-
     pub fn mouse_reporting_press(&self) -> bool {
-        self.state.mode(Mode::MouseReportingPress)
+        self.state.mouse_protocol_mode == MouseProtocolMode::Press
     }
 
     pub fn mouse_reporting_press_release(&self) -> bool {
-        self.state.mode(Mode::MouseReportingPressRelease)
+        self.state.mouse_protocol_mode == MouseProtocolMode::PressRelease
+    }
+
+    pub fn mouse_reporting_button_motion(&self) -> bool {
+        self.state.mouse_protocol_mode == MouseProtocolMode::ButtonMotion
+    }
+
+    pub fn mouse_reporting_any_motion(&self) -> bool {
+        self.state.mouse_protocol_mode == MouseProtocolMode::AnyMotion
+    }
+
+    pub fn mouse_reporting_utf8_mode(&self) -> bool {
+        self.state.mouse_protocol_encoding == MouseProtocolEncoding::Utf8
+    }
+
+    pub fn mouse_reporting_sgr_mode(&self) -> bool {
+        self.state.mouse_protocol_encoding == MouseProtocolEncoding::Sgr
     }
 
     pub fn check_audible_bell(&mut self) -> bool {
