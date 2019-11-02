@@ -1,3 +1,5 @@
+use std::convert::TryInto as _;
+
 #[derive(Clone)]
 pub struct Row {
     cells: Vec<crate::cell::Cell>,
@@ -118,7 +120,7 @@ impl Row {
         let mut max_col = None;
         for (col, cell) in self.cells.iter().enumerate() {
             if cell.has_contents() || prev_was_wide {
-                max_col = Some(col as u16);
+                max_col = Some(col.try_into().unwrap());
                 prev_was_wide = cell.is_wide();
             }
         }
