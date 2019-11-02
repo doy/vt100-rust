@@ -27,6 +27,17 @@ impl Grid {
 
     pub fn set_size(&mut self, size: Size) {
         self.size = size;
+
+        if self.scroll_bottom >= size.rows {
+            self.scroll_bottom = size.rows - 1;
+        }
+        if self.scroll_bottom < self.scroll_top {
+            self.scroll_top = 0;
+        }
+
+        self.row_clamp_top(false);
+        self.row_clamp_bottom(false);
+        self.col_clamp();
     }
 
     pub fn pos(&self) -> &Pos {

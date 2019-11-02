@@ -790,8 +790,9 @@ impl Screen {
     }
 
     pub fn set_window_size(&mut self, rows: u16, cols: u16) {
+        self.state.grid.set_size(crate::grid::Size { rows, cols });
         self.state
-            .grid_mut()
+            .alternate_grid
             .set_size(crate::grid::Size { rows, cols });
     }
 
