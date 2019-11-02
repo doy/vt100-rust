@@ -373,6 +373,7 @@ impl State {
         for param in params {
             match param {
                 1 => self.set_mode(Mode::ApplicationCursor),
+                6 => self.grid_mut().set_origin_mode(true),
                 9 => self.set_mode(Mode::MouseReportingPress),
                 25 => self.clear_mode(Mode::HideCursor),
                 1000 => self.set_mode(Mode::MouseReportingPressRelease),
@@ -395,6 +396,7 @@ impl State {
         for param in params {
             match param {
                 1 => self.clear_mode(Mode::ApplicationCursor),
+                6 => self.grid_mut().set_origin_mode(false),
                 9 => self.clear_mode(Mode::MouseReportingPress),
                 25 => self.set_mode(Mode::HideCursor),
                 1000 => self.clear_mode(Mode::MouseReportingPressRelease),
