@@ -507,13 +507,13 @@ impl State {
                 38 => {
                     i += 1;
                     if i >= params.len() {
-                        unimplemented!()
+                        return;
                     }
                     match params[i] {
                         2 => {
                             i += 3;
                             if i >= params.len() {
-                                unimplemented!()
+                                return;
                             }
                             self.attrs.fgcolor = crate::color::Color::Rgb(
                                 params[i - 2] as u8,
@@ -524,7 +524,7 @@ impl State {
                         5 => {
                             i += 1;
                             if i >= params.len() {
-                                unimplemented!()
+                                return;
                             }
                             self.attrs.fgcolor =
                                 crate::color::Color::Idx(params[i] as u8);
@@ -542,13 +542,13 @@ impl State {
                 48 => {
                     i += 1;
                     if i >= params.len() {
-                        unimplemented!()
+                        return;
                     }
                     match params[i] {
                         2 => {
                             i += 3;
                             if i >= params.len() {
-                                unimplemented!()
+                                return;
                             }
                             self.attrs.bgcolor = crate::color::Color::Rgb(
                                 params[i - 2] as u8,
@@ -559,7 +559,7 @@ impl State {
                         5 => {
                             i += 1;
                             if i >= params.len() {
-                                unimplemented!()
+                                return;
                             }
                             self.attrs.bgcolor =
                                 crate::color::Color::Idx(params[i] as u8);
