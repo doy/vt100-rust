@@ -49,7 +49,8 @@ impl Default for MouseProtocolEncoding {
 
 struct State {
     grid: crate::grid::Grid,
-    alternate_grid: Option<crate::grid::Grid>,
+    alternate_grid: crate::grid::Grid,
+    use_alternate_grid: bool,
 
     attrs: crate::attrs::Attrs,
 
@@ -67,7 +68,8 @@ impl State {
         let size = crate::grid::Size { rows, cols };
         Self {
             grid: crate::grid::Grid::new(size),
-            alternate_grid: None,
+            alternate_grid: crate::grid::Grid::new(size),
+            use_alternate_grid: false,
 
             attrs: crate::attrs::Attrs::default(),
 
@@ -86,16 +88,16 @@ impl State {
     }
 
     fn grid(&self) -> &crate::grid::Grid {
-        if let Some(grid) = &self.alternate_grid {
-            grid
+        if self.use_alternate_grid {
+            &self.alternate_grid
         } else {
             &self.grid
         }
     }
 
     fn grid_mut(&mut self) -> &mut crate::grid::Grid {
-        if let Some(grid) = &mut self.alternate_grid {
-            grid
+        if self.use_alternate_grid {
+            &mut self.alternate_grid
         } else {
             &mut self.grid
         }
@@ -121,13 +123,11 @@ impl State {
     }
 
     fn enter_alternate_grid(&mut self) {
-        if self.alternate_grid.is_none() {
-            self.alternate_grid = Some(self.new_grid());
-        }
+        self.use_alternate_grid = true;
     }
 
     fn exit_alternate_grid(&mut self) {
-        self.alternate_grid = None;
+        self.use_alternate_grid = false;
     }
 
     fn set_output(&mut self, output: Output) {
@@ -292,7 +292,8 @@ impl State {
     // ESC c
     fn ris(&mut self) {
         self.grid = self.new_grid();
-        self.alternate_grid = None;
+        self.alternate_grid = self.new_grid();
+        self.use_alternate_grid = false;
         self.attrs = crate::attrs::Attrs::default();
         self.modes = enumset::EnumSet::default();
         self.mouse_protocol_mode = MouseProtocolMode::default();
@@ -429,12 +430,17 @@ impl State {
                 6 => self.grid_mut().set_origin_mode(true),
                 9 => self.set_mouse_mode(MouseProtocolMode::Press),
                 25 => self.clear_mode(Mode::HideCursor),
+                47 => self.enter_alternate_grid(),
                 1000 => self.set_mouse_mode(MouseProtocolMode::PressRelease),
                 1002 => self.set_mouse_mode(MouseProtocolMode::ButtonMotion),
                 1003 => self.set_mouse_mode(MouseProtocolMode::AnyMotion),
                 1005 => self.set_mouse_encoding(MouseProtocolEncoding::Utf8),
                 1006 => self.set_mouse_encoding(MouseProtocolEncoding::Sgr),
-                1049 => self.enter_alternate_grid(),
+                1049 => {
+                    self.decsc();
+                    self.alternate_grid = self.new_grid();
+                    self.enter_alternate_grid();
+                }
                 2004 => self.set_mode(Mode::BracketedPaste),
                 _ => {}
             }
@@ -454,6 +460,9 @@ impl State {
                 6 => self.grid_mut().set_origin_mode(false),
                 9 => self.clear_mouse_mode(MouseProtocolMode::Press),
                 25 => self.set_mode(Mode::HideCursor),
+                47 => {
+                    self.exit_alternate_grid();
+                }
                 1000 => {
                     self.clear_mouse_mode(MouseProtocolMode::PressRelease)
                 }
@@ -465,7 +474,10 @@ impl State {
                     self.clear_mouse_encoding(MouseProtocolEncoding::Utf8)
                 }
                 1006 => self.clear_mouse_encoding(MouseProtocolEncoding::Sgr),
-                1049 => self.exit_alternate_grid(),
+                1049 => {
+                    self.exit_alternate_grid();
+                    self.decrc();
+                }
                 2004 => self.clear_mode(Mode::BracketedPaste),
                 _ => {}
             }
@@ -804,7 +816,7 @@ impl Screen {
     }
 
     pub fn alternate_buffer_active(&self) -> bool {
-        self.state.alternate_grid.is_some()
+        self.state.use_alternate_grid
     }
 
     pub fn application_cursor(&self) -> bool {
