@@ -12,6 +12,7 @@ keywords = ["terminal", "vt100"]
 license = "MIT"
 
 [dependencies]
+enumset = "0.4"
 unicode-normalization = "0.1"
 unicode-width = "0.1"
 vte = "0.3"
