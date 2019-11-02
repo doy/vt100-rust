@@ -628,7 +628,9 @@ impl vte::Perform for State {
             11 => self.vt(),
             12 => self.ff(),
             13 => self.cr(),
-            _ => {}
+            _ => {
+                log::warn!("unhandled control character: {}", b);
+            }
         }
     }
 
@@ -648,9 +650,13 @@ impl vte::Perform for State {
                 b'M' => self.ri(),
                 b'c' => self.ris(),
                 b'g' => self.vb(),
-                _ => {}
+                _ => {
+                    log::warn!("unhandled escape code: ESC {}", b);
+                }
             },
-            _ => {}
+            Some(i) => {
+                log::warn!("unhandled escape code: ESC {} {}", i, b);
+            }
         }
     }
 
@@ -686,16 +692,41 @@ impl vte::Perform for State {
                     params,
                     *self.grid().size(),
                 )),
-                _ => {}
+                _ => {
+                    if log::log_enabled!(log::Level::Warn) {
+                        log::warn!(
+                            "unhandled csi sequence: CSI {} {}",
+                            param_str(params),
+                            c
+                        )
+                    }
+                }
             },
             Some(b'?') => match c {
                 'J' => self.decsed(canonicalize_params_1(params, 0)),
                 'K' => self.decsel(canonicalize_params_1(params, 0)),
                 'h' => self.decset(canonicalize_params_multi(params)),
                 'l' => self.decrst(canonicalize_params_multi(params)),
-                _ => {}
+                _ => {
+                    if log::log_enabled!(log::Level::Warn) {
+                        log::warn!(
+                            "unhandled csi sequence: CSI ? {} {}",
+                            param_str(params),
+                            c
+                        )
+                    }
+                }
             },
-            _ => {}
+            Some(i) => {
+                if log::log_enabled!(log::Level::Warn) {
+                    log::warn!(
+                        "unhandled csi sequence: CSI {} {} {}",
+                        i,
+                        param_str(params),
+                        c
+                    )
+                }
+            }
         }
     }
 
@@ -704,13 +735,35 @@ impl vte::Perform for State {
             (Some(&b"0"), Some(s)) => self.osc0(s),
             (Some(&b"1"), Some(s)) => self.osc1(s),
             (Some(&b"2"), Some(s)) => self.osc2(s),
-            _ => {}
+            _ => {
+                if log::log_enabled!(log::Level::Warn) {
+                    log::warn!(
+                        "unhandled osc sequence: OSC {}",
+                        osc_param_str(params),
+                    )
+                }
+            }
         }
     }
 
-    // don't care
-    fn hook(&mut self, _: &[i64], _: &[u8], _: bool) {}
-    fn put(&mut self, _b: u8) {}
+    fn hook(&mut self, params: &[i64], intermediates: &[u8], _ignore: bool) {
+        if log::log_enabled!(log::Level::Warn) {
+            // TODO: include the final byte here (it seems to be a bug that
+            // the vte parser doesn't currently pass it to this method)
+            match intermediates.get(0) {
+                None => log::warn!(
+                    "unhandled dcs sequence: DCS {}",
+                    param_str(params),
+                ),
+                Some(i) => log::warn!(
+                    "unhandled dcs sequence: DCS {} {}",
+                    i,
+                    param_str(params),
+                ),
+            }
+        }
+    }
+    fn put(&mut self, _: u8) {}
     fn unhook(&mut self) {}
 }
 
@@ -938,4 +991,20 @@ fn i64_to_u16(i: i64) -> u16 {
     } else {
         i.try_into().unwrap()
     }
+}
+
+fn param_str(params: &[i64]) -> String {
+    let strs: Vec<_> = params
+        .iter()
+        .map(std::string::ToString::to_string)
+        .collect();
+    strs.join(" ; ")
+}
+
+fn osc_param_str(params: &[&[u8]]) -> String {
+    let strs: Vec<_> = params
+        .iter()
+        .map(|b| format!("\"{}\"", std::string::String::from_utf8_lossy(*b)))
+        .collect();
+    strs.join(" ; ")
 }
