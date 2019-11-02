@@ -119,9 +119,7 @@ impl State {
     }
 
     fn current_cell_mut(&mut self) -> &mut crate::cell::Cell {
-        self.grid_mut()
-            .current_cell_mut()
-            .expect("cursor not pointing to a cell")
+        self.grid_mut().current_cell_mut()
     }
 
     fn enter_alternate_grid(&mut self) {
@@ -310,8 +308,7 @@ impl State {
 
     // CSI @
     fn ich(&mut self, count: u16) {
-        let pos = *self.grid().pos();
-        self.grid_mut().insert_cells(pos, count);
+        self.grid_mut().insert_cells(count);
     }
 
     // CSI A
@@ -349,10 +346,9 @@ impl State {
 
     // CSI J
     fn ed(&mut self, mode: u16) {
-        let pos = *self.grid().pos();
         match mode {
-            0 => self.grid_mut().erase_all_forward(pos),
-            1 => self.grid_mut().erase_all_backward(pos),
+            0 => self.grid_mut().erase_all_forward(),
+            1 => self.grid_mut().erase_all_backward(),
             2 => self.grid_mut().erase_all(),
             _ => {}
         }
@@ -365,11 +361,10 @@ impl State {
 
     // CSI K
     fn el(&mut self, mode: u16) {
-        let pos = *self.grid().pos();
         match mode {
-            0 => self.grid_mut().erase_row_forward(pos),
-            1 => self.grid_mut().erase_row_backward(pos),
-            2 => self.grid_mut().erase_row(pos),
+            0 => self.grid_mut().erase_row_forward(),
+            1 => self.grid_mut().erase_row_backward(),
+            2 => self.grid_mut().erase_row(),
             _ => {}
         }
     }
@@ -381,20 +376,17 @@ impl State {
 
     // CSI L
     fn il(&mut self, count: u16) {
-        let pos = *self.grid().pos();
-        self.grid_mut().insert_lines(pos, count);
+        self.grid_mut().insert_lines(count);
     }
 
     // CSI M
     fn dl(&mut self, count: u16) {
-        let pos = *self.grid().pos();
-        self.grid_mut().delete_lines(pos, count);
+        self.grid_mut().delete_lines(count);
     }
 
     // CSI P
     fn dch(&mut self, count: u16) {
-        let pos = *self.grid().pos();
-        self.grid_mut().delete_cells(pos, count);
+        self.grid_mut().delete_cells(count);
     }
 
     // CSI S
@@ -409,8 +401,7 @@ impl State {
 
     // CSI X
     fn ech(&mut self, count: u16) {
-        let pos = *self.grid().pos();
-        self.grid_mut().erase_cells(pos, count);
+        self.grid_mut().erase_cells(count);
     }
 
     // CSI d

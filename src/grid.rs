@@ -62,6 +62,14 @@ impl Grid {
         self.pos = self.saved_pos;
     }
 
+    pub fn rows(&self) -> impl Iterator<Item = &crate::row::Row> {
+        self.rows.iter()
+    }
+
+    pub fn rows_mut(&mut self) -> impl Iterator<Item = &mut crate::row::Row> {
+        self.rows.iter_mut()
+    }
+
     pub fn row(&self, pos: Pos) -> Option<&crate::row::Row> {
         self.rows.get(pos.row as usize)
     }
@@ -70,8 +78,9 @@ impl Grid {
         self.rows.get_mut(pos.row as usize)
     }
 
-    pub fn current_row_mut(&mut self) -> Option<&mut crate::row::Row> {
+    pub fn current_row_mut(&mut self) -> &mut crate::row::Row {
         self.row_mut(self.pos)
+            .expect("cursor not pointing to a cell")
     }
 
     pub fn cell(&self, pos: Pos) -> Option<&crate::cell::Cell> {
@@ -82,8 +91,9 @@ impl Grid {
         self.row_mut(pos).and_then(|r| r.get_mut(pos.col))
     }
 
-    pub fn current_cell_mut(&mut self) -> Option<&mut crate::cell::Cell> {
+    pub fn current_cell_mut(&mut self) -> &mut crate::cell::Cell {
         self.cell_mut(self.pos)
+            .expect("cursor not pointing to a cell")
     }
 
     pub fn window_contents(
@@ -94,8 +104,10 @@ impl Grid {
         col_end: u16,
     ) -> String {
         let mut contents = String::new();
-        for row in row_start..=(row_end.min(self.size.rows - 1)) {
-            contents += &self.rows[row as usize].contents(col_start, col_end);
+        let row_start = row_start as usize;
+        let row_end = row_end as usize;
+        for row in self.rows().skip(row_start).take(row_end - row_start + 1) {
+            contents += &row.contents(col_start, col_end);
         }
         contents
     }
@@ -109,9 +121,11 @@ impl Grid {
     ) -> String {
         let mut contents = String::new();
         let mut prev_attrs = crate::attrs::Attrs::default();
-        for row in row_start..=(row_end.min(self.size.rows - 1)) {
-            let (new_contents, new_attrs) = &self.rows[row as usize]
-                .contents_formatted(col_start, col_end, prev_attrs);
+        let row_start = row_start as usize;
+        let row_end = row_end as usize;
+        for row in self.rows().skip(row_start).take(row_end - row_start + 1) {
+            let (new_contents, new_attrs) =
+                &row.contents_formatted(col_start, col_end, prev_attrs);
             contents += new_contents;
             prev_attrs = *new_attrs;
         }
@@ -125,107 +139,115 @@ impl Grid {
         ];
     }
 
-    pub fn erase_all_forward(&mut self, pos: Pos) {
-        for i in (pos.row + 1)..self.size.rows {
-            self.rows[i as usize] = crate::row::Row::new(self.size.cols);
+    pub fn erase_all_forward(&mut self) {
+        let size = self.size;
+        let pos = self.pos;
+        for row in self.rows_mut().skip(pos.row as usize + 1) {
+            *row = crate::row::Row::new(size.cols);
         }
-        let row = &mut self.rows[pos.row as usize];
+
+        self.erase_row_forward();
+    }
+
+    pub fn erase_all_backward(&mut self) {
+        let size = self.size;
+        let pos = self.pos;
+        for row in self.rows_mut().take(pos.row as usize) {
+            *row = crate::row::Row::new(size.cols);
+        }
+
+        self.erase_row_backward();
+    }
+
+    pub fn erase_row(&mut self) {
+        *self.current_row_mut() = crate::row::Row::new(self.size.cols);
+    }
+
+    pub fn erase_row_forward(&mut self) {
+        let pos = self.pos;
+        let row = self.current_row_mut();
         row.wrap(false);
-        for i in pos.col..self.size.cols {
-            *row.get_mut(i).unwrap() = crate::cell::Cell::default();
+        for cell in row.cells_mut().skip(pos.col as usize) {
+            *cell = crate::cell::Cell::default();
         }
     }
 
-    pub fn erase_all_backward(&mut self, pos: Pos) {
-        for i in 0..pos.row {
-            self.rows[i as usize] = crate::row::Row::new(self.size.cols);
-        }
-        let row = &mut self.rows[pos.row as usize];
-        for i in 0..pos.col {
-            *row.get_mut(i).unwrap() = crate::cell::Cell::default();
+    pub fn erase_row_backward(&mut self) {
+        let pos = self.pos;
+        let row = self.current_row_mut();
+        for cell in row.cells_mut().take(pos.col as usize) {
+            *cell = crate::cell::Cell::default();
         }
     }
 
-    pub fn erase_row(&mut self, pos: Pos) {
-        self.rows[pos.row as usize] = crate::row::Row::new(self.size.cols);
-    }
-
-    pub fn erase_row_forward(&mut self, pos: Pos) {
-        let row = &mut self.rows[pos.row as usize];
-        row.wrap(false);
-        for i in pos.col..self.size.cols {
-            *row.get_mut(i).unwrap() = crate::cell::Cell::default();
-        }
-    }
-
-    pub fn erase_row_backward(&mut self, pos: Pos) {
-        let row = &mut self.rows[pos.row as usize];
-        for i in 0..pos.col {
-            *row.get_mut(i).unwrap() = crate::cell::Cell::default();
-        }
-    }
-
-    pub fn insert_cells(&mut self, pos: Pos, count: u16) {
-        let row = &mut self.rows[pos.row as usize];
+    pub fn insert_cells(&mut self, count: u16) {
+        let size = self.size;
+        let pos = self.pos;
+        let row = self.current_row_mut();
         for _ in 0..count {
             row.insert(pos.col as usize, crate::cell::Cell::default());
         }
-        row.truncate(self.size.cols as usize);
+        row.truncate(size.cols as usize);
     }
 
-    pub fn delete_cells(&mut self, pos: Pos, count: u16) {
-        let row = &mut self.rows[pos.row as usize];
-        for _ in 0..(count.min(self.size.cols - pos.col)) {
+    pub fn delete_cells(&mut self, count: u16) {
+        let size = self.size;
+        let pos = self.pos;
+        let row = self.current_row_mut();
+        for _ in 0..(count.min(size.cols - pos.col)) {
             row.remove(pos.col as usize);
         }
-        row.resize(self.size.cols as usize, crate::cell::Cell::default());
+        row.resize(size.cols as usize, crate::cell::Cell::default());
     }
 
-    pub fn erase_cells(&mut self, pos: Pos, count: u16) {
-        let row = &mut self.rows[pos.row as usize];
-        for i in pos.col..(pos.col + count).min(self.size.cols - 1) {
-            *row.get_mut(i).unwrap() = crate::cell::Cell::default();
+    pub fn erase_cells(&mut self, count: u16) {
+        let pos = self.pos;
+        let row = self.current_row_mut();
+        for cell in
+            row.cells_mut().skip(pos.col as usize).take(count as usize)
+        {
+            *cell = crate::cell::Cell::default();
         }
     }
 
-    pub fn insert_lines(&mut self, pos: Pos, count: u16) {
+    pub fn insert_lines(&mut self, count: u16) {
         for _ in 0..count {
             self.rows.remove(self.scroll_bottom as usize);
             self.rows.insert(
-                pos.row as usize,
+                self.pos.row as usize,
                 crate::row::Row::new(self.size.cols),
             );
         }
     }
 
-    pub fn delete_lines(&mut self, pos: Pos, count: u16) {
-        for _ in 0..(count.min(self.size.rows - pos.row)) {
+    pub fn delete_lines(&mut self, count: u16) {
+        for _ in 0..(count.min(self.size.rows - self.pos.row)) {
             self.rows.insert(
                 self.scroll_bottom as usize + 1,
                 crate::row::Row::new(self.size.cols),
             );
-            self.rows.remove(pos.row as usize);
+            self.rows.remove(self.pos.row as usize);
         }
     }
 
     pub fn scroll_up(&mut self, count: u16) {
-        self.delete_lines(
-            Pos {
-                row: self.scroll_top,
-                col: 0,
-            },
-            count,
-        );
+        for _ in 0..(count.min(self.size.rows - self.scroll_top)) {
+            self.rows.insert(
+                self.scroll_bottom as usize + 1,
+                crate::row::Row::new(self.size.cols),
+            );
+            self.rows.remove(self.scroll_top as usize);
+        }
     }
 
     pub fn scroll_down(&mut self, count: u16) {
-        self.insert_lines(
-            Pos {
-                row: self.scroll_top,
-                col: 0,
-            },
-            count,
-        );
+        for _ in 0..count {
+            self.rows.remove(self.scroll_bottom as usize);
+            self.rows.insert(
+                self.scroll_top as usize,
+                crate::row::Row::new(self.size.cols),
+            );
+        }
     }
 
     // TODO: left/right
@@ -307,7 +329,7 @@ impl Grid {
 
     pub fn col_wrap(&mut self, width: u16) {
         if self.pos.col > self.size.cols - width {
-            self.current_row_mut().unwrap().wrap(true);
+            self.current_row_mut().wrap(true);
             self.pos.col = 0;
             self.row_inc_scroll(1);
         }
