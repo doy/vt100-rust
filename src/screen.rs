@@ -505,7 +505,7 @@ impl State {
                 24 => self.attrs.set_underline(false),
                 27 => self.attrs.set_inverse(false),
                 n if n >= 30 && n <= 37 => {
-                    self.attrs.fgcolor = crate::color::Color::Idx(n - 30);
+                    self.attrs.fgcolor = crate::attrs::Color::Idx(n - 30);
                 }
                 38 => match next_param!() {
                     2 => {
@@ -513,19 +513,19 @@ impl State {
                         let g = next_param!();
                         let b = next_param!();
                         self.attrs.fgcolor =
-                            crate::color::Color::Rgb(r, g, b);
+                            crate::attrs::Color::Rgb(r, g, b);
                     }
                     5 => {
                         self.attrs.fgcolor =
-                            crate::color::Color::Idx(next_param!());
+                            crate::attrs::Color::Idx(next_param!());
                     }
                     _ => {}
                 },
                 39 => {
-                    self.attrs.fgcolor = crate::color::Color::Default;
+                    self.attrs.fgcolor = crate::attrs::Color::Default;
                 }
                 n if n >= 40 && n <= 47 => {
-                    self.attrs.bgcolor = crate::color::Color::Idx(n - 40);
+                    self.attrs.bgcolor = crate::attrs::Color::Idx(n - 40);
                 }
                 48 => match next_param!() {
                     2 => {
@@ -533,22 +533,22 @@ impl State {
                         let g = next_param!();
                         let b = next_param!();
                         self.attrs.bgcolor =
-                            crate::color::Color::Rgb(r, g, b);
+                            crate::attrs::Color::Rgb(r, g, b);
                     }
                     5 => {
                         self.attrs.bgcolor =
-                            crate::color::Color::Idx(next_param!());
+                            crate::attrs::Color::Idx(next_param!());
                     }
                     _ => {}
                 },
                 49 => {
-                    self.attrs.bgcolor = crate::color::Color::Default;
+                    self.attrs.bgcolor = crate::attrs::Color::Default;
                 }
                 n if n >= 90 && n <= 97 => {
-                    self.attrs.fgcolor = crate::color::Color::Idx(n - 82);
+                    self.attrs.fgcolor = crate::attrs::Color::Idx(n - 82);
                 }
                 n if n >= 100 && n <= 107 => {
-                    self.attrs.bgcolor = crate::color::Color::Idx(n - 92);
+                    self.attrs.bgcolor = crate::attrs::Color::Idx(n - 92);
                 }
                 _ => {}
             }
@@ -804,11 +804,11 @@ impl Screen {
         (self.state.grid().pos().row, self.state.grid().pos().col)
     }
 
-    pub fn fgcolor(&self) -> crate::color::Color {
+    pub fn fgcolor(&self) -> crate::attrs::Color {
         self.state.attrs.fgcolor
     }
 
-    pub fn bgcolor(&self) -> crate::color::Color {
+    pub fn bgcolor(&self) -> crate::attrs::Color {
         self.state.attrs.bgcolor
     }
 

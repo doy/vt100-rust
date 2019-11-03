@@ -1,3 +1,16 @@
+#[derive(Eq, PartialEq, Debug, Copy, Clone)]
+pub enum Color {
+    Default,
+    Idx(u8),
+    Rgb(u8, u8, u8),
+}
+
+impl Default for Color {
+    fn default() -> Self {
+        Self::Default
+    }
+}
+
 #[derive(enumset::EnumSetType, Debug)]
 pub enum TextMode {
     Bold,
@@ -8,8 +21,8 @@ pub enum TextMode {
 
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug)]
 pub struct Attrs {
-    pub fgcolor: crate::color::Color,
-    pub bgcolor: crate::color::Color,
+    pub fgcolor: Color,
+    pub bgcolor: Color,
     pub mode: enumset::EnumSet<TextMode>,
 }
 
@@ -67,10 +80,10 @@ impl Attrs {
 
         if self.fgcolor != other.fgcolor {
             match self.fgcolor {
-                crate::color::Color::Default => {
+                Color::Default => {
                     opts.push(39);
                 }
-                crate::color::Color::Idx(i) => {
+                Color::Idx(i) => {
                     if i < 8 {
                         opts.push(i + 30);
                     } else if i < 16 {
@@ -81,7 +94,7 @@ impl Attrs {
                         opts.push(i);
                     }
                 }
-                crate::color::Color::Rgb(r, g, b) => {
+                Color::Rgb(r, g, b) => {
                     opts.push(38);
                     opts.push(2);
                     opts.push(r);
@@ -93,10 +106,10 @@ impl Attrs {
 
         if self.bgcolor != other.bgcolor {
             match self.bgcolor {
-                crate::color::Color::Default => {
+                Color::Default => {
                     opts.push(49);
                 }
-                crate::color::Color::Idx(i) => {
+                Color::Idx(i) => {
                     if i < 8 {
                         opts.push(i + 40);
                     } else if i < 16 {
@@ -107,7 +120,7 @@ impl Attrs {
                         opts.push(i);
                     }
                 }
-                crate::color::Color::Rgb(r, g, b) => {
+                Color::Rgb(r, g, b) => {
                     opts.push(48);
                     opts.push(2);
                     opts.push(r);

@@ -5,12 +5,11 @@
 
 mod attrs;
 mod cell;
-mod color;
 mod grid;
 mod row;
 mod screen;
 mod unicode;
 
 pub use cell::Cell;
-pub use color::Color;
+pub use attrs::Color;
 pub use screen::Screen;

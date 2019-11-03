@@ -46,11 +46,11 @@ impl Cell {
         &self.attrs
     }
 
-    pub fn fgcolor(&self) -> crate::color::Color {
+    pub fn fgcolor(&self) -> crate::attrs::Color {
         self.attrs.fgcolor
     }
 
-    pub fn bgcolor(&self) -> crate::color::Color {
+    pub fn bgcolor(&self) -> crate::attrs::Color {
         self.attrs.bgcolor
     }
 
