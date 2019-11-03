@@ -6,6 +6,7 @@ pub struct Grid {
     scroll_top: u16,
     scroll_bottom: u16,
     origin_mode: bool,
+    saved_origin_mode: bool,
 }
 
 impl Grid {
@@ -18,6 +19,7 @@ impl Grid {
             scroll_top: 0,
             scroll_bottom: size.rows - 1,
             origin_mode: false,
+            saved_origin_mode: false,
         }
     }
 
@@ -58,12 +60,14 @@ impl Grid {
         self.col_clamp();
     }
 
-    pub fn save_pos(&mut self) {
+    pub fn save_cursor(&mut self) {
         self.saved_pos = self.pos;
+        self.saved_origin_mode = self.origin_mode;
     }
 
-    pub fn restore_pos(&mut self) {
+    pub fn restore_cursor(&mut self) {
         self.pos = self.saved_pos;
+        self.origin_mode = self.saved_origin_mode;
     }
 
     pub fn rows(&self) -> impl Iterator<Item = &crate::row::Row> {

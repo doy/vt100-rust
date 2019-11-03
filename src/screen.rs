@@ -53,6 +53,7 @@ struct State {
     alternate_grid: crate::grid::Grid,
 
     attrs: crate::attrs::Attrs,
+    saved_attrs: crate::attrs::Attrs,
 
     title: String,
     icon_name: String,
@@ -70,6 +71,7 @@ impl State {
             alternate_grid: crate::grid::Grid::new(size),
 
             attrs: crate::attrs::Attrs::default(),
+            saved_attrs: crate::attrs::Attrs::default(),
 
             title: String::default(),
             icon_name: String::default(),
@@ -126,6 +128,16 @@ impl State {
 
     fn exit_alternate_grid(&mut self) {
         self.clear_mode(Mode::AlternateScreen);
+    }
+
+    fn save_cursor(&mut self) {
+        self.grid_mut().save_cursor();
+        self.saved_attrs = self.attrs;
+    }
+
+    fn restore_cursor(&mut self) {
+        self.grid_mut().restore_cursor();
+        self.attrs = self.saved_attrs;
     }
 
     fn set_output(&mut self, output: Output) {
@@ -263,12 +275,12 @@ impl State {
 
     // ESC 7
     fn decsc(&mut self) {
-        self.grid_mut().save_pos();
+        self.save_cursor();
     }
 
     // ESC 8
     fn decrc(&mut self) {
-        self.grid_mut().restore_pos();
+        self.restore_cursor();
     }
 
     // ESC =

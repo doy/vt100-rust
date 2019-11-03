@@ -175,4 +175,25 @@ fn decsc() {
 
     screen.process(b"\x1b8");
     assert_eq!(screen.cursor_position(), (0, 3));
+
+    screen.process(b"\x1bc\x1b[31m\x1b[5;15r\x1b[?6hfoo\x1b7");
+    assert_eq!(screen.cursor_position(), (4, 3));
+    assert_eq!(
+        screen.contents_formatted(0, 0, 23, 79),
+        "\n\n\n\n\x1b[31mfoo\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+    );
+
+    screen.process(b"\x1b[32m\x1b[?6lbar");
+    assert_eq!(screen.cursor_position(), (0, 3));
+    assert_eq!(
+        screen.contents_formatted(0, 0, 23, 79),
+        "\x1b[32mbar\n\n\n\n\x1b[31mfoo\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+    );
+
+    screen.process(b"\x1b8\x1b[Hz");
+    assert_eq!(screen.cursor_position(), (4, 1));
+    assert_eq!(
+        screen.contents_formatted(0, 0, 23, 79),
+        "\x1b[32mbar\n\n\n\n\x1b[31mzoo\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+    );
 }
