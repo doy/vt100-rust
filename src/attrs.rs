@@ -78,6 +78,10 @@ impl Attrs {
     pub fn escape_code_diff(&self, other: &Self) -> String {
         let mut opts = vec![];
 
+        if self != other && self == &Self::default() {
+            return "\x1b[m".to_string();
+        }
+
         if self.fgcolor != other.fgcolor {
             match self.fgcolor {
                 Color::Default => {
@@ -131,7 +135,7 @@ impl Attrs {
         }
 
         if self.bold() != other.bold() {
-            opts.push(if self.bold() { 1 } else { 21 });
+            opts.push(if self.bold() { 1 } else { 22 });
         }
         if self.italic() != other.italic() {
             opts.push(if self.italic() { 3 } else { 23 });
