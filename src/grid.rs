@@ -174,7 +174,7 @@ impl Grid {
     pub fn erase_row_backward(&mut self) {
         let pos = self.pos;
         let row = self.current_row_mut();
-        for cell in row.cells_mut().take(pos.col as usize) {
+        for cell in row.cells_mut().take(pos.col as usize + 1) {
             *cell = crate::cell::Cell::default();
         }
     }

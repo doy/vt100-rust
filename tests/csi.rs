@@ -102,7 +102,7 @@ fn ed() {
     screen.process(b"\x1b[10;12H\x1b[0J");
     assert_eq!(screen.window_contents(0, 0, 23, 79), "foo\n\n\n\n    bar\n\n\n\n\n         ba\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
 
-    screen.process(b"\x1b[5;7H\x1b[1J");
+    screen.process(b"\x1b[5;6H\x1b[1J");
     assert_eq!(
         screen.window_contents(0, 0, 23, 79),
         "\n\n\n\n      r\n\n\n\n\n         ba\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
@@ -138,7 +138,7 @@ fn ed() {
     screen.process(b"\x1b[10;12H\x1b[?0J");
     assert_eq!(screen.window_contents(0, 0, 23, 79), "foo\n\n\n\n    bar\n\n\n\n\n         ba\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
 
-    screen.process(b"\x1b[5;7H\x1b[?1J");
+    screen.process(b"\x1b[5;6H\x1b[?1J");
     assert_eq!(
         screen.window_contents(0, 0, 23, 79),
         "\n\n\n\n      r\n\n\n\n\n         ba\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
@@ -177,7 +177,7 @@ fn el() {
     screen.process(b"\x1b[5;8H\x1b[0K");
     assert_eq!(screen.window_contents(0, 0, 23, 79), "foo\n\n\n\n    bar\n\n\n\n\n         bazbaz\n\n\n\n\n\n\n\n\n\n                   quux\n\n\n\n\n");
 
-    screen.process(b"\x1b[10;13H\x1b[1K");
+    screen.process(b"\x1b[10;12H\x1b[1K");
     assert_eq!(screen.window_contents(0, 0, 23, 79), "foo\n\n\n\n    bar\n\n\n\n\n            baz\n\n\n\n\n\n\n\n\n\n                   quux\n\n\n\n\n");
 
     screen.process(b"\x1b[20;22H\x1b[2K");
@@ -198,7 +198,7 @@ fn el() {
     screen.process(b"\x1b[5;8H\x1b[?0K");
     assert_eq!(screen.window_contents(0, 0, 23, 79), "foo\n\n\n\n    bar\n\n\n\n\n         bazbaz\n\n\n\n\n\n\n\n\n\n                   quux\n\n\n\n\n");
 
-    screen.process(b"\x1b[10;13H\x1b[?1K");
+    screen.process(b"\x1b[10;12H\x1b[?1K");
     assert_eq!(screen.window_contents(0, 0, 23, 79), "foo\n\n\n\n    bar\n\n\n\n\n            baz\n\n\n\n\n\n\n\n\n\n                   quux\n\n\n\n\n");
 
     screen.process(b"\x1b[20;22H\x1b[?2K");
@@ -206,6 +206,30 @@ fn el() {
 
     screen.process(b"\x1b[1;2H\x1b[?K");
     assert_eq!(screen.window_contents(0, 0, 23, 79), "f\n\n\n\n    bar\n\n\n\n\n            baz\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
+
+    screen.process(b"\x1b[2J\x1b[H");
+    assert_eq!(
+        screen.window_contents(0, 0, 23, 79),
+        "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+    );
+
+    screen.process(b"1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890");
+    assert_eq!(
+        screen.window_contents(0, 0, 23, 79),
+        "1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+    );
+
+    screen.process(b"\x1b[1;21H\x1b[K");
+    assert_eq!(
+        screen.window_contents(0, 0, 23, 79),
+        "12345678901234567890\n12345678901234567890\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+    );
+
+    screen.process(b"\x1b[1;10H\x1b[1K");
+    assert_eq!(
+        screen.window_contents(0, 0, 23, 79),
+        "          1234567890\n12345678901234567890\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+    );
 }
 
 #[test]
