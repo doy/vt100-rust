@@ -15,7 +15,7 @@ fn ri() {
     let mut screen = vt100::Screen::new(24, 80);
     screen.process(b"foo\nbar\x1bMbaz");
     assert_eq!(
-        screen.window_contents(0, 0, 23, 79),
+        screen.contents(0, 0, 23, 79),
         "foo   baz\n   bar\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
     );
 }
@@ -29,11 +29,11 @@ fn ris() {
     assert_eq!(cell.contents(), "");
 
     assert_eq!(
-        screen.window_contents(0, 0, 23, 79),
+        screen.contents(0, 0, 23, 79),
         "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
     );
     assert_eq!(
-        screen.window_contents_formatted(0, 0, 23, 79),
+        screen.contents_formatted(0, 0, 23, 79),
         "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
     );
 
@@ -68,10 +68,10 @@ fn ris() {
     assert_eq!(cell.contents(), "f");
 
     assert_eq!(
-        screen.window_contents(0, 0, 23, 79),
+        screen.contents(0, 0, 23, 79),
         "foo\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
     );
-    assert_eq!(screen.window_contents_formatted(0, 0, 23, 79), "f\x1b[31;47;1;3;4moo\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
+    assert_eq!(screen.contents_formatted(0, 0, 23, 79), "f\x1b[31;47;1;3;4moo\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
 
     assert_eq!(screen.title(), "window title");
     assert_eq!(screen.icon_name(), "window icon name");
@@ -106,11 +106,11 @@ fn ris() {
     assert_eq!(cell.contents(), "");
 
     assert_eq!(
-        screen.window_contents(0, 0, 23, 79),
+        screen.contents(0, 0, 23, 79),
         "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
     );
     assert_eq!(
-        screen.window_contents_formatted(0, 0, 23, 79),
+        screen.contents_formatted(0, 0, 23, 79),
         "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
     );
 
@@ -153,7 +153,7 @@ fn decsc() {
     let mut screen = vt100::Screen::new(24, 80);
     screen.process(b"foo\x1b7\r\n\r\n\r\n         bar\x1b8baz");
     assert_eq!(
-        screen.window_contents(0, 0, 23, 79),
+        screen.contents(0, 0, 23, 79),
         "foobaz\n\n\n         bar\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
     );
 }

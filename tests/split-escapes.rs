@@ -12,7 +12,7 @@ fn write_to_screen(chunks: &mut Vec<Vec<u8>>) -> String {
     for chunk in chunks.iter_mut() {
         screen.process(&chunk);
     }
-    screen.window_contents(0, 0, 36, 192)
+    screen.contents(0, 0, 36, 192)
 }
 
 fn test_splits(filename: &str) {

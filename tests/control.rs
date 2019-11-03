@@ -20,7 +20,7 @@ fn bs() {
     assert_eq!(screen.cell(0, 3).unwrap().contents(), "");
     assert_eq!(screen.cell(1, 0).unwrap().contents(), "");
     assert_eq!(
-        screen.window_contents(0, 0, 23, 79),
+        screen.contents(0, 0, 23, 79),
         "faa\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
     );
 
@@ -32,7 +32,7 @@ fn bs() {
     assert_eq!(screen.cell(1, 4).unwrap().contents(), "");
     assert_eq!(screen.cell(2, 0).unwrap().contents(), "");
     assert_eq!(
-        screen.window_contents(0, 0, 23, 79),
+        screen.contents(0, 0, 23, 79),
         "faa\nbarx\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
     );
 }
@@ -55,7 +55,7 @@ fn tab() {
     assert_eq!(screen.cell(0, 10).unwrap().contents(), "r");
     assert_eq!(screen.cell(0, 11).unwrap().contents(), "");
     assert_eq!(
-        screen.window_contents(0, 0, 23, 79),
+        screen.contents(0, 0, 23, 79),
         "foo     bar\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
     );
 }
@@ -78,7 +78,7 @@ fn lf_with(b: u8) {
     assert_eq!(screen.cell(1, 5).unwrap().contents(), "r");
     assert_eq!(screen.cell(1, 6).unwrap().contents(), "");
     assert_eq!(
-        screen.window_contents(0, 0, 23, 79),
+        screen.contents(0, 0, 23, 79),
         "foo\n   bar\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
     );
 }
@@ -110,7 +110,7 @@ fn cr() {
     assert_eq!(screen.cell(0, 4).unwrap().contents(), "");
     assert_eq!(screen.cell(1, 0).unwrap().contents(), "");
     assert_eq!(
-        screen.window_contents(0, 0, 23, 79),
+        screen.contents(0, 0, 23, 79),
         "baro\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
     );
 }

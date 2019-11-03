@@ -1,7 +1,7 @@
 #[test]
 fn object_creation() {
     let screen = vt100::Screen::new(24, 80);
-    assert_eq!(screen.window_size(), (24, 80));
+    assert_eq!(screen.size(), (24, 80));
 }
 
 #[test]
@@ -9,40 +9,40 @@ fn process_text() {
     let mut screen = vt100::Screen::new(24, 80);
     let input = b"foo\x1b[31m\x1b[32mb\x1b[3;7;42ma\x1b[23mr";
     screen.process(input);
-    assert_eq!(screen.window_contents(0, 0, 0, 50), "foobar\n");
+    assert_eq!(screen.contents(0, 0, 0, 50), "foobar\n");
 }
 
 #[test]
-fn set_window_size() {
+fn set_size() {
     let mut screen = vt100::Screen::new(24, 80);
-    assert_eq!(screen.window_size(), (24, 80));
+    assert_eq!(screen.size(), (24, 80));
     assert_eq!(screen.cursor_position(), (0, 0));
 
-    screen.set_window_size(34, 8);
-    assert_eq!(screen.window_size(), (34, 8));
+    screen.set_size(34, 8);
+    assert_eq!(screen.size(), (34, 8));
     assert_eq!(screen.cursor_position(), (0, 0));
 
     screen.process(b"\x1b[30;5H");
     assert_eq!(screen.cursor_position(), (29, 4));
 
-    screen.set_window_size(24, 80);
-    assert_eq!(screen.window_size(), (24, 80));
+    screen.set_size(24, 80);
+    assert_eq!(screen.size(), (24, 80));
     assert_eq!(screen.cursor_position(), (23, 4));
 
-    screen.set_window_size(34, 8);
-    assert_eq!(screen.window_size(), (34, 8));
+    screen.set_size(34, 8);
+    assert_eq!(screen.size(), (34, 8));
     assert_eq!(screen.cursor_position(), (23, 4));
 
     screen.process(b"\x1b[?1049h");
-    assert_eq!(screen.window_size(), (34, 8));
+    assert_eq!(screen.size(), (34, 8));
     assert_eq!(screen.cursor_position(), (0, 0));
 
-    screen.set_window_size(24, 80);
-    assert_eq!(screen.window_size(), (24, 80));
+    screen.set_size(24, 80);
+    assert_eq!(screen.size(), (24, 80));
     assert_eq!(screen.cursor_position(), (0, 0));
 
     screen.process(b"\x1b[?1049l");
-    assert_eq!(screen.window_size(), (24, 80));
+    assert_eq!(screen.size(), (24, 80));
     assert_eq!(screen.cursor_position(), (23, 4));
 }
 

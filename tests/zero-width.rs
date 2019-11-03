@@ -4,7 +4,7 @@
 fn zero_width_characters() {
     let mut screen = vt100::Screen::new(24, 140);
     screen.process(b"Free En\xc2\xadter\xc2\xadprise is gonna ru\xc2\xadin ev\xc2\xadery\xc2\xadthing good un\xc2\xadless we take a knife to its tes\xc2\xadti\xc2\xadcles first.");
-    assert_eq!(screen.window_contents(0, 0, 0, 139), "Free En\u{00ad}ter\u{00ad}prise is gonna ru\u{00ad}in ev\u{00ad}ery\u{00ad}thing good un\u{00ad}less we take a knife to its tes\u{00ad}ti\u{00ad}cles first.\n");
+    assert_eq!(screen.contents(0, 0, 0, 139), "Free En\u{00ad}ter\u{00ad}prise is gonna ru\u{00ad}in ev\u{00ad}ery\u{00ad}thing good un\u{00ad}less we take a knife to its tes\u{00ad}ti\u{00ad}cles first.\n");
     assert_eq!(screen.cell(0, 0).unwrap().contents(), "F");
     assert_eq!(screen.cell(0, 1).unwrap().contents(), "r");
     assert_eq!(screen.cell(0, 2).unwrap().contents(), "e");

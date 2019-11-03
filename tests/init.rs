@@ -3,7 +3,7 @@
 #[test]
 fn init() {
     let mut screen = vt100::Screen::new(24, 80);
-    assert_eq!(screen.window_size(), (24, 80));
+    assert_eq!(screen.size(), (24, 80));
     assert_eq!(screen.cursor_position(), (0, 0));
 
     let cell = screen.cell(0, 0);
@@ -16,11 +16,11 @@ fn init() {
     assert!(cell.is_none());
 
     assert_eq!(
-        screen.window_contents(0, 0, 23, 79),
+        screen.contents(0, 0, 23, 79),
         "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
     );
     assert_eq!(
-        screen.window_contents_formatted(0, 0, 23, 79),
+        screen.contents_formatted(0, 0, 23, 79),
         "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
     );
 

@@ -755,19 +755,19 @@ impl Screen {
         }
     }
 
-    pub fn set_window_size(&mut self, rows: u16, cols: u16) {
+    pub fn set_size(&mut self, rows: u16, cols: u16) {
         self.state.grid.set_size(crate::grid::Size { rows, cols });
         self.state
             .alternate_grid
             .set_size(crate::grid::Size { rows, cols });
     }
 
-    pub fn window_size(&self) -> (u16, u16) {
+    pub fn size(&self) -> (u16, u16) {
         let size = self.state.grid().size();
         (size.rows, size.cols)
     }
 
-    pub fn window_contents(
+    pub fn contents(
         &self,
         row_start: u16,
         col_start: u16,
@@ -776,10 +776,10 @@ impl Screen {
     ) -> String {
         self.state
             .grid()
-            .window_contents(row_start, col_start, row_end, col_end)
+            .contents(row_start, col_start, row_end, col_end)
     }
 
-    pub fn window_contents_formatted(
+    pub fn contents_formatted(
         &self,
         row_start: u16,
         col_start: u16,
@@ -788,7 +788,7 @@ impl Screen {
     ) -> String {
         self.state
             .grid()
-            .window_contents_formatted(row_start, col_start, row_end, col_end)
+            .contents_formatted(row_start, col_start, row_end, col_end)
     }
 
     pub fn cell(&self, row: u16, col: u16) -> Option<&crate::cell::Cell> {

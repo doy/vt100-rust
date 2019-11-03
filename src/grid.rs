@@ -100,7 +100,7 @@ impl Grid {
             .expect("cursor not pointing to a cell")
     }
 
-    pub fn window_contents(
+    pub fn contents(
         &self,
         row_start: u16,
         col_start: u16,
@@ -116,7 +116,7 @@ impl Grid {
         contents
     }
 
-    pub fn window_contents_formatted(
+    pub fn contents_formatted(
         &self,
         row_start: u16,
         col_start: u16,
