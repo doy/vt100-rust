@@ -52,4 +52,13 @@ fn origin_mode() {
 
     screen.process(b"\x1b[10;50H");
     assert_eq!(screen.cursor_position(), (9, 49));
+
+    screen.process(b"\x1b[?6h\x1b[?47h\x1b[6;16r\x1b[H");
+    assert_eq!(screen.cursor_position(), (0, 0));
+
+    screen.process(b"\x1b[?6h");
+    assert_eq!(screen.cursor_position(), (5, 0));
+
+    screen.process(b"\x1b[?47l\x1b[H");
+    assert_eq!(screen.cursor_position(), (4, 0));
 }

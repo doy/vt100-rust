@@ -99,7 +99,7 @@ fn ris() {
         vt100::MouseProtocolEncoding::Sgr
     );
 
-    screen.process(b"\x1bc");
+    screen.process(b"\x07\x1bg\x1bc");
     assert_eq!(screen.cursor_position(), (0, 0));
 
     let cell = screen.cell(0, 0).unwrap();
@@ -126,8 +126,10 @@ fn ris() {
     assert!(!screen.underline());
     assert!(!screen.inverse());
 
-    assert!(!screen.check_visual_bell());
-    assert!(!screen.check_audible_bell());
+    // bell states don't change with reset
+    assert!(screen.check_visual_bell());
+    assert!(screen.check_audible_bell());
+
     assert!(!screen.application_keypad());
     assert!(!screen.application_cursor());
     assert!(!screen.hide_cursor());
@@ -156,4 +158,21 @@ fn decsc() {
         screen.contents(0, 0, 23, 79),
         "foobaz\n\n\n         bar\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
     );
+    assert_eq!(screen.cursor_position(), (0, 6));
+
+    screen.process(b"\x1b[?47h\x1b[20;20H");
+    assert_eq!(
+        screen.contents(0, 0, 23, 79),
+        "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+    );
+    assert_eq!(screen.cursor_position(), (19, 19));
+
+    screen.process(b"\x1b8");
+    assert_eq!(screen.cursor_position(), (0, 0));
+
+    screen.process(b"\x1b[?47l\x1b[20;20H");
+    assert_eq!(screen.cursor_position(), (19, 19));
+
+    screen.process(b"\x1b8");
+    assert_eq!(screen.cursor_position(), (0, 3));
 }
