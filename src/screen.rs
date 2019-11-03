@@ -496,14 +496,14 @@ impl State {
         loop {
             match next_param!() {
                 0 => self.attrs = crate::attrs::Attrs::default(),
-                1 => self.attrs.bold = true,
-                3 => self.attrs.italic = true,
-                4 => self.attrs.underline = true,
-                7 => self.attrs.inverse = true,
-                22 => self.attrs.bold = false,
-                23 => self.attrs.italic = false,
-                24 => self.attrs.underline = false,
-                27 => self.attrs.inverse = false,
+                1 => self.attrs.set_bold(true),
+                3 => self.attrs.set_italic(true),
+                4 => self.attrs.set_underline(true),
+                7 => self.attrs.set_inverse(true),
+                22 => self.attrs.set_bold(false),
+                23 => self.attrs.set_italic(false),
+                24 => self.attrs.set_underline(false),
+                27 => self.attrs.set_inverse(false),
                 n if n >= 30 && n <= 37 => {
                     self.attrs.fgcolor = crate::color::Color::Idx(n - 30);
                 }
@@ -813,19 +813,19 @@ impl Screen {
     }
 
     pub fn bold(&self) -> bool {
-        self.state.attrs.bold
+        self.state.attrs.bold()
     }
 
     pub fn italic(&self) -> bool {
-        self.state.attrs.italic
+        self.state.attrs.italic()
     }
 
     pub fn underline(&self) -> bool {
-        self.state.attrs.underline
+        self.state.attrs.underline()
     }
 
     pub fn inverse(&self) -> bool {
-        self.state.attrs.inverse
+        self.state.attrs.inverse()
     }
 
     pub fn title(&self) -> &str {

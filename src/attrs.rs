@@ -1,14 +1,67 @@
+#[derive(enumset::EnumSetType, Debug)]
+pub enum TextMode {
+    Bold,
+    Italic,
+    Underline,
+    Inverse,
+}
+
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug)]
 pub struct Attrs {
     pub fgcolor: crate::color::Color,
     pub bgcolor: crate::color::Color,
-    pub bold: bool,
-    pub italic: bool,
-    pub underline: bool,
-    pub inverse: bool,
+    pub mode: enumset::EnumSet<TextMode>,
 }
 
 impl Attrs {
+    pub fn bold(&self) -> bool {
+        self.mode.contains(TextMode::Bold)
+    }
+
+    pub fn set_bold(&mut self, bold: bool) {
+        if bold {
+            self.mode.insert(TextMode::Bold);
+        } else {
+            self.mode.remove(TextMode::Bold);
+        }
+    }
+
+    pub fn italic(&self) -> bool {
+        self.mode.contains(TextMode::Italic)
+    }
+
+    pub fn set_italic(&mut self, italic: bool) {
+        if italic {
+            self.mode.insert(TextMode::Italic);
+        } else {
+            self.mode.remove(TextMode::Italic);
+        }
+    }
+
+    pub fn underline(&self) -> bool {
+        self.mode.contains(TextMode::Underline)
+    }
+
+    pub fn set_underline(&mut self, underline: bool) {
+        if underline {
+            self.mode.insert(TextMode::Underline);
+        } else {
+            self.mode.remove(TextMode::Underline);
+        }
+    }
+
+    pub fn inverse(&self) -> bool {
+        self.mode.contains(TextMode::Inverse)
+    }
+
+    pub fn set_inverse(&mut self, inverse: bool) {
+        if inverse {
+            self.mode.insert(TextMode::Inverse);
+        } else {
+            self.mode.remove(TextMode::Inverse);
+        }
+    }
+
     pub fn escape_code_diff(&self, other: &Self) -> String {
         let mut opts = vec![];
 
@@ -64,17 +117,17 @@ impl Attrs {
             }
         }
 
-        if self.bold != other.bold {
-            opts.push(if self.bold { 1 } else { 21 });
+        if self.bold() != other.bold() {
+            opts.push(if self.bold() { 1 } else { 21 });
         }
-        if self.italic != other.italic {
-            opts.push(if self.italic { 3 } else { 23 });
+        if self.italic() != other.italic() {
+            opts.push(if self.italic() { 3 } else { 23 });
         }
-        if self.underline != other.underline {
-            opts.push(if self.underline { 4 } else { 24 });
+        if self.underline() != other.underline() {
+            opts.push(if self.underline() { 4 } else { 24 });
         }
-        if self.inverse != other.inverse {
-            opts.push(if self.inverse { 7 } else { 27 });
+        if self.inverse() != other.inverse() {
+            opts.push(if self.inverse() { 7 } else { 27 });
         }
 
         let strs: Vec<_> =

@@ -56,18 +56,18 @@ impl Cell {
     }
 
     pub fn bold(&self) -> bool {
-        self.attrs.bold
+        self.attrs.bold()
     }
 
     pub fn italic(&self) -> bool {
-        self.attrs.italic
+        self.attrs.italic()
     }
 
     pub fn inverse(&self) -> bool {
-        self.attrs.inverse
+        self.attrs.inverse()
     }
 
     pub fn underline(&self) -> bool {
-        self.attrs.underline
+        self.attrs.underline()
     }
 }
