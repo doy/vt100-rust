@@ -14,6 +14,10 @@ impl Row {
         }
     }
 
+    pub fn clear(&mut self) {
+        *self = Self::new(self.cells.len().try_into().unwrap());
+    }
+
     pub fn cells_mut(
         &mut self,
     ) -> impl Iterator<Item = &mut crate::cell::Cell> {

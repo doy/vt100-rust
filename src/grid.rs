@@ -21,6 +21,10 @@ impl Grid {
         }
     }
 
+    fn new_row(&self) -> crate::row::Row {
+        crate::row::Row::new(self.size.cols)
+    }
+
     pub fn size(&self) -> Size {
         self.size
     }
@@ -134,33 +138,31 @@ impl Grid {
 
     pub fn erase_all(&mut self) {
         self.rows = vec![
-            crate::row::Row::new(self.size.cols);
+            self.new_row();
             self.size.rows as usize
         ];
     }
 
     pub fn erase_all_forward(&mut self) {
-        let size = self.size;
         let pos = self.pos;
         for row in self.rows_mut().skip(pos.row as usize + 1) {
-            *row = crate::row::Row::new(size.cols);
+            row.clear();
         }
 
         self.erase_row_forward();
     }
 
     pub fn erase_all_backward(&mut self) {
-        let size = self.size;
         let pos = self.pos;
         for row in self.rows_mut().take(pos.row as usize) {
-            *row = crate::row::Row::new(size.cols);
+            row.clear();
         }
 
         self.erase_row_backward();
     }
 
     pub fn erase_row(&mut self) {
-        *self.current_row_mut() = crate::row::Row::new(self.size.cols);
+        self.current_row_mut().clear();
     }
 
     pub fn erase_row_forward(&mut self) {
@@ -215,7 +217,7 @@ impl Grid {
             self.rows.remove(self.scroll_bottom as usize);
             self.rows.insert(
                 self.pos.row as usize,
-                crate::row::Row::new(self.size.cols),
+                self.new_row(),
             );
         }
     }
@@ -224,7 +226,7 @@ impl Grid {
         for _ in 0..(count.min(self.size.rows - self.pos.row)) {
             self.rows.insert(
                 self.scroll_bottom as usize + 1,
-                crate::row::Row::new(self.size.cols),
+                self.new_row(),
             );
             self.rows.remove(self.pos.row as usize);
         }
@@ -234,7 +236,7 @@ impl Grid {
         for _ in 0..(count.min(self.size.rows - self.scroll_top)) {
             self.rows.insert(
                 self.scroll_bottom as usize + 1,
-                crate::row::Row::new(self.size.cols),
+                self.new_row(),
             );
             self.rows.remove(self.scroll_top as usize);
         }
@@ -245,7 +247,7 @@ impl Grid {
             self.rows.remove(self.scroll_bottom as usize);
             self.rows.insert(
                 self.scroll_top as usize,
-                crate::row::Row::new(self.size.cols),
+                self.new_row(),
             );
         }
     }
