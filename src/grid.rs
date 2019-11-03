@@ -137,10 +137,7 @@ impl Grid {
     }
 
     pub fn erase_all(&mut self) {
-        self.rows = vec![
-            self.new_row();
-            self.size.rows as usize
-        ];
+        self.rows = vec![self.new_row(); self.size.rows as usize];
     }
 
     pub fn erase_all_forward(&mut self) {
@@ -215,29 +212,22 @@ impl Grid {
     pub fn insert_lines(&mut self, count: u16) {
         for _ in 0..count {
             self.rows.remove(self.scroll_bottom as usize);
-            self.rows.insert(
-                self.pos.row as usize,
-                self.new_row(),
-            );
+            self.rows.insert(self.pos.row as usize, self.new_row());
         }
     }
 
     pub fn delete_lines(&mut self, count: u16) {
         for _ in 0..(count.min(self.size.rows - self.pos.row)) {
-            self.rows.insert(
-                self.scroll_bottom as usize + 1,
-                self.new_row(),
-            );
+            self.rows
+                .insert(self.scroll_bottom as usize + 1, self.new_row());
             self.rows.remove(self.pos.row as usize);
         }
     }
 
     pub fn scroll_up(&mut self, count: u16) {
         for _ in 0..(count.min(self.size.rows - self.scroll_top)) {
-            self.rows.insert(
-                self.scroll_bottom as usize + 1,
-                self.new_row(),
-            );
+            self.rows
+                .insert(self.scroll_bottom as usize + 1, self.new_row());
             self.rows.remove(self.scroll_top as usize);
         }
     }
@@ -245,10 +235,7 @@ impl Grid {
     pub fn scroll_down(&mut self, count: u16) {
         for _ in 0..count {
             self.rows.remove(self.scroll_bottom as usize);
-            self.rows.insert(
-                self.scroll_top as usize,
-                self.new_row(),
-            );
+            self.rows.insert(self.scroll_top as usize, self.new_row());
         }
     }
 

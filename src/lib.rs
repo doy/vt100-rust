@@ -12,4 +12,4 @@ mod unicode;
 
 pub use attrs::Color;
 pub use cell::Cell;
-pub use screen::{MouseProtocolMode, MouseProtocolEncoding, Screen};
+pub use screen::{MouseProtocolEncoding, MouseProtocolMode, Screen};
