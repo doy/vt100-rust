@@ -13,6 +13,7 @@ enum Mode {
     KeypadApplication,
     ApplicationCursor,
     HideCursor,
+    AlternateScreen,
     BracketedPaste,
 }
 
@@ -50,7 +51,6 @@ impl Default for MouseProtocolEncoding {
 struct State {
     grid: crate::grid::Grid,
     alternate_grid: crate::grid::Grid,
-    use_alternate_grid: bool,
 
     attrs: crate::attrs::Attrs,
 
@@ -69,7 +69,6 @@ impl State {
         Self {
             grid: crate::grid::Grid::new(size),
             alternate_grid: crate::grid::Grid::new(size),
-            use_alternate_grid: false,
 
             attrs: crate::attrs::Attrs::default(),
 
@@ -88,7 +87,7 @@ impl State {
     }
 
     fn grid(&self) -> &crate::grid::Grid {
-        if self.use_alternate_grid {
+        if self.mode(Mode::AlternateScreen) {
             &self.alternate_grid
         } else {
             &self.grid
@@ -96,7 +95,7 @@ impl State {
     }
 
     fn grid_mut(&mut self) -> &mut crate::grid::Grid {
-        if self.use_alternate_grid {
+        if self.mode(Mode::AlternateScreen) {
             &mut self.alternate_grid
         } else {
             &mut self.grid
@@ -123,11 +122,11 @@ impl State {
     }
 
     fn enter_alternate_grid(&mut self) {
-        self.use_alternate_grid = true;
+        self.set_mode(Mode::AlternateScreen);
     }
 
     fn exit_alternate_grid(&mut self) {
-        self.use_alternate_grid = false;
+        self.clear_mode(Mode::AlternateScreen);
     }
 
     fn set_output(&mut self, output: Output) {
@@ -292,7 +291,6 @@ impl State {
     fn ris(&mut self) {
         self.grid = self.new_grid();
         self.alternate_grid = self.new_grid();
-        self.use_alternate_grid = false;
         self.attrs = crate::attrs::Attrs::default();
         self.modes = enumset::EnumSet::default();
         self.mouse_protocol_mode = MouseProtocolMode::default();
@@ -841,7 +839,7 @@ impl Screen {
     }
 
     pub fn alternate_buffer_active(&self) -> bool {
-        self.state.use_alternate_grid
+        self.state.mode(Mode::AlternateScreen)
     }
 
     pub fn application_cursor(&self) -> bool {
