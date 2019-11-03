@@ -84,7 +84,7 @@ impl State {
     }
 
     fn new_grid(&self) -> crate::grid::Grid {
-        crate::grid::Grid::new(*self.grid().size())
+        crate::grid::Grid::new(self.grid().size())
     }
 
     fn grid(&self) -> &crate::grid::Grid {
@@ -179,7 +179,7 @@ impl State {
 
 impl State {
     fn text(&mut self, c: char) {
-        let pos = *self.grid().pos();
+        let pos = self.grid().pos();
         if pos.col > 0 {
             let prev_cell = self
                 .cell_mut(crate::grid::Pos {
@@ -661,7 +661,7 @@ impl vte::Perform for State {
                 'm' => self.sgr(canonicalize_params_multi(params)),
                 'r' => self.csr(canonicalize_params_csr(
                     params,
-                    *self.grid().size(),
+                    self.grid().size(),
                 )),
                 _ => {
                     if log::log_enabled!(log::Level::Warn) {

@@ -21,8 +21,8 @@ impl Grid {
         }
     }
 
-    pub fn size(&self) -> &Size {
-        &self.size
+    pub fn size(&self) -> Size {
+        self.size
     }
 
     pub fn set_size(&mut self, size: Size) {
@@ -40,8 +40,8 @@ impl Grid {
         self.col_clamp();
     }
 
-    pub fn pos(&self) -> &Pos {
-        &self.pos
+    pub fn pos(&self) -> Pos {
+        self.pos
     }
 
     pub fn set_pos(&mut self, mut pos: Pos) {
