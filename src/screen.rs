@@ -10,7 +10,7 @@ enum Output {
 
 #[derive(enumset::EnumSetType, Debug)]
 enum Mode {
-    KeypadApplication,
+    ApplicationKeypad,
     ApplicationCursor,
     HideCursor,
     AlternateScreen,
@@ -18,7 +18,7 @@ enum Mode {
 }
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
-enum MouseProtocolMode {
+pub enum MouseProtocolMode {
     None,
     Press,
     PressRelease,
@@ -35,7 +35,7 @@ impl Default for MouseProtocolMode {
 }
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
-enum MouseProtocolEncoding {
+pub enum MouseProtocolEncoding {
     Default,
     Utf8,
     Sgr,
@@ -274,12 +274,12 @@ impl State {
 
     // ESC =
     fn deckpam(&mut self) {
-        self.set_mode(Mode::KeypadApplication);
+        self.set_mode(Mode::ApplicationKeypad);
     }
 
     // ESC >
     fn deckpnm(&mut self) {
-        self.clear_mode(Mode::KeypadApplication);
+        self.clear_mode(Mode::ApplicationKeypad);
     }
 
     // ESC M
@@ -747,12 +747,10 @@ impl Screen {
         }
     }
 
-    pub fn rows(&self) -> u16 {
-        self.state.grid().size().rows
-    }
-
-    pub fn cols(&self) -> u16 {
-        self.state.grid().size().cols
+    pub fn process(&mut self, bytes: &[u8]) {
+        for byte in bytes {
+            self.parser.advance(&mut self.state, *byte);
+        }
     }
 
     pub fn set_window_size(&mut self, rows: u16, cols: u16) {
@@ -762,14 +760,9 @@ impl Screen {
             .set_size(crate::grid::Size { rows, cols });
     }
 
-    pub fn process(&mut self, bytes: &[u8]) {
-        for byte in bytes {
-            self.parser.advance(&mut self.state, *byte);
-        }
-    }
-
-    pub fn cell(&self, row: u16, col: u16) -> Option<&crate::cell::Cell> {
-        self.state.cell(crate::grid::Pos { row, col })
+    pub fn window_size(&self) -> (u16, u16) {
+        let size = self.state.grid().size();
+        (size.rows, size.cols)
     }
 
     pub fn window_contents(
@@ -796,8 +789,13 @@ impl Screen {
             .window_contents_formatted(row_start, col_start, row_end, col_end)
     }
 
+    pub fn cell(&self, row: u16, col: u16) -> Option<&crate::cell::Cell> {
+        self.state.cell(crate::grid::Pos { row, col })
+    }
+
     pub fn cursor_position(&self) -> (u16, u16) {
-        (self.state.grid().pos().row, self.state.grid().pos().col)
+        let pos = self.state.grid().pos();
+        (pos.row, pos.col)
     }
 
     pub fn fgcolor(&self) -> crate::attrs::Color {
@@ -832,56 +830,40 @@ impl Screen {
         &self.state.icon_name
     }
 
-    pub fn hide_cursor(&self) -> bool {
-        self.state.mode(Mode::HideCursor)
-    }
-
-    pub fn alternate_buffer_active(&self) -> bool {
-        self.state.mode(Mode::AlternateScreen)
-    }
-
-    pub fn application_cursor(&self) -> bool {
-        self.state.mode(Mode::ApplicationCursor)
-    }
-
-    pub fn application_keypad(&self) -> bool {
-        self.state.mode(Mode::KeypadApplication)
-    }
-
-    pub fn bracketed_paste(&self) -> bool {
-        self.state.mode(Mode::BracketedPaste)
-    }
-
-    pub fn mouse_reporting_press(&self) -> bool {
-        self.state.mouse_protocol_mode == MouseProtocolMode::Press
-    }
-
-    pub fn mouse_reporting_press_release(&self) -> bool {
-        self.state.mouse_protocol_mode == MouseProtocolMode::PressRelease
-    }
-
-    pub fn mouse_reporting_button_motion(&self) -> bool {
-        self.state.mouse_protocol_mode == MouseProtocolMode::ButtonMotion
-    }
-
-    pub fn mouse_reporting_any_motion(&self) -> bool {
-        self.state.mouse_protocol_mode == MouseProtocolMode::AnyMotion
-    }
-
-    pub fn mouse_reporting_utf8_mode(&self) -> bool {
-        self.state.mouse_protocol_encoding == MouseProtocolEncoding::Utf8
-    }
-
-    pub fn mouse_reporting_sgr_mode(&self) -> bool {
-        self.state.mouse_protocol_encoding == MouseProtocolEncoding::Sgr
-    }
-
     pub fn check_audible_bell(&mut self) -> bool {
         self.state.check_output(Output::AudibleBell)
     }
 
     pub fn check_visual_bell(&mut self) -> bool {
         self.state.check_output(Output::VisualBell)
+    }
+
+    pub fn application_keypad(&self) -> bool {
+        self.state.mode(Mode::ApplicationKeypad)
+    }
+
+    pub fn application_cursor(&self) -> bool {
+        self.state.mode(Mode::ApplicationCursor)
+    }
+
+    pub fn hide_cursor(&self) -> bool {
+        self.state.mode(Mode::HideCursor)
+    }
+
+    pub fn alternate_screen(&self) -> bool {
+        self.state.mode(Mode::AlternateScreen)
+    }
+
+    pub fn bracketed_paste(&self) -> bool {
+        self.state.mode(Mode::BracketedPaste)
+    }
+
+    pub fn mouse_protocol_mode(&self) -> MouseProtocolMode {
+        self.state.mouse_protocol_mode
+    }
+
+    pub fn mouse_protocol_encoding(&self) -> MouseProtocolEncoding {
+        self.state.mouse_protocol_encoding
     }
 }
 

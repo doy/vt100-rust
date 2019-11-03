@@ -39,94 +39,130 @@ fn split_escape_sequences() {
     assert_eq!(screen.cursor_position(), (11, 23));
     assert_eq!(screen.window_contents(0, 0, 23, 79), contents);
 
-    assert!(!screen.mouse_reporting_press_release());
+    assert_eq!(screen.mouse_protocol_mode(), vt100::MouseProtocolMode::None);
     screen.process(b"\x1b");
-    assert!(!screen.mouse_reporting_press_release());
+    assert_eq!(screen.mouse_protocol_mode(), vt100::MouseProtocolMode::None);
     assert_eq!(screen.cursor_position(), (11, 23));
     assert_eq!(screen.window_contents(0, 0, 23, 79), contents);
     screen.process(b"[");
-    assert!(!screen.mouse_reporting_press_release());
+    assert_eq!(screen.mouse_protocol_mode(), vt100::MouseProtocolMode::None);
     assert_eq!(screen.cursor_position(), (11, 23));
     assert_eq!(screen.window_contents(0, 0, 23, 79), contents);
     screen.process(b"?");
-    assert!(!screen.mouse_reporting_press_release());
+    assert_eq!(screen.mouse_protocol_mode(), vt100::MouseProtocolMode::None);
     assert_eq!(screen.cursor_position(), (11, 23));
     assert_eq!(screen.window_contents(0, 0, 23, 79), contents);
     screen.process(b"1");
-    assert!(!screen.mouse_reporting_press_release());
+    assert_eq!(screen.mouse_protocol_mode(), vt100::MouseProtocolMode::None);
     assert_eq!(screen.cursor_position(), (11, 23));
     assert_eq!(screen.window_contents(0, 0, 23, 79), contents);
     screen.process(b"0");
-    assert!(!screen.mouse_reporting_press_release());
+    assert_eq!(screen.mouse_protocol_mode(), vt100::MouseProtocolMode::None);
     assert_eq!(screen.cursor_position(), (11, 23));
     assert_eq!(screen.window_contents(0, 0, 23, 79), contents);
     screen.process(b"0");
-    assert!(!screen.mouse_reporting_press_release());
+    assert_eq!(screen.mouse_protocol_mode(), vt100::MouseProtocolMode::None);
     assert_eq!(screen.cursor_position(), (11, 23));
     assert_eq!(screen.window_contents(0, 0, 23, 79), contents);
     screen.process(b"0");
-    assert!(!screen.mouse_reporting_press_release());
+    assert_eq!(screen.mouse_protocol_mode(), vt100::MouseProtocolMode::None);
     assert_eq!(screen.cursor_position(), (11, 23));
     assert_eq!(screen.window_contents(0, 0, 23, 79), contents);
     screen.process(b"h");
-    assert!(screen.mouse_reporting_press_release());
+    assert_eq!(
+        screen.mouse_protocol_mode(),
+        vt100::MouseProtocolMode::PressRelease
+    );
     assert_eq!(screen.cursor_position(), (11, 23));
     assert_eq!(screen.window_contents(0, 0, 23, 79), contents);
 
     assert_eq!(screen.title(), "");
     screen.process(b"\x1b");
     assert_eq!(screen.title(), "");
-    assert!(screen.mouse_reporting_press_release());
+    assert_eq!(
+        screen.mouse_protocol_mode(),
+        vt100::MouseProtocolMode::PressRelease
+    );
     assert_eq!(screen.cursor_position(), (11, 23));
     assert_eq!(screen.window_contents(0, 0, 23, 79), contents);
     screen.process(b"]");
     assert_eq!(screen.title(), "");
-    assert!(screen.mouse_reporting_press_release());
+    assert_eq!(
+        screen.mouse_protocol_mode(),
+        vt100::MouseProtocolMode::PressRelease
+    );
     assert_eq!(screen.cursor_position(), (11, 23));
     assert_eq!(screen.window_contents(0, 0, 23, 79), contents);
     screen.process(b"0");
     assert_eq!(screen.title(), "");
-    assert!(screen.mouse_reporting_press_release());
+    assert_eq!(
+        screen.mouse_protocol_mode(),
+        vt100::MouseProtocolMode::PressRelease
+    );
     assert_eq!(screen.cursor_position(), (11, 23));
     assert_eq!(screen.window_contents(0, 0, 23, 79), contents);
     screen.process(b";");
     assert_eq!(screen.title(), "");
-    assert!(screen.mouse_reporting_press_release());
+    assert_eq!(
+        screen.mouse_protocol_mode(),
+        vt100::MouseProtocolMode::PressRelease
+    );
     assert_eq!(screen.cursor_position(), (11, 23));
     assert_eq!(screen.window_contents(0, 0, 23, 79), contents);
     screen.process(b"a");
     assert_eq!(screen.title(), "");
-    assert!(screen.mouse_reporting_press_release());
+    assert_eq!(
+        screen.mouse_protocol_mode(),
+        vt100::MouseProtocolMode::PressRelease
+    );
     assert_eq!(screen.cursor_position(), (11, 23));
     assert_eq!(screen.window_contents(0, 0, 23, 79), contents);
     screen.process(b" ");
     assert_eq!(screen.title(), "");
-    assert!(screen.mouse_reporting_press_release());
+    assert_eq!(
+        screen.mouse_protocol_mode(),
+        vt100::MouseProtocolMode::PressRelease
+    );
     assert_eq!(screen.cursor_position(), (11, 23));
     assert_eq!(screen.window_contents(0, 0, 23, 79), contents);
     screen.process(b"'");
     assert_eq!(screen.title(), "");
-    assert!(screen.mouse_reporting_press_release());
+    assert_eq!(
+        screen.mouse_protocol_mode(),
+        vt100::MouseProtocolMode::PressRelease
+    );
     assert_eq!(screen.cursor_position(), (11, 23));
     assert_eq!(screen.window_contents(0, 0, 23, 79), contents);
     screen.process(b"[");
     assert_eq!(screen.title(), "");
-    assert!(screen.mouse_reporting_press_release());
+    assert_eq!(
+        screen.mouse_protocol_mode(),
+        vt100::MouseProtocolMode::PressRelease
+    );
     assert_eq!(screen.cursor_position(), (11, 23));
     assert_eq!(screen.window_contents(0, 0, 23, 79), contents);
     screen.process(b"]");
     assert_eq!(screen.title(), "");
-    assert!(screen.mouse_reporting_press_release());
+    assert_eq!(
+        screen.mouse_protocol_mode(),
+        vt100::MouseProtocolMode::PressRelease
+    );
     assert_eq!(screen.cursor_position(), (11, 23));
     assert_eq!(screen.window_contents(0, 0, 23, 79), contents);
     screen.process(b"_");
     assert_eq!(screen.title(), "");
-    assert!(screen.mouse_reporting_press_release());
+    assert_eq!(
+        screen.mouse_protocol_mode(),
+        vt100::MouseProtocolMode::PressRelease
+    );
     assert_eq!(screen.cursor_position(), (11, 23));
     assert_eq!(screen.window_contents(0, 0, 23, 79), contents);
     screen.process(b"\x07");
     assert_eq!(screen.title(), "a '[]_");
-    assert!(screen.mouse_reporting_press_release());
+    assert_eq!(
+        screen.mouse_protocol_mode(),
+        vt100::MouseProtocolMode::PressRelease
+    );
     assert_eq!(screen.cursor_position(), (11, 23));
     assert_eq!(screen.window_contents(0, 0, 23, 79), contents);
 }

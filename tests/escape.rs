@@ -48,16 +48,17 @@ fn ris() {
     assert!(!screen.underline());
     assert!(!screen.inverse());
 
-    assert!(!screen.hide_cursor());
-    assert!(!screen.application_keypad());
-    assert!(!screen.application_cursor());
-    assert!(!screen.mouse_reporting_press());
-    assert!(!screen.mouse_reporting_press_release());
-    assert!(!screen.mouse_reporting_button_motion());
-    assert!(!screen.mouse_reporting_sgr_mode());
-    assert!(!screen.bracketed_paste());
     assert!(!screen.check_visual_bell());
     assert!(!screen.check_audible_bell());
+    assert!(!screen.application_keypad());
+    assert!(!screen.application_cursor());
+    assert!(!screen.hide_cursor());
+    assert!(!screen.bracketed_paste());
+    assert_eq!(screen.mouse_protocol_mode(), vt100::MouseProtocolMode::None);
+    assert_eq!(
+        screen.mouse_protocol_encoding(),
+        vt100::MouseProtocolEncoding::Default
+    );
 
     screen.process(b"f\x1b[31m\x1b[47;1;3;4moo\x1b[7m\x1b[21;21H\x1b]2;window title\x07\x1b]1;window icon name\x07\x1b[?25l\x1b[?1h\x1b=\x1b[?9h\x1b[?1000h\x1b[?1006h\x1b[?2004h\x07\x1bg");
 
@@ -83,18 +84,20 @@ fn ris() {
     assert!(screen.underline());
     assert!(screen.inverse());
 
-    assert!(screen.hide_cursor());
-    assert!(screen.application_keypad());
-    assert!(screen.application_cursor());
-    assert!(!screen.mouse_reporting_press());
-    assert!(screen.mouse_reporting_press_release());
-    assert!(!screen.mouse_reporting_button_motion());
-    assert!(!screen.mouse_reporting_any_motion());
-    assert!(screen.mouse_reporting_sgr_mode());
-    assert!(!screen.mouse_reporting_utf8_mode());
-    assert!(screen.bracketed_paste());
     assert!(screen.check_visual_bell());
     assert!(screen.check_audible_bell());
+    assert!(screen.application_keypad());
+    assert!(screen.application_cursor());
+    assert!(screen.hide_cursor());
+    assert!(screen.bracketed_paste());
+    assert_eq!(
+        screen.mouse_protocol_mode(),
+        vt100::MouseProtocolMode::PressRelease
+    );
+    assert_eq!(
+        screen.mouse_protocol_encoding(),
+        vt100::MouseProtocolEncoding::Sgr
+    );
 
     screen.process(b"\x1bc");
     assert_eq!(screen.cursor_position(), (0, 0));
@@ -123,18 +126,17 @@ fn ris() {
     assert!(!screen.underline());
     assert!(!screen.inverse());
 
-    assert!(!screen.hide_cursor());
-    assert!(!screen.application_keypad());
-    assert!(!screen.application_cursor());
-    assert!(!screen.mouse_reporting_press());
-    assert!(!screen.mouse_reporting_press_release());
-    assert!(!screen.mouse_reporting_button_motion());
-    assert!(!screen.mouse_reporting_any_motion());
-    assert!(!screen.mouse_reporting_utf8_mode());
-    assert!(!screen.mouse_reporting_sgr_mode());
-    assert!(!screen.bracketed_paste());
     assert!(!screen.check_visual_bell());
     assert!(!screen.check_audible_bell());
+    assert!(!screen.application_keypad());
+    assert!(!screen.application_cursor());
+    assert!(!screen.hide_cursor());
+    assert!(!screen.bracketed_paste());
+    assert_eq!(screen.mouse_protocol_mode(), vt100::MouseProtocolMode::None);
+    assert_eq!(
+        screen.mouse_protocol_encoding(),
+        vt100::MouseProtocolEncoding::Default
+    );
 }
 
 #[test]

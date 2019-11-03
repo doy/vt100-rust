@@ -3,8 +3,7 @@
 #[test]
 fn init() {
     let mut screen = vt100::Screen::new(24, 80);
-    assert_eq!(screen.rows(), 24);
-    assert_eq!(screen.cols(), 80);
+    assert_eq!(screen.window_size(), (24, 80));
     assert_eq!(screen.cursor_position(), (0, 0));
 
     let cell = screen.cell(0, 0);
@@ -36,14 +35,15 @@ fn init() {
     assert!(!screen.underline());
     assert!(!screen.inverse());
 
-    assert!(!screen.hide_cursor());
-    assert!(!screen.application_keypad());
-    assert!(!screen.application_cursor());
-    assert!(!screen.mouse_reporting_press());
-    assert!(!screen.mouse_reporting_press_release());
-    assert!(!screen.mouse_reporting_button_motion());
-    assert!(!screen.mouse_reporting_sgr_mode());
-    assert!(!screen.bracketed_paste());
     assert!(!screen.check_visual_bell());
     assert!(!screen.check_audible_bell());
+    assert!(!screen.application_keypad());
+    assert!(!screen.application_cursor());
+    assert!(!screen.hide_cursor());
+    assert!(!screen.bracketed_paste());
+    assert_eq!(screen.mouse_protocol_mode(), vt100::MouseProtocolMode::None);
+    assert_eq!(
+        screen.mouse_protocol_encoding(),
+        vt100::MouseProtocolEncoding::Default
+    );
 }
