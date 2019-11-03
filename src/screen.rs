@@ -64,8 +64,7 @@ struct State {
 }
 
 impl State {
-    fn new(rows: u16, cols: u16) -> Self {
-        let size = crate::grid::Size { rows, cols };
+    fn new(size: crate::grid::Size) -> Self {
         Self {
             grid: crate::grid::Grid::new(size),
             alternate_grid: crate::grid::Grid::new(size),
@@ -289,12 +288,15 @@ impl State {
 
     // ESC c
     fn ris(&mut self) {
-        self.grid = self.new_grid();
-        self.alternate_grid = self.new_grid();
-        self.attrs = crate::attrs::Attrs::default();
-        self.modes = enumset::EnumSet::default();
-        self.mouse_protocol_mode = MouseProtocolMode::default();
-        self.mouse_protocol_encoding = MouseProtocolEncoding::default();
+        let outputs = self.outputs;
+        let title = self.title.clone();
+        let icon_name = self.icon_name.clone();
+
+        *self = Self::new(self.grid().size());
+
+        self.outputs = outputs;
+        self.title = title;
+        self.icon_name = icon_name;
     }
 
     // ESC g
@@ -743,7 +745,7 @@ impl Screen {
     pub fn new(rows: u16, cols: u16) -> Self {
         Self {
             parser: vte::Parser::new(),
-            state: State::new(rows, cols),
+            state: State::new(crate::grid::Size { rows, cols }),
         }
     }
 
