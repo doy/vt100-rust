@@ -62,11 +62,11 @@ impl Cell {
         self.attrs.italic()
     }
 
-    pub fn inverse(&self) -> bool {
-        self.attrs.inverse()
-    }
-
     pub fn underline(&self) -> bool {
         self.attrs.underline()
+    }
+
+    pub fn inverse(&self) -> bool {
+        self.attrs.inverse()
     }
 }
