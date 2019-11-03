@@ -10,6 +10,6 @@ mod row;
 mod screen;
 mod unicode;
 
-pub use cell::Cell;
 pub use attrs::Color;
+pub use cell::Cell;
 pub use screen::Screen;

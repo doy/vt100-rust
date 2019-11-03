@@ -657,10 +657,8 @@ impl vte::Perform for State {
                 'h' => self.sm(canonicalize_params_multi(params)),
                 'l' => self.rm(canonicalize_params_multi(params)),
                 'm' => self.sgr(canonicalize_params_multi(params)),
-                'r' => self.csr(canonicalize_params_csr(
-                    params,
-                    self.grid().size(),
-                )),
+                'r' => self
+                    .csr(canonicalize_params_csr(params, self.grid().size())),
                 _ => {
                     if log::log_enabled!(log::Level::Warn) {
                         log::warn!(
