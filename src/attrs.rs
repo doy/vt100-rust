@@ -1,7 +1,13 @@
+/// Represents a foreground or background color for cells.
 #[derive(Eq, PartialEq, Debug, Copy, Clone)]
 pub enum Color {
+    /// The default terminal color.
     Default,
+
+    /// An indexed terminal color.
     Idx(u8),
+
+    /// An RGB terminal color. The parameters are (red, green, blue).
     Rgb(u8, u8, u8),
 }
 

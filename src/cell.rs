@@ -1,5 +1,6 @@
 use unicode_normalization::UnicodeNormalization as _;
 
+/// Represents a single terminal cell.
 #[derive(Clone, Debug, Default)]
 pub struct Cell {
     contents: String,
@@ -7,6 +8,7 @@ pub struct Cell {
 }
 
 impl Cell {
+    /// Creates a new cell.
     pub fn new() -> Self {
         Self::default()
     }
@@ -31,14 +33,21 @@ impl Cell {
         self.attrs.clear();
     }
 
+    /// Returns the text contents of the cell.
+    ///
+    /// Can include multiple unicode characters if combining characters are
+    /// used, but will contain at most one character with a non-zero character
+    /// width.
     pub fn contents(&self) -> &str {
         &self.contents
     }
 
+    /// Returns whether the cell contains any text data.
     pub fn has_contents(&self) -> bool {
         self.contents != ""
     }
 
+    /// Returns whether the text data in the cell represents a wide character.
     pub fn is_wide(&self) -> bool {
         crate::unicode::str_width(&self.contents) > 1
     }
@@ -47,26 +56,36 @@ impl Cell {
         &self.attrs
     }
 
+    /// Returns the foreground color of the cell.
     pub fn fgcolor(&self) -> crate::attrs::Color {
         self.attrs.fgcolor
     }
 
+    /// Returns the background color of the cell.
     pub fn bgcolor(&self) -> crate::attrs::Color {
         self.attrs.bgcolor
     }
 
+    /// Returns whether the cell should be rendered with the bold text
+    /// attribute.
     pub fn bold(&self) -> bool {
         self.attrs.bold()
     }
 
+    /// Returns whether the cell should be rendered with the italic text
+    /// attribute.
     pub fn italic(&self) -> bool {
         self.attrs.italic()
     }
 
+    /// Returns whether the cell should be rendered with the underlined text
+    /// attribute.
     pub fn underline(&self) -> bool {
         self.attrs.underline()
     }
 
+    /// Returns whether the cell should be rendered with the inverse text
+    /// attribute.
     pub fn inverse(&self) -> bool {
         self.attrs.inverse()
     }
