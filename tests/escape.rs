@@ -14,10 +14,7 @@ fn deckpam() {
 fn ri() {
     let mut screen = vt100::Screen::new(24, 80);
     screen.process(b"foo\nbar\x1bMbaz");
-    assert_eq!(
-        screen.contents(0, 0, 23, 79),
-        "foo   baz\n   bar\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
-    );
+    assert_eq!(screen.contents(0, 0, 23, 79), "foo   baz\n   bar");
 }
 
 #[test]
@@ -28,14 +25,8 @@ fn ris() {
     let cell = screen.cell(0, 0).unwrap();
     assert_eq!(cell.contents(), "");
 
-    assert_eq!(
-        screen.contents(0, 0, 23, 79),
-        "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
-    );
-    assert_eq!(
-        screen.contents_formatted(0, 0, 23, 79),
-        "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
-    );
+    assert_eq!(screen.contents(0, 0, 23, 79), "");
+    assert_eq!(screen.contents_formatted(0, 0, 23, 79), "");
 
     assert_eq!(screen.title(), "");
     assert_eq!(screen.icon_name(), "");
@@ -67,11 +58,11 @@ fn ris() {
     let cell = screen.cell(0, 0).unwrap();
     assert_eq!(cell.contents(), "f");
 
+    assert_eq!(screen.contents(0, 0, 23, 79), "foo");
     assert_eq!(
-        screen.contents(0, 0, 23, 79),
-        "foo\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+        screen.contents_formatted(0, 0, 23, 79),
+        "f\x1b[31;47;1;3;4moo"
     );
-    assert_eq!(screen.contents_formatted(0, 0, 23, 79), "f\x1b[31;47;1;3;4moo\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
 
     assert_eq!(screen.title(), "window title");
     assert_eq!(screen.icon_name(), "window icon name");
@@ -105,14 +96,8 @@ fn ris() {
     let cell = screen.cell(0, 0).unwrap();
     assert_eq!(cell.contents(), "");
 
-    assert_eq!(
-        screen.contents(0, 0, 23, 79),
-        "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
-    );
-    assert_eq!(
-        screen.contents_formatted(0, 0, 23, 79),
-        "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
-    );
+    assert_eq!(screen.contents(0, 0, 23, 79), "");
+    assert_eq!(screen.contents_formatted(0, 0, 23, 79), "");
 
     // title and icon name don't change with reset
     assert_eq!(screen.title(), "window title");
@@ -154,17 +139,11 @@ fn vb() {
 fn decsc() {
     let mut screen = vt100::Screen::new(24, 80);
     screen.process(b"foo\x1b7\r\n\r\n\r\n         bar\x1b8baz");
-    assert_eq!(
-        screen.contents(0, 0, 23, 79),
-        "foobaz\n\n\n         bar\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
-    );
+    assert_eq!(screen.contents(0, 0, 23, 79), "foobaz\n\n\n         bar");
     assert_eq!(screen.cursor_position(), (0, 6));
 
     screen.process(b"\x1b[?47h\x1b[20;20H");
-    assert_eq!(
-        screen.contents(0, 0, 23, 79),
-        "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
-    );
+    assert_eq!(screen.contents(0, 0, 23, 79), "");
     assert_eq!(screen.cursor_position(), (19, 19));
 
     screen.process(b"\x1b8");
@@ -180,20 +159,20 @@ fn decsc() {
     assert_eq!(screen.cursor_position(), (4, 3));
     assert_eq!(
         screen.contents_formatted(0, 0, 23, 79),
-        "\n\n\n\n\x1b[31mfoo\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+        "\r\n\r\n\r\n\r\n\x1b[31mfoo"
     );
 
     screen.process(b"\x1b[32m\x1b[?6lbar");
     assert_eq!(screen.cursor_position(), (0, 3));
     assert_eq!(
         screen.contents_formatted(0, 0, 23, 79),
-        "\x1b[32mbar\n\n\n\n\x1b[31mfoo\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+        "\x1b[32mbar\r\n\r\n\r\n\r\n\x1b[31mfoo"
     );
 
     screen.process(b"\x1b8\x1b[Hz");
     assert_eq!(screen.cursor_position(), (4, 1));
     assert_eq!(
         screen.contents_formatted(0, 0, 23, 79),
-        "\x1b[32mbar\n\n\n\n\x1b[31mzoo\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+        "\x1b[32mbar\r\n\r\n\r\n\r\n\x1b[31mzoo"
     );
 }

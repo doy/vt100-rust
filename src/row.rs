@@ -119,7 +119,7 @@ impl Row {
             }
         }
         if !self.wrapped {
-            contents += "\n";
+            contents += "\r\n";
         }
         (contents, prev_attrs)
     }

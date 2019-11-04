@@ -15,14 +15,8 @@ fn init() {
     let cell = screen.cell(0, 80);
     assert!(cell.is_none());
 
-    assert_eq!(
-        screen.contents(0, 0, 23, 79),
-        "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
-    );
-    assert_eq!(
-        screen.contents_formatted(0, 0, 23, 79),
-        "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
-    );
+    assert_eq!(screen.contents(0, 0, 23, 79), "");
+    assert_eq!(screen.contents_formatted(0, 0, 23, 79), "");
 
     assert_eq!(screen.title(), "");
     assert_eq!(screen.icon_name(), "");

@@ -9,14 +9,8 @@ fn ascii() {
     assert_eq!(screen.cell(0, 2).unwrap().contents(), "o");
     assert_eq!(screen.cell(0, 3).unwrap().contents(), "");
     assert_eq!(screen.cell(1, 0).unwrap().contents(), "");
-    assert_eq!(
-        screen.contents(0, 0, 23, 79),
-        "foo\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
-    );
-    assert_eq!(
-        screen.contents(0, 0, 500, 500),
-        "foo\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
-    );
+    assert_eq!(screen.contents(0, 0, 23, 79), "foo");
+    assert_eq!(screen.contents(0, 0, 500, 500), "foo");
 }
 
 #[test]
@@ -29,14 +23,8 @@ fn utf8() {
     assert_eq!(screen.cell(0, 3).unwrap().contents(), "é");
     assert_eq!(screen.cell(0, 4).unwrap().contents(), "");
     assert_eq!(screen.cell(1, 0).unwrap().contents(), "");
-    assert_eq!(
-        screen.contents(0, 0, 23, 79),
-        "café\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
-    );
-    assert_eq!(
-        screen.contents(0, 0, 500, 500),
-        "café\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
-    );
+    assert_eq!(screen.contents(0, 0, 23, 79), "café");
+    assert_eq!(screen.contents(0, 0, 500, 500), "café");
 }
 
 #[test]
@@ -54,14 +42,8 @@ fn newlines() {
     assert_eq!(screen.cell(2, 2).unwrap().contents(), "d");
     assert_eq!(screen.cell(0, 3).unwrap().contents(), "");
     assert_eq!(screen.cell(3, 0).unwrap().contents(), "");
-    assert_eq!(
-        screen.contents(0, 0, 23, 79),
-        "f\noo\nood\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
-    );
-    assert_eq!(
-        screen.contents(0, 0, 500, 500),
-        "f\noo\nood\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
-    );
+    assert_eq!(screen.contents(0, 0, 23, 79), "f\noo\nood");
+    assert_eq!(screen.contents(0, 0, 500, 500), "f\noo\nood");
 }
 
 #[test]
@@ -76,14 +58,8 @@ fn wide() {
     assert_eq!(screen.cell(0, 5).unwrap().contents(), "");
     assert_eq!(screen.cell(0, 6).unwrap().contents(), "");
     assert_eq!(screen.cell(1, 0).unwrap().contents(), "");
-    assert_eq!(
-        screen.contents(0, 0, 23, 79),
-        "aデbネ\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
-    );
-    assert_eq!(
-        screen.contents(0, 0, 500, 500),
-        "aデbネ\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
-    );
+    assert_eq!(screen.contents(0, 0, 23, 79), "aデbネ");
+    assert_eq!(screen.contents(0, 0, 500, 500), "aデbネ");
 }
 
 #[test]
@@ -94,9 +70,9 @@ fn combining() {
     screen.process("\u{0301}".as_bytes());
     assert_eq!(screen.cell(0, 0).unwrap().contents(), "á");
     screen.process(b"\x1b[20;20Habcdefg");
-    assert_eq!(screen.contents(19, 19, 19, 26), "abcdefg\n");
+    assert_eq!(screen.contents(19, 19, 19, 26), "abcdefg");
     screen.process("\x1b[20;25H\u{0301}".as_bytes());
-    assert_eq!(screen.contents(19, 19, 19, 26), "abcdéfg\n");
+    assert_eq!(screen.contents(19, 19, 19, 26), "abcdéfg");
     screen.process(b"\x1b[10;78Haaa");
     assert_eq!(screen.cell(9, 79).unwrap().contents(), "a");
     screen.process("\r\n\u{0301}".as_bytes());
@@ -108,34 +84,34 @@ fn combining() {
 fn wrap() {
     let mut screen = vt100::Screen::new(24, 80);
     screen.process(b"0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789");
-    assert_eq!(screen.contents(0, 0, 23, 79), "0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
+    assert_eq!(screen.contents(0, 0, 23, 79), "0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789");
     screen.process(b"\x1b[5H01234567890123456789012345678901234567890123456789012345678901234567890123456789");
     screen.process(b"\x1b[6H01234567890123456789012345678901234567890123456789012345678901234567890123456789");
-    assert_eq!(screen.contents(0, 0, 23, 79), "0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789\n\n\n01234567890123456789012345678901234567890123456789012345678901234567890123456789\n01234567890123456789012345678901234567890123456789012345678901234567890123456789\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
+    assert_eq!(screen.contents(0, 0, 23, 79), "0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789\n\n\n01234567890123456789012345678901234567890123456789012345678901234567890123456789\n01234567890123456789012345678901234567890123456789012345678901234567890123456789");
 
     screen.process(b"\x1b[H\x1b[J");
     screen.process(b"0123456789012345678901234567890123456789012345678901234567890123456789012345678");
-    assert_eq!(screen.contents(0, 0, 23, 79), "0123456789012345678901234567890123456789012345678901234567890123456789012345678\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
+    assert_eq!(screen.contents(0, 0, 23, 79), "0123456789012345678901234567890123456789012345678901234567890123456789012345678");
     assert_eq!(screen.cursor_position(), (0, 79));
     screen.process(b"9");
-    assert_eq!(screen.contents(0, 0, 23, 79), "01234567890123456789012345678901234567890123456789012345678901234567890123456789\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
+    assert_eq!(screen.contents(0, 0, 23, 79), "01234567890123456789012345678901234567890123456789012345678901234567890123456789");
     assert_eq!(screen.cursor_position(), (0, 80));
     screen.process(b"a");
-    assert_eq!(screen.contents(0, 0, 23, 79), "01234567890123456789012345678901234567890123456789012345678901234567890123456789a\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
+    assert_eq!(screen.contents(0, 0, 23, 79), "01234567890123456789012345678901234567890123456789012345678901234567890123456789a");
     assert_eq!(screen.cursor_position(), (1, 1));
     screen.process(b"b");
-    assert_eq!(screen.contents(0, 0, 23, 79), "01234567890123456789012345678901234567890123456789012345678901234567890123456789ab\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
+    assert_eq!(screen.contents(0, 0, 23, 79), "01234567890123456789012345678901234567890123456789012345678901234567890123456789ab");
     assert_eq!(screen.cursor_position(), (1, 2));
 
     screen.process(b"\x1b[H\x1b[J");
     screen.process(b"012345678901234567890123456789012345678901234567890123456789012345678901234567");
-    assert_eq!(screen.contents(0, 0, 23, 79), "012345678901234567890123456789012345678901234567890123456789012345678901234567\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
+    assert_eq!(screen.contents(0, 0, 23, 79), "012345678901234567890123456789012345678901234567890123456789012345678901234567");
     assert_eq!(screen.cursor_position(), (0, 78));
     screen.process("ネ".as_bytes());
-    assert_eq!(screen.contents(0, 0, 23, 79), "012345678901234567890123456789012345678901234567890123456789012345678901234567ネ\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
+    assert_eq!(screen.contents(0, 0, 23, 79), "012345678901234567890123456789012345678901234567890123456789012345678901234567ネ");
     assert_eq!(screen.cursor_position(), (0, 80));
     screen.process(b"a");
-    assert_eq!(screen.contents(0, 0, 23, 79), "012345678901234567890123456789012345678901234567890123456789012345678901234567ネa\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
+    assert_eq!(screen.contents(0, 0, 23, 79), "012345678901234567890123456789012345678901234567890123456789012345678901234567ネa");
     assert_eq!(screen.cursor_position(), (1, 1));
     assert_eq!(screen.cell(0, 77).unwrap().contents(), "7");
     assert_eq!(screen.cell(0, 78).unwrap().contents(), "ネ");
@@ -145,13 +121,13 @@ fn wrap() {
 
     screen.process(b"\x1b[H\x1b[J");
     screen.process(b"0123456789012345678901234567890123456789012345678901234567890123456789012345678");
-    assert_eq!(screen.contents(0, 0, 23, 79), "0123456789012345678901234567890123456789012345678901234567890123456789012345678\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
+    assert_eq!(screen.contents(0, 0, 23, 79), "0123456789012345678901234567890123456789012345678901234567890123456789012345678");
     assert_eq!(screen.cursor_position(), (0, 79));
     screen.process("ネ".as_bytes());
-    assert_eq!(screen.contents(0, 0, 23, 79), "0123456789012345678901234567890123456789012345678901234567890123456789012345678ネ\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
+    assert_eq!(screen.contents(0, 0, 23, 79), "0123456789012345678901234567890123456789012345678901234567890123456789012345678ネ");
     assert_eq!(screen.cursor_position(), (1, 2));
     screen.process(b"a");
-    assert_eq!(screen.contents(0, 0, 23, 79), "0123456789012345678901234567890123456789012345678901234567890123456789012345678ネa\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
+    assert_eq!(screen.contents(0, 0, 23, 79), "0123456789012345678901234567890123456789012345678901234567890123456789012345678ネa");
     assert_eq!(screen.cursor_position(), (1, 3));
     assert_eq!(screen.cell(0, 77).unwrap().contents(), "7");
     assert_eq!(screen.cell(0, 78).unwrap().contents(), "8");
@@ -166,7 +142,7 @@ fn wrap() {
 fn soft_hyphen() {
     let mut screen = vt100::Screen::new(24, 140);
     screen.process(b"Free En\xc2\xadter\xc2\xadprise is gonna ru\xc2\xadin ev\xc2\xadery\xc2\xadthing good un\xc2\xadless we take a knife to its tes\xc2\xadti\xc2\xadcles first.");
-    assert_eq!(screen.contents(0, 0, 0, 139), "Free En\u{00ad}ter\u{00ad}prise is gonna ru\u{00ad}in ev\u{00ad}ery\u{00ad}thing good un\u{00ad}less we take a knife to its tes\u{00ad}ti\u{00ad}cles first.\n");
+    assert_eq!(screen.contents(0, 0, 0, 139), "Free En\u{00ad}ter\u{00ad}prise is gonna ru\u{00ad}in ev\u{00ad}ery\u{00ad}thing good un\u{00ad}less we take a knife to its tes\u{00ad}ti\u{00ad}cles first.");
     assert_eq!(screen.cell(0, 0).unwrap().contents(), "F");
     assert_eq!(screen.cell(0, 1).unwrap().contents(), "r");
     assert_eq!(screen.cell(0, 2).unwrap().contents(), "e");

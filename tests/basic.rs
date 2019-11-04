@@ -9,7 +9,7 @@ fn process_text() {
     let mut screen = vt100::Screen::new(24, 80);
     let input = b"foo\x1b[31m\x1b[32mb\x1b[3;7;42ma\x1b[23mr";
     screen.process(input);
-    assert_eq!(screen.contents(0, 0, 0, 50), "foobar\n");
+    assert_eq!(screen.contents(0, 0, 0, 50), "foobar");
 }
 
 #[test]

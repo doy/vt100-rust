@@ -117,7 +117,7 @@ impl Grid {
         for row in self.rows().skip(row_start).take(row_end - row_start + 1) {
             contents += &row.contents(col_start, col_end);
         }
-        contents
+        contents.trim_end().to_string()
     }
 
     pub fn contents_formatted(
@@ -137,7 +137,7 @@ impl Grid {
             contents += new_contents;
             prev_attrs = *new_attrs;
         }
-        contents
+        contents.trim_end().to_string()
     }
 
     pub fn erase_all(&mut self) {
