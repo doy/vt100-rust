@@ -7,12 +7,15 @@ fn get_file_contents(name: &str) -> Vec<u8> {
     buf
 }
 
-fn write_to_screen(chunks: &mut Vec<Vec<u8>>) -> String {
+fn write_to_screen(chunks: &mut Vec<Vec<u8>>) -> (String, String) {
     let mut screen = vt100::Screen::new(37, 193);
     for chunk in chunks.iter_mut() {
         screen.process(&chunk);
     }
-    screen.contents(0, 0, 36, 192)
+    (
+        screen.contents(0, 0, 36, 192),
+        screen.contents_formatted(0, 0, 36, 192),
+    )
 }
 
 fn test_splits(filename: &str) {
