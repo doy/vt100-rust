@@ -27,6 +27,18 @@ impl Grid {
         crate::row::Row::new(self.size.cols)
     }
 
+    pub fn clear(&mut self) {
+        self.pos = Pos::default();
+        self.saved_pos = Pos::default();
+        for row in self.rows_mut() {
+            row.clear();
+        }
+        self.scroll_top = 0;
+        self.scroll_bottom = self.size.rows - 1;
+        self.origin_mode = false;
+        self.saved_origin_mode = false;
+    }
+
     pub fn size(&self) -> Size {
         self.size
     }
@@ -141,7 +153,9 @@ impl Grid {
     }
 
     pub fn erase_all(&mut self) {
-        self.rows = vec![self.new_row(); self.size.rows as usize];
+        for row in self.rows_mut() {
+            row.clear();
+        }
     }
 
     pub fn erase_all_forward(&mut self) {
@@ -171,7 +185,7 @@ impl Grid {
         let row = self.current_row_mut();
         row.wrap(false);
         for cell in row.cells_mut().skip(pos.col as usize) {
-            *cell = crate::cell::Cell::default();
+            cell.clear();
         }
     }
 
@@ -179,7 +193,7 @@ impl Grid {
         let pos = self.pos;
         let row = self.current_row_mut();
         for cell in row.cells_mut().take(pos.col as usize + 1) {
-            *cell = crate::cell::Cell::default();
+            cell.clear();
         }
     }
 
@@ -209,7 +223,7 @@ impl Grid {
         for cell in
             row.cells_mut().skip(pos.col as usize).take(count as usize)
         {
-            *cell = crate::cell::Cell::default();
+            cell.clear();
         }
     }
 

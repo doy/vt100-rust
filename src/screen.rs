@@ -83,10 +83,6 @@ impl State {
         }
     }
 
-    fn new_grid(&self) -> crate::grid::Grid {
-        crate::grid::Grid::new(self.grid().size())
-    }
-
     fn grid(&self) -> &crate::grid::Grid {
         if self.mode(Mode::AlternateScreen) {
             &self.alternate_grid
@@ -198,7 +194,7 @@ impl State {
                 })
                 .unwrap();
             if prev_cell.is_wide() {
-                prev_cell.reset();
+                prev_cell.clear();
             }
         }
 
@@ -442,7 +438,7 @@ impl State {
                 1006 => self.set_mouse_encoding(MouseProtocolEncoding::Sgr),
                 1049 => {
                     self.decsc();
-                    self.alternate_grid = self.new_grid();
+                    self.alternate_grid.clear();
                     self.enter_alternate_grid();
                 }
                 2004 => self.set_mode(Mode::BracketedPaste),

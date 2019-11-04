@@ -27,6 +27,12 @@ pub struct Attrs {
 }
 
 impl Attrs {
+    pub fn clear(&mut self) {
+        self.fgcolor = Color::default();
+        self.bgcolor = Color::default();
+        self.mode = enumset::EnumSet::default();
+    }
+
     pub fn bold(&self) -> bool {
         self.mode.contains(TextMode::Bold)
     }

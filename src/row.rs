@@ -15,7 +15,10 @@ impl Row {
     }
 
     pub fn clear(&mut self) {
-        *self = Self::new(self.cells.len().try_into().unwrap());
+        for cell in &mut self.cells {
+            cell.clear();
+        }
+        self.wrapped = false;
     }
 
     pub fn cells_mut(

@@ -26,8 +26,9 @@ impl Cell {
         }
     }
 
-    pub(crate) fn reset(&mut self) {
-        *self = Self::default();
+    pub(crate) fn clear(&mut self) {
+        self.contents.clear();
+        self.attrs.clear();
     }
 
     pub fn contents(&self) -> &str {
