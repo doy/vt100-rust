@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.0] - 2019-11-04
+
+### Changed
+
+* Reimplemented in pure safe rust, with a much more accurate parser
+* A bunch of minor API tweaks, some backwards-incompatible
+
 ## [0.1.2] - 2016-06-04
 
 ### Fixed
