@@ -9,6 +9,7 @@ homepage = "https://github.com/doy/vt100-rust"
 repository = "https://github.com/doy/vt100-rust"
 readme = "README.md"
 keywords = ["terminal", "vt100"]
+categories = ["command-line-interface", "encoding"]
 license = "MIT"
 
 [dependencies]

@@ -16,6 +16,8 @@
 //! screen.process(b"this text is \x1b[31mRED\x1b[m");
 //! ```
 
+// XXX this is broken with ale
+// #![warn(clippy::cargo)]
 #![warn(clippy::pedantic)]
 #![warn(clippy::nursery)]
 #![allow(clippy::missing_const_for_fn)]
