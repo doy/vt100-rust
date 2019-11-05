@@ -359,9 +359,19 @@ fn diff() {
 }
 
 #[test]
-fn diff_crawl() {
+fn diff_crawl_short() {
+    diff_crawl(1000);
+}
+
+#[test]
+#[ignore]
+fn diff_crawl_full() {
+    diff_crawl(7625);
+}
+
+fn diff_crawl(i: usize) {
     let mut parser = vt100::Parser::new(24, 80);
-    let screens: Vec<_> = (1..=30)
+    let screens: Vec<_> = (1..=i)
         .map(|i| {
             let mut file =
                 std::fs::File::open(format!("tests/data/crawl/crawl{}", i))
@@ -402,11 +412,17 @@ fn compare_diff(
     let (rows, cols) = screen.size();
     let mut parser = vt100::Parser::new(rows, cols);
     parser.process(prev_parsed);
+    // need to reparse the formatted contents here in case we're in the middle
+    // of parsing an escape sequence, since applying the diff at that location
+    // directly won't work in that case
+    let contents = parser.screen().contents_formatted();
+    let mut parser = vt100::Parser::new(rows, cols);
+    parser.process(&contents);
+    compare_cells(parser.screen(), &prev_screen);
     assert_eq!(
         parser.screen().contents_formatted(),
         prev_screen.contents_formatted()
     );
-    compare_cells(parser.screen(), &prev_screen);
 
     parser.process(&screen.contents_diff(prev_screen));
     if parser.screen().contents_formatted() != screen.contents_formatted() {
@@ -423,11 +439,11 @@ fn compare_diff(
             .write_all(&screen.contents_diff(prev_screen))
             .unwrap();
     }
+    compare_cells(parser.screen(), &screen);
     assert_eq!(
         parser.screen().contents_formatted(),
         screen.contents_formatted()
     );
-    compare_cells(parser.screen(), &screen);
 }
 
 fn compare_cells(screen1: &vt100::Screen, screen2: &vt100::Screen) {
@@ -439,13 +455,55 @@ fn compare_cells(screen1: &vt100::Screen, screen2: &vt100::Screen) {
             let cell1 = screen1.cell(row, col).unwrap();
             let cell2 = screen2.cell(row, col).unwrap();
 
-            assert_eq!(cell1.contents(), cell2.contents());
-            assert_eq!(cell1.fgcolor(), cell2.fgcolor());
-            assert_eq!(cell1.bgcolor(), cell2.bgcolor());
-            assert_eq!(cell1.bold(), cell2.bold());
-            assert_eq!(cell1.italic(), cell2.italic());
-            assert_eq!(cell1.underline(), cell2.underline());
-            assert_eq!(cell1.inverse(), cell2.inverse());
+            assert_eq!(
+                cell1.contents(),
+                cell2.contents(),
+                "cell at position ({},{}) had different contents",
+                row + 1,
+                col + 1
+            );
+            assert_eq!(
+                cell1.fgcolor(),
+                cell2.fgcolor(),
+                "cell at position ({},{}) had different fgcolor",
+                row + 1,
+                col + 1
+            );
+            assert_eq!(
+                cell1.bgcolor(),
+                cell2.bgcolor(),
+                "cell at position ({},{}) had different bgcolor",
+                row + 1,
+                col + 1
+            );
+            assert_eq!(
+                cell1.bold(),
+                cell2.bold(),
+                "cell at position ({},{}) had different bold",
+                row + 1,
+                col + 1
+            );
+            assert_eq!(
+                cell1.italic(),
+                cell2.italic(),
+                "cell at position ({},{}) had different italic",
+                row + 1,
+                col + 1
+            );
+            assert_eq!(
+                cell1.underline(),
+                cell2.underline(),
+                "cell at position ({},{}) had different underline",
+                row + 1,
+                col + 1
+            );
+            assert_eq!(
+                cell1.inverse(),
+                cell2.inverse(),
+                "cell at position ({},{}) had different inverse",
+                row + 1,
+                col + 1
+            );
         }
     }
 }
