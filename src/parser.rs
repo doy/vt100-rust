@@ -1,3 +1,5 @@
+/// A parser for terminal output which produces an in-memory representation of
+/// the terminal contents.
 pub struct Parser {
     parser: vte::Parser,
     screen: crate::screen::Screen,
@@ -23,10 +25,14 @@ impl Parser {
         }
     }
 
+    /// Returns a reference to a `Screen` object containing the terminal
+    /// state.
     pub fn screen(&self) -> &crate::screen::Screen {
         &self.screen
     }
 
+    /// Returns a mutable reference to a `Screen` object containing the
+    /// terminal state.
     pub fn screen_mut(&mut self) -> &mut crate::screen::Screen {
         &mut self.screen
     }

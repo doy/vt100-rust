@@ -69,6 +69,7 @@ impl Default for MouseProtocolEncoding {
     }
 }
 
+/// Represents the overall terminal state.
 #[derive(Clone, Debug)]
 pub struct Screen {
     grid: crate::grid::Grid,

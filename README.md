@@ -14,6 +14,10 @@ such as terminal multiplexers or terminal recording applications.
 ## Synopsis
 
 ```rust
-let mut screen = vt100::Screen::new(24, 80);
-screen.process(b"this text is \x1b[31mRED\x1b[m");
+let mut parser = vt100::Parser::new(24, 80);
+parser.process(b"this text is \x1b[31mRED\x1b[m");
+assert_eq!(
+    parser.screen().cell(0, 13).unwrap().fgcolor(),
+    vt100::Color::Idx(1),
+);
 ```
