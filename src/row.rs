@@ -112,7 +112,7 @@ impl Row {
 
                 let cell_contents = cell.contents();
                 let cell_contents = if cell_contents == "" {
-                    " "
+                    "\x1b[C"
                 } else {
                     cell_contents
                 };

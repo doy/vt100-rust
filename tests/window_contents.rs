@@ -54,6 +54,18 @@ fn formatted() {
     assert_eq!(parser.screen().contents_formatted(0, 0 ,23, 79), &b"foo\x1b[33;1;7mb\x1b[42;22ma\x1b[35mr\r\n\x1b[45mq\x1b[38;2;123;213;231mu\x1b[38;5;254mu\x1b[39mx"[..]);
 }
 
+#[test]
+fn empty_cells() {
+    let mut parser = vt100::Parser::new(24, 80);
+    parser.process(b"\x1b[5C\x1b[32m bar\x1b[H\x1b[31mfoo");
+    compare_formatted(&parser);
+    assert_eq!(parser.screen().contents(0, 0, 23, 79), "foo   bar");
+    assert_eq!(
+        parser.screen().contents_formatted(0, 0, 23, 79),
+        b"\x1b[31mfoo\x1b[m\x1b[C\x1b[C\x1b[32m bar"
+    );
+}
+
 fn compare_formatted(parser: &vt100::Parser) {
     let (rows, cols) = parser.screen().size();
     let contents =
