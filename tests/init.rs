@@ -2,42 +2,45 @@
 
 #[test]
 fn init() {
-    let mut screen = vt100::Screen::new(24, 80);
-    assert_eq!(screen.size(), (24, 80));
-    assert_eq!(screen.cursor_position(), (0, 0));
+    let mut parser = vt100::Parser::new(24, 80);
+    assert_eq!(parser.screen().size(), (24, 80));
+    assert_eq!(parser.screen().cursor_position(), (0, 0));
 
-    let cell = screen.cell(0, 0);
+    let cell = parser.screen().cell(0, 0);
     assert_eq!(cell.unwrap().contents(), "");
-    let cell = screen.cell(23, 79);
+    let cell = parser.screen().cell(23, 79);
     assert_eq!(cell.unwrap().contents(), "");
-    let cell = screen.cell(24, 0);
+    let cell = parser.screen().cell(24, 0);
     assert!(cell.is_none());
-    let cell = screen.cell(0, 80);
+    let cell = parser.screen().cell(0, 80);
     assert!(cell.is_none());
 
-    assert_eq!(screen.contents(0, 0, 23, 79), "");
-    assert_eq!(screen.contents_formatted(0, 0, 23, 79), "");
+    assert_eq!(parser.screen().contents(0, 0, 23, 79), "");
+    assert_eq!(parser.screen().contents_formatted(0, 0, 23, 79), "");
 
-    assert_eq!(screen.title(), "");
-    assert_eq!(screen.icon_name(), "");
+    assert_eq!(parser.screen().title(), "");
+    assert_eq!(parser.screen().icon_name(), "");
 
-    assert_eq!(screen.fgcolor(), vt100::Color::Default);
-    assert_eq!(screen.bgcolor(), vt100::Color::Default);
+    assert_eq!(parser.screen().fgcolor(), vt100::Color::Default);
+    assert_eq!(parser.screen().bgcolor(), vt100::Color::Default);
 
-    assert!(!screen.bold());
-    assert!(!screen.italic());
-    assert!(!screen.underline());
-    assert!(!screen.inverse());
+    assert!(!parser.screen().bold());
+    assert!(!parser.screen().italic());
+    assert!(!parser.screen().underline());
+    assert!(!parser.screen().inverse());
 
-    assert!(!screen.check_visual_bell());
-    assert!(!screen.check_audible_bell());
-    assert!(!screen.application_keypad());
-    assert!(!screen.application_cursor());
-    assert!(!screen.hide_cursor());
-    assert!(!screen.bracketed_paste());
-    assert_eq!(screen.mouse_protocol_mode(), vt100::MouseProtocolMode::None);
+    assert!(!parser.screen_mut().check_visual_bell());
+    assert!(!parser.screen_mut().check_audible_bell());
+    assert!(!parser.screen().application_keypad());
+    assert!(!parser.screen().application_cursor());
+    assert!(!parser.screen().hide_cursor());
+    assert!(!parser.screen().bracketed_paste());
     assert_eq!(
-        screen.mouse_protocol_encoding(),
+        parser.screen().mouse_protocol_mode(),
+        vt100::MouseProtocolMode::None
+    );
+    assert_eq!(
+        parser.screen().mouse_protocol_encoding(),
         vt100::MouseProtocolEncoding::Default
     );
 }

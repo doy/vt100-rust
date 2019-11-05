@@ -69,7 +69,7 @@ impl Default for MouseProtocolEncoding {
     }
 }
 
-struct State {
+pub struct Screen {
     grid: crate::grid::Grid,
     alternate_grid: crate::grid::Grid,
 
@@ -85,8 +85,8 @@ struct State {
     mouse_protocol_encoding: MouseProtocolEncoding,
 }
 
-impl State {
-    fn new(size: crate::grid::Size) -> Self {
+impl Screen {
+    pub(crate) fn new(size: crate::grid::Size) -> Self {
         Self {
             grid: crate::grid::Grid::new(size),
             alternate_grid: crate::grid::Grid::new(size),
@@ -102,6 +102,172 @@ impl State {
             mouse_protocol_mode: MouseProtocolMode::default(),
             mouse_protocol_encoding: MouseProtocolEncoding::default(),
         }
+    }
+
+    /// Resizes the terminal.
+    pub fn set_size(&mut self, rows: u16, cols: u16) {
+        self.grid.set_size(crate::grid::Size { rows, cols });
+        self.alternate_grid
+            .set_size(crate::grid::Size { rows, cols });
+    }
+
+    /// Returns the current size of the terminal.
+    ///
+    /// The return value will be (rows, cols).
+    pub fn size(&self) -> (u16, u16) {
+        let size = self.grid().size();
+        (size.rows, size.cols)
+    }
+
+    /// Returns the text contents of the subset of the terminal given by the
+    /// parameters.
+    ///
+    /// This will not include any formatting information, and will be in plain
+    /// text format.
+    pub fn contents(
+        &self,
+        row_start: u16,
+        col_start: u16,
+        row_end: u16,
+        col_end: u16,
+    ) -> String {
+        self.grid().contents(row_start, col_start, row_end, col_end)
+    }
+
+    /// Returns the formatted contents of the subset of the terminal given by
+    /// the parameters.
+    ///
+    /// Formatting information will be included inline as terminal escape
+    /// codes. The result will be suitable for feeding directly to a raw
+    /// terminal parser, and will result in the same visual output. Internal
+    /// terminal modes (such as application keypad mode or alternate screen
+    /// mode) will not be included here.
+    pub fn contents_formatted(
+        &self,
+        row_start: u16,
+        col_start: u16,
+        row_end: u16,
+        col_end: u16,
+    ) -> String {
+        self.grid()
+            .contents_formatted(row_start, col_start, row_end, col_end)
+    }
+
+    /// Returns the `Cell` object at the given location in the terminal, if it
+    /// exists.
+    pub fn cell(&self, row: u16, col: u16) -> Option<&crate::cell::Cell> {
+        self.grid().cell(crate::grid::Pos { row, col })
+    }
+
+    /// Returns the current cursor position of the terminal.
+    ///
+    /// The return value will be (row, col).
+    pub fn cursor_position(&self) -> (u16, u16) {
+        let pos = self.grid().pos();
+        (pos.row, pos.col)
+    }
+
+    /// Returns the currently active foreground color.
+    ///
+    /// This is the foreground color which will be used when writing text to a
+    /// new cell.
+    pub fn fgcolor(&self) -> crate::attrs::Color {
+        self.attrs.fgcolor
+    }
+
+    /// Returns the currently active background color.
+    ///
+    /// This is the background color which will be used when writing text to a
+    /// new cell.
+    pub fn bgcolor(&self) -> crate::attrs::Color {
+        self.attrs.bgcolor
+    }
+
+    /// Returns whether the bold text attribute is active.
+    ///
+    /// If true, text written to a new cell will have the bold text attribute.
+    pub fn bold(&self) -> bool {
+        self.attrs.bold()
+    }
+
+    /// Returns whether the italic text attribute is active.
+    ///
+    /// If true, text written to a new cell will have the italic text attribute.
+    pub fn italic(&self) -> bool {
+        self.attrs.italic()
+    }
+
+    /// Returns whether the underline text attribute is active.
+    ///
+    /// If true, text written to a new cell will have the underline text
+    /// attribute.
+    pub fn underline(&self) -> bool {
+        self.attrs.underline()
+    }
+
+    /// Returns whether the inverse text attribute is active.
+    ///
+    /// If true, text written to a new cell will have the inverse text
+    /// attribute.
+    pub fn inverse(&self) -> bool {
+        self.attrs.inverse()
+    }
+
+    /// Returns the terminal's window title.
+    pub fn title(&self) -> &str {
+        &self.title
+    }
+
+    /// Returns the terminal's icon name.
+    pub fn icon_name(&self) -> &str {
+        &self.icon_name
+    }
+
+    /// Returns whether an audible bell has occurred since the last time this
+    /// method was called.
+    pub fn check_audible_bell(&mut self) -> bool {
+        self.check_output(Output::AudibleBell)
+    }
+
+    /// Returns whether an visual bell has occurred since the last time this
+    /// method was called.
+    pub fn check_visual_bell(&mut self) -> bool {
+        self.check_output(Output::VisualBell)
+    }
+
+    /// Returns whether the terminal should be in application keypad mode.
+    pub fn application_keypad(&self) -> bool {
+        self.mode(Mode::ApplicationKeypad)
+    }
+
+    /// Returns whether the terminal should be in application cursor mode.
+    pub fn application_cursor(&self) -> bool {
+        self.mode(Mode::ApplicationCursor)
+    }
+
+    /// Returns whether the terminal should be in hide cursor mode.
+    pub fn hide_cursor(&self) -> bool {
+        self.mode(Mode::HideCursor)
+    }
+
+    /// Returns whether the terminal should be in alternate screen mode.
+    pub fn alternate_screen(&self) -> bool {
+        self.mode(Mode::AlternateScreen)
+    }
+
+    /// Returns whether the terminal should be in bracketed paste mode.
+    pub fn bracketed_paste(&self) -> bool {
+        self.mode(Mode::BracketedPaste)
+    }
+
+    /// Returns the currently active `MouseProtocolMode`
+    pub fn mouse_protocol_mode(&self) -> MouseProtocolMode {
+        self.mouse_protocol_mode
+    }
+
+    /// Returns the currently active `MouseProtocolEncoding`
+    pub fn mouse_protocol_encoding(&self) -> MouseProtocolEncoding {
+        self.mouse_protocol_encoding
     }
 
     fn grid(&self) -> &crate::grid::Grid {
@@ -122,10 +288,6 @@ impl State {
 
     fn row(&self, pos: crate::grid::Pos) -> Option<&crate::row::Row> {
         self.grid().row(pos)
-    }
-
-    fn cell(&self, pos: crate::grid::Pos) -> Option<&crate::cell::Cell> {
-        self.grid().cell(pos)
     }
 
     fn cell_mut(
@@ -204,7 +366,7 @@ impl State {
     }
 }
 
-impl State {
+impl Screen {
     fn text(&mut self, c: char) {
         let pos = self.grid().pos();
         if pos.col > 0 {
@@ -614,7 +776,7 @@ impl State {
     }
 }
 
-impl vte::Perform for State {
+impl vte::Perform for Screen {
     fn print(&mut self, c: char) {
         self.text(c)
     }
@@ -763,200 +925,6 @@ impl vte::Perform for State {
     }
     fn put(&mut self, _: u8) {}
     fn unhook(&mut self) {}
-}
-
-/// Represents a terminal screen.
-pub struct Screen {
-    parser: vte::Parser,
-    state: State,
-}
-
-impl Screen {
-    /// Creates a new terminal screen of the given size.
-    pub fn new(rows: u16, cols: u16) -> Self {
-        Self {
-            parser: vte::Parser::new(),
-            state: State::new(crate::grid::Size { rows, cols }),
-        }
-    }
-
-    /// Processes the contents of the given byte string, and updates the
-    /// in-memory terminal state.
-    pub fn process(&mut self, bytes: &[u8]) {
-        for byte in bytes {
-            self.parser.advance(&mut self.state, *byte);
-        }
-    }
-
-    /// Resizes the terminal.
-    pub fn set_size(&mut self, rows: u16, cols: u16) {
-        self.state.grid.set_size(crate::grid::Size { rows, cols });
-        self.state
-            .alternate_grid
-            .set_size(crate::grid::Size { rows, cols });
-    }
-
-    /// Returns the current size of the terminal.
-    ///
-    /// The return value will be (rows, cols).
-    pub fn size(&self) -> (u16, u16) {
-        let size = self.state.grid().size();
-        (size.rows, size.cols)
-    }
-
-    /// Returns the text contents of the subset of the terminal given by the
-    /// parameters.
-    ///
-    /// This will not include any formatting information, and will be in plain
-    /// text format.
-    pub fn contents(
-        &self,
-        row_start: u16,
-        col_start: u16,
-        row_end: u16,
-        col_end: u16,
-    ) -> String {
-        self.state
-            .grid()
-            .contents(row_start, col_start, row_end, col_end)
-    }
-
-    /// Returns the formatted contents of the subset of the terminal given by
-    /// the parameters.
-    ///
-    /// Formatting information will be included inline as terminal escape
-    /// codes. The result will be suitable for feeding directly to a raw
-    /// terminal parser, and will result in the same visual output. Internal
-    /// terminal modes (such as application keypad mode or alternate screen
-    /// mode) will not be included here.
-    pub fn contents_formatted(
-        &self,
-        row_start: u16,
-        col_start: u16,
-        row_end: u16,
-        col_end: u16,
-    ) -> String {
-        self.state
-            .grid()
-            .contents_formatted(row_start, col_start, row_end, col_end)
-    }
-
-    /// Returns the `Cell` object at the given location in the terminal, if it
-    /// exists.
-    pub fn cell(&self, row: u16, col: u16) -> Option<&crate::cell::Cell> {
-        self.state.cell(crate::grid::Pos { row, col })
-    }
-
-    /// Returns the current cursor position of the terminal.
-    ///
-    /// The return value will be (row, col).
-    pub fn cursor_position(&self) -> (u16, u16) {
-        let pos = self.state.grid().pos();
-        (pos.row, pos.col)
-    }
-
-    /// Returns the currently active foreground color.
-    ///
-    /// This is the foreground color which will be used when writing text to a
-    /// new cell.
-    pub fn fgcolor(&self) -> crate::attrs::Color {
-        self.state.attrs.fgcolor
-    }
-
-    /// Returns the currently active background color.
-    ///
-    /// This is the background color which will be used when writing text to a
-    /// new cell.
-    pub fn bgcolor(&self) -> crate::attrs::Color {
-        self.state.attrs.bgcolor
-    }
-
-    /// Returns whether the bold text attribute is active.
-    ///
-    /// If true, text written to a new cell will have the bold text attribute.
-    pub fn bold(&self) -> bool {
-        self.state.attrs.bold()
-    }
-
-    /// Returns whether the italic text attribute is active.
-    ///
-    /// If true, text written to a new cell will have the italic text attribute.
-    pub fn italic(&self) -> bool {
-        self.state.attrs.italic()
-    }
-
-    /// Returns whether the underline text attribute is active.
-    ///
-    /// If true, text written to a new cell will have the underline text
-    /// attribute.
-    pub fn underline(&self) -> bool {
-        self.state.attrs.underline()
-    }
-
-    /// Returns whether the inverse text attribute is active.
-    ///
-    /// If true, text written to a new cell will have the inverse text
-    /// attribute.
-    pub fn inverse(&self) -> bool {
-        self.state.attrs.inverse()
-    }
-
-    /// Returns the terminal's window title.
-    pub fn title(&self) -> &str {
-        &self.state.title
-    }
-
-    /// Returns the terminal's icon name.
-    pub fn icon_name(&self) -> &str {
-        &self.state.icon_name
-    }
-
-    /// Returns whether an audible bell has occurred since the last time this
-    /// method was called.
-    pub fn check_audible_bell(&mut self) -> bool {
-        self.state.check_output(Output::AudibleBell)
-    }
-
-    /// Returns whether an visual bell has occurred since the last time this
-    /// method was called.
-    pub fn check_visual_bell(&mut self) -> bool {
-        self.state.check_output(Output::VisualBell)
-    }
-
-    /// Returns whether the terminal should be in application keypad mode.
-    pub fn application_keypad(&self) -> bool {
-        self.state.mode(Mode::ApplicationKeypad)
-    }
-
-    /// Returns whether the terminal should be in application cursor mode.
-    pub fn application_cursor(&self) -> bool {
-        self.state.mode(Mode::ApplicationCursor)
-    }
-
-    /// Returns whether the terminal should be in hide cursor mode.
-    pub fn hide_cursor(&self) -> bool {
-        self.state.mode(Mode::HideCursor)
-    }
-
-    /// Returns whether the terminal should be in alternate screen mode.
-    pub fn alternate_screen(&self) -> bool {
-        self.state.mode(Mode::AlternateScreen)
-    }
-
-    /// Returns whether the terminal should be in bracketed paste mode.
-    pub fn bracketed_paste(&self) -> bool {
-        self.state.mode(Mode::BracketedPaste)
-    }
-
-    /// Returns the currently active `MouseProtocolMode`
-    pub fn mouse_protocol_mode(&self) -> MouseProtocolMode {
-        self.state.mouse_protocol_mode
-    }
-
-    /// Returns the currently active `MouseProtocolEncoding`
-    pub fn mouse_protocol_encoding(&self) -> MouseProtocolEncoding {
-        self.state.mouse_protocol_encoding
-    }
 }
 
 fn canonicalize_params_1(params: &[i64], default: u16) -> u16 {

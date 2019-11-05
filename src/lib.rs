@@ -12,8 +12,8 @@
 //! # Synopsis
 //!
 //! ```
-//! let mut screen = vt100::Screen::new(24, 80);
-//! screen.process(b"this text is \x1b[31mRED\x1b[m");
+//! let mut parser = vt100::Parser::new(24, 80);
+//! parser.process(b"this text is \x1b[31mRED\x1b[m");
 //! ```
 
 // XXX this is broken with ale
@@ -26,10 +26,12 @@
 mod attrs;
 mod cell;
 mod grid;
+mod parser;
 mod row;
 mod screen;
 mod unicode;
 
 pub use attrs::Color;
 pub use cell::Cell;
+pub use parser::Parser;
 pub use screen::{MouseProtocolEncoding, MouseProtocolMode, Screen};
