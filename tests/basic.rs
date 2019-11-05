@@ -44,6 +44,25 @@ fn set_size() {
     parser.process(b"\x1b[?1049l");
     assert_eq!(parser.screen().size(), (24, 80));
     assert_eq!(parser.screen().cursor_position(), (23, 4));
+
+    parser.screen_mut().set_size(34, 8);
+    parser.process(b"\x1bc01234567890123456789");
+    assert_eq!(
+        parser.screen().contents(0, 0, 33, 7),
+        "01234567890123456789"
+    );
+
+    parser.screen_mut().set_size(24, 80);
+    assert_eq!(
+        parser.screen().contents(0, 0, 23, 79),
+        "01234567\n89012345\n6789"
+    );
+
+    parser.screen_mut().set_size(34, 8);
+    assert_eq!(
+        parser.screen().contents(0, 0, 23, 79),
+        "01234567\n89012345\n6789"
+    );
 }
 
 #[test]

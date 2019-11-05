@@ -45,6 +45,12 @@ impl Grid {
     }
 
     pub fn set_size(&mut self, size: Size) {
+        if size.cols != self.size.cols {
+            for row in &mut self.rows {
+                row.wrap(false);
+            }
+        }
+
         self.size = size;
 
         if self.scroll_bottom >= size.rows {
