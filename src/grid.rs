@@ -156,7 +156,7 @@ impl Grid {
     }
 
     pub fn contents_diff(&self, prev: &Self) -> Vec<u8> {
-        let mut contents = vec![];
+        let mut contents = b"\x1b[m".to_vec();
         let mut prev_attrs = crate::attrs::Attrs::default();
         for (idx, (row, prev_row)) in self.rows().zip(prev.rows()).enumerate()
         {
