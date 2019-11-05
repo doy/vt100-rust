@@ -1,3 +1,5 @@
+use std::io::Read as _;
+
 #[test]
 fn formatted() {
     let mut parser = vt100::Parser::new(24, 80);
@@ -339,12 +341,40 @@ fn diff() {
 
     parser.process(b"\x1b[1;8H\x1b[X");
     let screen5 = parser.screen().clone();
-    assert_eq!(screen5.contents_diff(&screen4), b"\x1b[1;8H\x1b[X");
+    assert_eq!(screen5.contents_diff(&screen4), b"\x1b[1;8H\x1b[X\x1b[C");
     compare_diff(
         &screen4,
         &screen5,
         b"\x1b[5C\x1b[32m bar\x1b[H\x1b[31mfoo\x1b[1;7H\x1b[32mbaz",
     );
+}
+
+#[test]
+fn diff_crawl() {
+    let mut parser = vt100::Parser::new(24, 80);
+    let screens: Vec<_> = (1..=30)
+        .map(|i| {
+            let mut file =
+                std::fs::File::open(format!("tests/data/crawl/crawl{}", i))
+                    .unwrap();
+            let mut frame = vec![];
+            file.read_to_end(&mut frame).unwrap();
+            parser.process(&frame);
+            (frame.clone(), parser.screen().clone())
+        })
+        .collect();
+
+    let mut all_frames: Vec<u8> = vec![];
+    for two_screens in screens.windows(2) {
+        eprintln!("loop");
+        match two_screens {
+            [(prev_frame, prev_screen), (_, screen)] => {
+                all_frames.extend(prev_frame);
+                compare_diff(prev_screen, screen, &all_frames);
+            }
+            _ => unreachable!(),
+        }
+    }
 }
 
 fn compare_formatted(screen: &vt100::Screen) {
@@ -370,6 +400,20 @@ fn compare_diff(
     compare_cells(parser.screen(), &prev_screen);
 
     parser.process(&screen.contents_diff(prev_screen));
+    if parser.screen().contents_formatted() != screen.contents_formatted() {
+        use std::io::Write as _;
+        let mut prev_screen_file =
+            std::fs::File::create("prev_screen").unwrap();
+        prev_screen_file
+            .write_all(&prev_screen.contents_formatted())
+            .unwrap();
+        let mut screen_file = std::fs::File::create("screen").unwrap();
+        screen_file.write_all(&screen.contents_formatted()).unwrap();
+        let mut diff_file = std::fs::File::create("diff").unwrap();
+        diff_file
+            .write_all(&screen.contents_diff(prev_screen))
+            .unwrap();
+    }
     assert_eq!(
         parser.screen().contents_formatted(),
         screen.contents_formatted()

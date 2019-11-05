@@ -158,7 +158,7 @@ impl Row {
                 contents.extend(if cell.has_contents() {
                     cell.contents().as_bytes()
                 } else {
-                    b"\x1b[X"
+                    b"\x1b[X\x1b[C"
                 });
             }
         }
