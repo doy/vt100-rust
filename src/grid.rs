@@ -1,3 +1,4 @@
+#[derive(Clone, Debug)]
 pub struct Grid {
     size: Size,
     pos: Pos,

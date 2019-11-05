@@ -1,6 +1,6 @@
 use std::convert::TryInto as _;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Row {
     cells: Vec<crate::cell::Cell>,
     wrapped: bool,

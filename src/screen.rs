@@ -69,6 +69,7 @@ impl Default for MouseProtocolEncoding {
     }
 }
 
+#[derive(Clone, Debug)]
 pub struct Screen {
     grid: crate::grid::Grid,
     alternate_grid: crate::grid::Grid,
