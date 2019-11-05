@@ -1,3 +1,5 @@
+use std::convert::TryInto as _;
+
 #[derive(Clone, Debug)]
 pub struct Grid {
     size: Size,
@@ -150,6 +152,23 @@ impl Grid {
         while contents.ends_with(b"\r\n") {
             contents.truncate(contents.len() - 2);
         }
+        contents
+    }
+
+    pub fn contents_diff(&self, prev: &Self) -> Vec<u8> {
+        let mut contents = vec![];
+        let mut prev_attrs = crate::attrs::Attrs::default();
+        for (idx, (row, prev_row)) in self.rows().zip(prev.rows()).enumerate()
+        {
+            let (mut new_contents, new_attrs) = row.contents_diff(
+                idx.try_into().unwrap(),
+                prev_row,
+                prev_attrs,
+            );
+            contents.append(&mut new_contents);
+            prev_attrs = new_attrs;
+        }
+
         contents
     }
 

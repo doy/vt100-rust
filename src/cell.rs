@@ -1,7 +1,7 @@
 use unicode_normalization::UnicodeNormalization as _;
 
 /// Represents a single terminal cell.
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct Cell {
     contents: String,
     attrs: crate::attrs::Attrs,

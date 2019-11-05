@@ -183,6 +183,10 @@ impl Screen {
         })
     }
 
+    pub fn contents_diff(&self, prev: &Self) -> Vec<u8> {
+        self.grid().contents_diff(prev.grid())
+    }
+
     /// Returns the `Cell` object at the given location in the terminal, if it
     /// exists.
     pub fn cell(&self, row: u16, col: u16) -> Option<&crate::cell::Cell> {

@@ -126,6 +126,46 @@ impl Row {
         (contents, prev_attrs)
     }
 
+    pub fn contents_diff(
+        &self,
+        row_idx: u16,
+        prev: &Self,
+        attrs: crate::attrs::Attrs,
+    ) -> (Vec<u8>, crate::attrs::Attrs) {
+        let mut needs_move = true;
+        let mut contents = vec![];
+        let mut prev_attrs = attrs;
+        for (idx, (cell, prev_cell)) in
+            self.cells().zip(prev.cells()).enumerate()
+        {
+            if cell == prev_cell {
+                needs_move = true;
+            } else {
+                if needs_move {
+                    contents.extend(
+                        format!("\x1b[{};{}H", row_idx + 1, idx + 1)
+                            .as_bytes(),
+                    );
+                    needs_move = false;
+                }
+
+                let attrs = cell.attrs();
+                if &prev_attrs != attrs {
+                    contents.append(&mut attrs.escape_code_diff(&prev_attrs));
+                    prev_attrs = *attrs;
+                }
+
+                contents.extend(if cell.has_contents() {
+                    cell.contents().as_bytes()
+                } else {
+                    b"\x1b[X"
+                });
+            }
+        }
+
+        (contents, prev_attrs)
+    }
+
     fn content_width(&self, start: u16) -> u16 {
         for (col, cell) in
             self.cells.iter().skip(start as usize).enumerate().rev()
