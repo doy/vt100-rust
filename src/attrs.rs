@@ -87,11 +87,11 @@ impl Attrs {
         }
     }
 
-    pub fn escape_code_diff(&self, other: &Self) -> String {
+    pub fn escape_code_diff(&self, other: &Self) -> Vec<u8> {
         let mut opts = vec![];
 
         if self != other && self == &Self::default() {
-            return "\x1b[m".to_string();
+            return b"\x1b[m".to_vec();
         }
 
         if self.fgcolor != other.fgcolor {
@@ -159,8 +159,17 @@ impl Attrs {
             opts.push(if self.inverse() { 7 } else { 27 });
         }
 
-        let strs: Vec<_> =
-            opts.iter().map(std::string::ToString::to_string).collect();
-        format!("\x1b[{}m", strs.join(";"))
+        let mut bytes = b"\x1b[".to_vec();
+        let mut first = true;
+        for opt in opts {
+            if first {
+                first = false;
+            } else {
+                bytes.push(b';');
+            }
+            bytes.extend(opt.to_string().as_bytes());
+        }
+        bytes.push(b'm');
+        bytes
     }
 }

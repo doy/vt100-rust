@@ -139,18 +139,27 @@ impl Grid {
         col_start: u16,
         row_end: u16,
         col_end: u16,
-    ) -> String {
-        let mut contents = String::new();
+    ) -> Vec<u8> {
+        let mut contents = vec![];
         let mut prev_attrs = crate::attrs::Attrs::default();
         let row_start = row_start as usize;
         let row_end = row_end as usize;
         for row in self.rows().skip(row_start).take(row_end - row_start + 1) {
-            let (new_contents, new_attrs) =
-                &row.contents_formatted(col_start, col_end, prev_attrs);
-            contents += new_contents;
-            prev_attrs = *new_attrs;
+            let (mut new_contents, new_attrs) =
+                row.contents_formatted(col_start, col_end, prev_attrs);
+            contents.append(&mut new_contents);
+            prev_attrs = new_attrs;
         }
-        contents.trim_end().to_string()
+
+        let mut idx = None;
+        for (i, b) in contents.iter().enumerate().rev() {
+            if !(*b as char).is_whitespace() {
+                idx = Some(i + 1);
+                break;
+            }
+        }
+        contents.truncate(idx.unwrap_or(0));
+        contents
     }
 
     pub fn erase_all(&mut self) {

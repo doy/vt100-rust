@@ -151,7 +151,7 @@ impl Screen {
         col_start: u16,
         row_end: u16,
         col_end: u16,
-    ) -> String {
+    ) -> Vec<u8> {
         self.grid()
             .contents_formatted(row_start, col_start, row_end, col_end)
     }

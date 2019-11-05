@@ -91,9 +91,9 @@ impl Row {
         col_start: u16,
         col_end: u16,
         attrs: crate::attrs::Attrs,
-    ) -> (String, crate::attrs::Attrs) {
+    ) -> (Vec<u8>, crate::attrs::Attrs) {
         let mut prev_was_wide = false;
-        let mut contents = String::new();
+        let mut contents = vec![];
         let mut prev_attrs = attrs;
         if let Some(max_col) = self.max_col() {
             for col in col_start..=(col_end.min(max_col)) {
@@ -106,7 +106,7 @@ impl Row {
 
                 let attrs = cell.attrs();
                 if &prev_attrs != attrs {
-                    contents += &attrs.escape_code_diff(&prev_attrs);
+                    contents.append(&mut attrs.escape_code_diff(&prev_attrs));
                     prev_attrs = *attrs;
                 }
 
@@ -116,13 +116,13 @@ impl Row {
                 } else {
                     cell_contents
                 };
-                contents += cell_contents;
+                contents.extend(cell_contents.as_bytes());
 
                 prev_was_wide = cell.is_wide();
             }
         }
         if !self.wrapped {
-            contents += "\r\n";
+            contents.extend(b"\r\n");
         }
         (contents, prev_attrs)
     }

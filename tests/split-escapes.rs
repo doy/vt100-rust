@@ -7,7 +7,7 @@ fn get_file_contents(name: &str) -> Vec<u8> {
     buf
 }
 
-fn write_to_parser(chunks: &mut Vec<Vec<u8>>) -> (String, String) {
+fn write_to_parser(chunks: &mut Vec<Vec<u8>>) -> (String, Vec<u8>) {
     let mut parser = vt100::Parser::new(37, 193);
     for chunk in chunks.iter_mut() {
         parser.process(&chunk);

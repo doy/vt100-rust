@@ -26,7 +26,7 @@ fn ris() {
     assert_eq!(cell.contents(), "");
 
     assert_eq!(parser.screen().contents(0, 0, 23, 79), "");
-    assert_eq!(parser.screen().contents_formatted(0, 0, 23, 79), "");
+    assert_eq!(parser.screen().contents_formatted(0, 0, 23, 79), b"");
 
     assert_eq!(parser.screen().title(), "");
     assert_eq!(parser.screen().icon_name(), "");
@@ -64,7 +64,7 @@ fn ris() {
     assert_eq!(parser.screen().contents(0, 0, 23, 79), "foo");
     assert_eq!(
         parser.screen().contents_formatted(0, 0, 23, 79),
-        "f\x1b[31;47;1;3;4moo"
+        b"f\x1b[31;47;1;3;4moo"
     );
 
     assert_eq!(parser.screen().title(), "window title");
@@ -100,7 +100,7 @@ fn ris() {
     assert_eq!(cell.contents(), "");
 
     assert_eq!(parser.screen().contents(0, 0, 23, 79), "");
-    assert_eq!(parser.screen().contents_formatted(0, 0, 23, 79), "");
+    assert_eq!(parser.screen().contents_formatted(0, 0, 23, 79), b"");
 
     // title and icon name don't change with reset
     assert_eq!(parser.screen().title(), "window title");
@@ -168,20 +168,20 @@ fn decsc() {
     assert_eq!(parser.screen().cursor_position(), (4, 3));
     assert_eq!(
         parser.screen().contents_formatted(0, 0, 23, 79),
-        "\r\n\r\n\r\n\r\n\x1b[31mfoo"
+        b"\r\n\r\n\r\n\r\n\x1b[31mfoo"
     );
 
     parser.process(b"\x1b[32m\x1b[?6lbar");
     assert_eq!(parser.screen().cursor_position(), (0, 3));
     assert_eq!(
         parser.screen().contents_formatted(0, 0, 23, 79),
-        "\x1b[32mbar\r\n\r\n\r\n\r\n\x1b[31mfoo"
+        b"\x1b[32mbar\r\n\r\n\r\n\r\n\x1b[31mfoo"
     );
 
     parser.process(b"\x1b8\x1b[Hz");
     assert_eq!(parser.screen().cursor_position(), (4, 1));
     assert_eq!(
         parser.screen().contents_formatted(0, 0, 23, 79),
-        "\x1b[32mbar\r\n\r\n\r\n\r\n\x1b[31mzoo"
+        b"\x1b[32mbar\r\n\r\n\r\n\r\n\x1b[31mzoo"
     );
 }
