@@ -13,8 +13,8 @@ fn write_to_parser(chunks: &mut Vec<Vec<u8>>) -> (String, Vec<u8>) {
         parser.process(&chunk);
     }
     (
-        parser.screen().contents(0, 0, 36, 192),
-        parser.screen().contents_formatted(0, 0, 36, 192),
+        parser.screen().contents(),
+        parser.screen().contents_formatted(),
     )
 }
 

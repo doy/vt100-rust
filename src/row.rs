@@ -21,6 +21,10 @@ impl Row {
         self.wrapped = false;
     }
 
+    fn cells(&self) -> impl Iterator<Item = &crate::cell::Cell> {
+        self.cells.iter()
+    }
+
     pub fn cells_mut(
         &mut self,
     ) -> impl Iterator<Item = &mut crate::cell::Cell> {
@@ -59,84 +63,78 @@ impl Row {
         self.wrapped
     }
 
-    pub fn contents(&self, col_start: u16, col_end: u16) -> String {
+    pub fn contents(&self, start: u16, width: u16) -> String {
         let mut prev_was_wide = false;
         let mut contents = String::new();
-        if let Some(max_col) = self.max_col() {
-            for col in col_start..=(col_end.min(max_col)) {
-                if prev_was_wide {
-                    prev_was_wide = false;
-                    continue;
-                }
 
-                let cell = &self.cells[col as usize];
-                let cell_contents = cell.contents();
-                let cell_contents = if cell_contents == "" {
-                    " "
-                } else {
-                    cell_contents
-                };
-                contents += cell_contents;
-                prev_was_wide = cell.is_wide();
+        for cell in self
+            .cells()
+            .skip(start as usize)
+            .take(width.min(self.content_width(start)) as usize)
+        {
+            if prev_was_wide {
+                prev_was_wide = false;
+                continue;
             }
+
+            contents += if cell.has_contents() {
+                cell.contents()
+            } else {
+                " "
+            };
+            prev_was_wide = cell.is_wide();
         }
-        if !self.wrapped {
-            contents += "\n";
-        }
-        contents
+
+        contents.trim_end().to_string()
     }
 
     pub fn contents_formatted(
         &self,
-        col_start: u16,
-        col_end: u16,
+        start: u16,
+        width: u16,
         attrs: crate::attrs::Attrs,
     ) -> (Vec<u8>, crate::attrs::Attrs) {
         let mut prev_was_wide = false;
         let mut contents = vec![];
         let mut prev_attrs = attrs;
-        if let Some(max_col) = self.max_col() {
-            for col in col_start..=(col_end.min(max_col)) {
-                if prev_was_wide {
-                    prev_was_wide = false;
-                    continue;
-                }
 
-                let cell = &self.cells[col as usize];
-
-                let attrs = cell.attrs();
-                if &prev_attrs != attrs {
-                    contents.append(&mut attrs.escape_code_diff(&prev_attrs));
-                    prev_attrs = *attrs;
-                }
-
-                let cell_contents = cell.contents();
-                let cell_contents = if cell_contents == "" {
-                    "\x1b[C"
-                } else {
-                    cell_contents
-                };
-                contents.extend(cell_contents.as_bytes());
-
-                prev_was_wide = cell.is_wide();
+        for cell in self
+            .cells()
+            .skip(start as usize)
+            .take(width.min(self.content_width(start)) as usize)
+        {
+            if prev_was_wide {
+                prev_was_wide = false;
+                continue;
             }
+
+            let attrs = cell.attrs();
+            if &prev_attrs != attrs {
+                contents.append(&mut attrs.escape_code_diff(&prev_attrs));
+                prev_attrs = *attrs;
+            }
+
+            contents.extend(if cell.has_contents() {
+                cell.contents().as_bytes()
+            } else {
+                b"\x1b[C"
+            });
+
+            prev_was_wide = cell.is_wide();
         }
-        if !self.wrapped {
-            contents.extend(b"\r\n");
-        }
+
         (contents, prev_attrs)
     }
 
-    fn max_col(&self) -> Option<u16> {
-        let mut prev_was_wide = false;
-        // XXX very inefficient
-        let mut max_col = None;
-        for (col, cell) in self.cells.iter().enumerate() {
-            if cell.has_contents() || prev_was_wide {
-                max_col = Some(col.try_into().unwrap());
-                prev_was_wide = cell.is_wide();
+    fn content_width(&self, start: u16) -> u16 {
+        for (col, cell) in
+            self.cells.iter().skip(start as usize).enumerate().rev()
+        {
+            if cell.has_contents() {
+                let width: u16 = col.try_into().unwrap();
+                return width + 1;
             }
         }
-        max_col
+        0
     }
 }

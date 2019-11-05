@@ -122,38 +122,65 @@ impl Screen {
         (size.rows, size.cols)
     }
 
-    /// Returns the text contents of the subset of the terminal given by the
-    /// parameters.
+    /// Returns the text contents of the terminal.
     ///
     /// This will not include any formatting information, and will be in plain
     /// text format.
-    pub fn contents(
-        &self,
-        row_start: u16,
-        col_start: u16,
-        row_end: u16,
-        col_end: u16,
-    ) -> String {
-        self.grid().contents(row_start, col_start, row_end, col_end)
+    pub fn contents(&self) -> String {
+        self.grid().contents()
     }
 
-    /// Returns the formatted contents of the subset of the terminal given by
-    /// the parameters.
+    /// Returns the text contents of the terminal by row, restricted to the
+    /// given subset of columns.
+    ///
+    /// This will not include any formatting information, and will be in plain
+    /// text format.
+    ///
+    /// Newlines will not be included.
+    pub fn rows(
+        &self,
+        start: u16,
+        width: u16,
+    ) -> impl Iterator<Item = String> + '_ {
+        self.grid()
+            .rows()
+            .map(move |row| row.contents(start, width))
+    }
+
+    /// Returns the formatted contents of the terminal.
     ///
     /// Formatting information will be included inline as terminal escape
     /// codes. The result will be suitable for feeding directly to a raw
     /// terminal parser, and will result in the same visual output. Internal
     /// terminal modes (such as application keypad mode or alternate screen
     /// mode) will not be included here.
-    pub fn contents_formatted(
+    pub fn contents_formatted(&self) -> Vec<u8> {
+        self.grid().contents_formatted()
+    }
+
+    /// Returns the formatted contents of the terminal by row, restricted to
+    /// the given subset of columns.
+    ///
+    /// Formatting information will be included inline as terminal escape
+    /// codes. The result will be suitable for feeding directly to a raw
+    /// terminal parser, and will result in the same visual output. Internal
+    /// terminal modes (such as application keypad mode or alternate screen
+    /// mode) will not be included here.
+    ///
+    /// CRLF at the end of lines will not be included.
+    pub fn rows_formatted(
         &self,
-        row_start: u16,
-        col_start: u16,
-        row_end: u16,
-        col_end: u16,
-    ) -> Vec<u8> {
-        self.grid()
-            .contents_formatted(row_start, col_start, row_end, col_end)
+        start: u16,
+        width: u16,
+    ) -> impl Iterator<Item = Vec<u8>> + '_ {
+        self.grid().rows().map(move |row| {
+            let (contents, _) = row.contents_formatted(
+                start,
+                width,
+                crate::attrs::Attrs::default(),
+            );
+            contents
+        })
     }
 
     /// Returns the `Cell` object at the given location in the terminal, if it

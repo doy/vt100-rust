@@ -123,48 +123,33 @@ impl Grid {
             .expect("cursor not pointing to a cell")
     }
 
-    pub fn contents(
-        &self,
-        row_start: u16,
-        col_start: u16,
-        row_end: u16,
-        col_end: u16,
-    ) -> String {
+    pub fn contents(&self) -> String {
         let mut contents = String::new();
-        let row_start = row_start as usize;
-        let row_end = row_end as usize;
-        for row in self.rows().skip(row_start).take(row_end - row_start + 1) {
-            contents += &row.contents(col_start, col_end);
+        for row in self.rows() {
+            contents += &row.contents(0, self.size.cols);
+            if !row.wrapped() {
+                contents += "\n";
+            }
         }
         contents.trim_end().to_string()
     }
 
-    pub fn contents_formatted(
-        &self,
-        row_start: u16,
-        col_start: u16,
-        row_end: u16,
-        col_end: u16,
-    ) -> Vec<u8> {
+    pub fn contents_formatted(&self) -> Vec<u8> {
         let mut contents = vec![];
         let mut prev_attrs = crate::attrs::Attrs::default();
-        let row_start = row_start as usize;
-        let row_end = row_end as usize;
-        for row in self.rows().skip(row_start).take(row_end - row_start + 1) {
+        for row in self.rows() {
             let (mut new_contents, new_attrs) =
-                row.contents_formatted(col_start, col_end, prev_attrs);
+                row.contents_formatted(0, self.size.cols, prev_attrs);
             contents.append(&mut new_contents);
+            if !row.wrapped() {
+                contents.extend(b"\r\n");
+            }
             prev_attrs = new_attrs;
         }
 
-        let mut idx = None;
-        for (i, b) in contents.iter().enumerate().rev() {
-            if !(*b as char).is_whitespace() {
-                idx = Some(i + 1);
-                break;
-            }
+        while contents.ends_with(b"\r\n") {
+            contents.truncate(contents.len() - 2);
         }
-        contents.truncate(idx.unwrap_or(0));
         contents
     }
 

@@ -14,7 +14,7 @@ fn deckpam() {
 fn ri() {
     let mut parser = vt100::Parser::new(24, 80);
     parser.process(b"foo\nbar\x1bMbaz");
-    assert_eq!(parser.screen().contents(0, 0, 23, 79), "foo   baz\n   bar");
+    assert_eq!(parser.screen().contents(), "foo   baz\n   bar");
 }
 
 #[test]
@@ -25,8 +25,8 @@ fn ris() {
     let cell = parser.screen().cell(0, 0).unwrap();
     assert_eq!(cell.contents(), "");
 
-    assert_eq!(parser.screen().contents(0, 0, 23, 79), "");
-    assert_eq!(parser.screen().contents_formatted(0, 0, 23, 79), b"");
+    assert_eq!(parser.screen().contents(), "");
+    assert_eq!(parser.screen().contents_formatted(), b"");
 
     assert_eq!(parser.screen().title(), "");
     assert_eq!(parser.screen().icon_name(), "");
@@ -61,9 +61,9 @@ fn ris() {
     let cell = parser.screen().cell(0, 0).unwrap();
     assert_eq!(cell.contents(), "f");
 
-    assert_eq!(parser.screen().contents(0, 0, 23, 79), "foo");
+    assert_eq!(parser.screen().contents(), "foo");
     assert_eq!(
-        parser.screen().contents_formatted(0, 0, 23, 79),
+        parser.screen().contents_formatted(),
         b"f\x1b[31;47;1;3;4moo"
     );
 
@@ -99,8 +99,8 @@ fn ris() {
     let cell = parser.screen().cell(0, 0).unwrap();
     assert_eq!(cell.contents(), "");
 
-    assert_eq!(parser.screen().contents(0, 0, 23, 79), "");
-    assert_eq!(parser.screen().contents_formatted(0, 0, 23, 79), b"");
+    assert_eq!(parser.screen().contents(), "");
+    assert_eq!(parser.screen().contents_formatted(), b"");
 
     // title and icon name don't change with reset
     assert_eq!(parser.screen().title(), "window title");
@@ -145,14 +145,11 @@ fn vb() {
 fn decsc() {
     let mut parser = vt100::Parser::new(24, 80);
     parser.process(b"foo\x1b7\r\n\r\n\r\n         bar\x1b8baz");
-    assert_eq!(
-        parser.screen().contents(0, 0, 23, 79),
-        "foobaz\n\n\n         bar"
-    );
+    assert_eq!(parser.screen().contents(), "foobaz\n\n\n         bar");
     assert_eq!(parser.screen().cursor_position(), (0, 6));
 
     parser.process(b"\x1b[?47h\x1b[20;20H");
-    assert_eq!(parser.screen().contents(0, 0, 23, 79), "");
+    assert_eq!(parser.screen().contents(), "");
     assert_eq!(parser.screen().cursor_position(), (19, 19));
 
     parser.process(b"\x1b8");
@@ -167,21 +164,21 @@ fn decsc() {
     parser.process(b"\x1bc\x1b[31m\x1b[5;15r\x1b[?6hfoo\x1b7");
     assert_eq!(parser.screen().cursor_position(), (4, 3));
     assert_eq!(
-        parser.screen().contents_formatted(0, 0, 23, 79),
+        parser.screen().contents_formatted(),
         b"\r\n\r\n\r\n\r\n\x1b[31mfoo"
     );
 
     parser.process(b"\x1b[32m\x1b[?6lbar");
     assert_eq!(parser.screen().cursor_position(), (0, 3));
     assert_eq!(
-        parser.screen().contents_formatted(0, 0, 23, 79),
+        parser.screen().contents_formatted(),
         b"\x1b[32mbar\r\n\r\n\r\n\r\n\x1b[31mfoo"
     );
 
     parser.process(b"\x1b8\x1b[Hz");
     assert_eq!(parser.screen().cursor_position(), (4, 1));
     assert_eq!(
-        parser.screen().contents_formatted(0, 0, 23, 79),
+        parser.screen().contents_formatted(),
         b"\x1b[32mbar\r\n\r\n\r\n\r\n\x1b[31mzoo"
     );
 }

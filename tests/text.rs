@@ -9,8 +9,8 @@ fn ascii() {
     assert_eq!(parser.screen().cell(0, 2).unwrap().contents(), "o");
     assert_eq!(parser.screen().cell(0, 3).unwrap().contents(), "");
     assert_eq!(parser.screen().cell(1, 0).unwrap().contents(), "");
-    assert_eq!(parser.screen().contents(0, 0, 23, 79), "foo");
-    assert_eq!(parser.screen().contents(0, 0, 500, 500), "foo");
+    assert_eq!(parser.screen().contents(), "foo");
+    assert_eq!(parser.screen().contents(), "foo");
 }
 
 #[test]
@@ -23,8 +23,8 @@ fn utf8() {
     assert_eq!(parser.screen().cell(0, 3).unwrap().contents(), "é");
     assert_eq!(parser.screen().cell(0, 4).unwrap().contents(), "");
     assert_eq!(parser.screen().cell(1, 0).unwrap().contents(), "");
-    assert_eq!(parser.screen().contents(0, 0, 23, 79), "café");
-    assert_eq!(parser.screen().contents(0, 0, 500, 500), "café");
+    assert_eq!(parser.screen().contents(), "café");
+    assert_eq!(parser.screen().contents(), "café");
 }
 
 #[test]
@@ -42,8 +42,8 @@ fn newlines() {
     assert_eq!(parser.screen().cell(2, 2).unwrap().contents(), "d");
     assert_eq!(parser.screen().cell(0, 3).unwrap().contents(), "");
     assert_eq!(parser.screen().cell(3, 0).unwrap().contents(), "");
-    assert_eq!(parser.screen().contents(0, 0, 23, 79), "f\noo\nood");
-    assert_eq!(parser.screen().contents(0, 0, 500, 500), "f\noo\nood");
+    assert_eq!(parser.screen().contents(), "f\noo\nood");
+    assert_eq!(parser.screen().contents(), "f\noo\nood");
 }
 
 #[test]
@@ -58,8 +58,8 @@ fn wide() {
     assert_eq!(parser.screen().cell(0, 5).unwrap().contents(), "");
     assert_eq!(parser.screen().cell(0, 6).unwrap().contents(), "");
     assert_eq!(parser.screen().cell(1, 0).unwrap().contents(), "");
-    assert_eq!(parser.screen().contents(0, 0, 23, 79), "aデbネ");
-    assert_eq!(parser.screen().contents(0, 0, 500, 500), "aデbネ");
+    assert_eq!(parser.screen().contents(), "aデbネ");
+    assert_eq!(parser.screen().contents(), "aデbネ");
 }
 
 #[test]
@@ -69,10 +69,10 @@ fn combining() {
     assert_eq!(parser.screen().cell(0, 0).unwrap().contents(), "a");
     parser.process("\u{0301}".as_bytes());
     assert_eq!(parser.screen().cell(0, 0).unwrap().contents(), "á");
-    parser.process(b"\x1b[20;20Habcdefg");
-    assert_eq!(parser.screen().contents(19, 19, 19, 26), "abcdefg");
-    parser.process("\x1b[20;25H\u{0301}".as_bytes());
-    assert_eq!(parser.screen().contents(19, 19, 19, 26), "abcdéfg");
+    parser.process(b"\x1bcabcdefg");
+    assert_eq!(parser.screen().contents(), "abcdefg");
+    parser.process("\x1b[1;6H\u{0301}".as_bytes());
+    assert_eq!(parser.screen().contents(), "abcdéfg");
     parser.process(b"\x1b[10;78Haaa");
     assert_eq!(parser.screen().cell(9, 79).unwrap().contents(), "a");
     parser.process("\r\n\u{0301}".as_bytes());
@@ -84,34 +84,34 @@ fn combining() {
 fn wrap() {
     let mut parser = vt100::Parser::new(24, 80);
     parser.process(b"0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789");
-    assert_eq!(parser.screen().contents(0, 0, 23, 79), "0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789");
+    assert_eq!(parser.screen().contents(), "0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789");
     parser.process(b"\x1b[5H01234567890123456789012345678901234567890123456789012345678901234567890123456789");
     parser.process(b"\x1b[6H01234567890123456789012345678901234567890123456789012345678901234567890123456789");
-    assert_eq!(parser.screen().contents(0, 0, 23, 79), "0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789\n\n\n01234567890123456789012345678901234567890123456789012345678901234567890123456789\n01234567890123456789012345678901234567890123456789012345678901234567890123456789");
+    assert_eq!(parser.screen().contents(), "0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789\n\n\n01234567890123456789012345678901234567890123456789012345678901234567890123456789\n01234567890123456789012345678901234567890123456789012345678901234567890123456789");
 
     parser.process(b"\x1b[H\x1b[J");
     parser.process(b"0123456789012345678901234567890123456789012345678901234567890123456789012345678");
-    assert_eq!(parser.screen().contents(0, 0, 23, 79), "0123456789012345678901234567890123456789012345678901234567890123456789012345678");
+    assert_eq!(parser.screen().contents(), "0123456789012345678901234567890123456789012345678901234567890123456789012345678");
     assert_eq!(parser.screen().cursor_position(), (0, 79));
     parser.process(b"9");
-    assert_eq!(parser.screen().contents(0, 0, 23, 79), "01234567890123456789012345678901234567890123456789012345678901234567890123456789");
+    assert_eq!(parser.screen().contents(), "01234567890123456789012345678901234567890123456789012345678901234567890123456789");
     assert_eq!(parser.screen().cursor_position(), (0, 80));
     parser.process(b"a");
-    assert_eq!(parser.screen().contents(0, 0, 23, 79), "01234567890123456789012345678901234567890123456789012345678901234567890123456789a");
+    assert_eq!(parser.screen().contents(), "01234567890123456789012345678901234567890123456789012345678901234567890123456789a");
     assert_eq!(parser.screen().cursor_position(), (1, 1));
     parser.process(b"b");
-    assert_eq!(parser.screen().contents(0, 0, 23, 79), "01234567890123456789012345678901234567890123456789012345678901234567890123456789ab");
+    assert_eq!(parser.screen().contents(), "01234567890123456789012345678901234567890123456789012345678901234567890123456789ab");
     assert_eq!(parser.screen().cursor_position(), (1, 2));
 
     parser.process(b"\x1b[H\x1b[J");
     parser.process(b"012345678901234567890123456789012345678901234567890123456789012345678901234567");
-    assert_eq!(parser.screen().contents(0, 0, 23, 79), "012345678901234567890123456789012345678901234567890123456789012345678901234567");
+    assert_eq!(parser.screen().contents(), "012345678901234567890123456789012345678901234567890123456789012345678901234567");
     assert_eq!(parser.screen().cursor_position(), (0, 78));
     parser.process("ネ".as_bytes());
-    assert_eq!(parser.screen().contents(0, 0, 23, 79), "012345678901234567890123456789012345678901234567890123456789012345678901234567ネ");
+    assert_eq!(parser.screen().contents(), "012345678901234567890123456789012345678901234567890123456789012345678901234567ネ");
     assert_eq!(parser.screen().cursor_position(), (0, 80));
     parser.process(b"a");
-    assert_eq!(parser.screen().contents(0, 0, 23, 79), "012345678901234567890123456789012345678901234567890123456789012345678901234567ネa");
+    assert_eq!(parser.screen().contents(), "012345678901234567890123456789012345678901234567890123456789012345678901234567ネa");
     assert_eq!(parser.screen().cursor_position(), (1, 1));
     assert_eq!(parser.screen().cell(0, 77).unwrap().contents(), "7");
     assert_eq!(parser.screen().cell(0, 78).unwrap().contents(), "ネ");
@@ -121,13 +121,13 @@ fn wrap() {
 
     parser.process(b"\x1b[H\x1b[J");
     parser.process(b"0123456789012345678901234567890123456789012345678901234567890123456789012345678");
-    assert_eq!(parser.screen().contents(0, 0, 23, 79), "0123456789012345678901234567890123456789012345678901234567890123456789012345678");
+    assert_eq!(parser.screen().contents(), "0123456789012345678901234567890123456789012345678901234567890123456789012345678");
     assert_eq!(parser.screen().cursor_position(), (0, 79));
     parser.process("ネ".as_bytes());
-    assert_eq!(parser.screen().contents(0, 0, 23, 79), "0123456789012345678901234567890123456789012345678901234567890123456789012345678ネ");
+    assert_eq!(parser.screen().contents(), "0123456789012345678901234567890123456789012345678901234567890123456789012345678ネ");
     assert_eq!(parser.screen().cursor_position(), (1, 2));
     parser.process(b"a");
-    assert_eq!(parser.screen().contents(0, 0, 23, 79), "0123456789012345678901234567890123456789012345678901234567890123456789012345678ネa");
+    assert_eq!(parser.screen().contents(), "0123456789012345678901234567890123456789012345678901234567890123456789012345678ネa");
     assert_eq!(parser.screen().cursor_position(), (1, 3));
     assert_eq!(parser.screen().cell(0, 77).unwrap().contents(), "7");
     assert_eq!(parser.screen().cell(0, 78).unwrap().contents(), "8");
@@ -142,7 +142,7 @@ fn wrap() {
 fn soft_hyphen() {
     let mut parser = vt100::Parser::new(24, 140);
     parser.process(b"Free En\xc2\xadter\xc2\xadprise is gonna ru\xc2\xadin ev\xc2\xadery\xc2\xadthing good un\xc2\xadless we take a knife to its tes\xc2\xadti\xc2\xadcles first.");
-    assert_eq!(parser.screen().contents(0, 0, 0, 139), "Free En\u{00ad}ter\u{00ad}prise is gonna ru\u{00ad}in ev\u{00ad}ery\u{00ad}thing good un\u{00ad}less we take a knife to its tes\u{00ad}ti\u{00ad}cles first.");
+    assert_eq!(parser.screen().contents(), "Free En\u{00ad}ter\u{00ad}prise is gonna ru\u{00ad}in ev\u{00ad}ery\u{00ad}thing good un\u{00ad}less we take a knife to its tes\u{00ad}ti\u{00ad}cles first.");
     assert_eq!(parser.screen().cell(0, 0).unwrap().contents(), "F");
     assert_eq!(parser.screen().cell(0, 1).unwrap().contents(), "r");
     assert_eq!(parser.screen().cell(0, 2).unwrap().contents(), "e");

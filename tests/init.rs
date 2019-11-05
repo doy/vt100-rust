@@ -15,8 +15,8 @@ fn init() {
     let cell = parser.screen().cell(0, 80);
     assert!(cell.is_none());
 
-    assert_eq!(parser.screen().contents(0, 0, 23, 79), "");
-    assert_eq!(parser.screen().contents_formatted(0, 0, 23, 79), b"");
+    assert_eq!(parser.screen().contents(), "");
+    assert_eq!(parser.screen().contents_formatted(), b"");
 
     assert_eq!(parser.screen().title(), "");
     assert_eq!(parser.screen().icon_name(), "");
