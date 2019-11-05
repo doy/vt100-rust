@@ -8,11 +8,6 @@ pub struct Cell {
 }
 
 impl Cell {
-    /// Creates a new cell.
-    pub fn new() -> Self {
-        Self::default()
-    }
-
     pub(crate) fn set(&mut self, c: String, a: crate::attrs::Attrs) {
         self.contents = c;
         self.attrs = a;
