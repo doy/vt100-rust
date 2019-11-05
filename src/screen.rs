@@ -33,7 +33,8 @@ pub enum MouseProtocolMode {
 
     // Highlight,
     /// Mouse button events should be reported on button press and release, as
-    /// well as when the mouse moves between cells while a button is held down.
+    /// well as when the mouse moves between cells while a button is held
+    /// down.
     ButtonMotion,
 
     /// Mouse button events should be reported on button press and release,
@@ -194,7 +195,8 @@ impl Screen {
 
     /// Returns whether the italic text attribute is active.
     ///
-    /// If true, text written to a new cell will have the italic text attribute.
+    /// If true, text written to a new cell will have the italic text
+    /// attribute.
     pub fn italic(&self) -> bool {
         self.attrs.italic()
     }
