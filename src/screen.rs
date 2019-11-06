@@ -796,13 +796,8 @@ impl Screen {
     }
 
     // CSI r
-    fn csr(&mut self, (top, bottom, left, right): (u16, u16, u16, u16)) {
-        self.grid_mut().set_scroll_region(
-            top - 1,
-            bottom - 1,
-            left - 1,
-            right - 1,
-        );
+    fn decstbm(&mut self, (top, bottom): (u16, u16)) {
+        self.grid_mut().set_scroll_region(top - 1, bottom - 1);
     }
 
     // osc codes
@@ -899,8 +894,10 @@ impl vte::Perform for Screen {
                 'h' => self.sm(canonicalize_params_multi(params)),
                 'l' => self.rm(canonicalize_params_multi(params)),
                 'm' => self.sgr(canonicalize_params_multi(params)),
-                'r' => self
-                    .csr(canonicalize_params_csr(params, self.grid().size())),
+                'r' => self.decstbm(canonicalize_params_decstbm(
+                    params,
+                    self.grid().size(),
+                )),
                 _ => {
                     if log::log_enabled!(log::Level::Warn) {
                         log::warn!(
@@ -1015,10 +1012,10 @@ fn canonicalize_params_multi(params: &[i64]) -> &[i64] {
     }
 }
 
-fn canonicalize_params_csr(
+fn canonicalize_params_decstbm(
     params: &[i64],
     size: crate::grid::Size,
-) -> (u16, u16, u16, u16) {
+) -> (u16, u16) {
     let top = params.get(0).copied().unwrap_or(0);
     let top = if top == 0 { 1 } else { i64_to_u16(top) };
 
@@ -1029,17 +1026,7 @@ fn canonicalize_params_csr(
         i64_to_u16(bottom)
     };
 
-    let left = params.get(2).copied().unwrap_or(0);
-    let left = if left == 0 { 1 } else { i64_to_u16(left) };
-
-    let right = params.get(3).copied().unwrap_or(0);
-    let right = if right == 0 {
-        size.cols
-    } else {
-        i64_to_u16(right)
-    };
-
-    (top, bottom, left, right)
+    (top, bottom)
 }
 
 fn i64_to_u16(i: i64) -> u16 {

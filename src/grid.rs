@@ -304,14 +304,7 @@ impl Grid {
         }
     }
 
-    // TODO: left/right
-    pub fn set_scroll_region(
-        &mut self,
-        top: u16,
-        bottom: u16,
-        _left: u16,
-        _right: u16,
-    ) {
+    pub fn set_scroll_region(&mut self, top: u16, bottom: u16) {
         let bottom = bottom.min(self.size().rows - 1);
         if top < bottom {
             self.scroll_top = top;
