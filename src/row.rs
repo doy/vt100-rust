@@ -125,11 +125,10 @@ impl Row {
 
     pub fn contents_diff(
         &self,
-        row_idx: u16,
         prev: &Self,
         attrs: crate::attrs::Attrs,
     ) -> (Vec<u8>, crate::attrs::Attrs, u16) {
-        let mut needs_move = true;
+        let mut skip = 0;
         let mut contents = vec![];
         let mut prev_attrs = attrs;
         let mut final_col = 0;
@@ -137,14 +136,11 @@ impl Row {
             self.cells().zip(prev.cells()).enumerate()
         {
             if cell == prev_cell {
-                needs_move = true;
+                skip += 1;
             } else {
-                if needs_move {
-                    contents.extend(
-                        format!("\x1b[{};{}H", row_idx + 1, idx + 1)
-                            .as_bytes(),
-                    );
-                    needs_move = false;
+                if skip > 0 {
+                    contents.extend(format!("\x1b[{}C", skip).as_bytes());
+                    skip = 0;
                 }
 
                 let attrs = cell.attrs();

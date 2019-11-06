@@ -329,7 +329,7 @@ fn diff() {
     let screen2 = parser.screen().clone();
     assert_eq!(
         screen2.contents_diff(&screen1),
-        b"\x1b[m\x1b[1;6H\x1b[32m bar"
+        b"\x1b[m\x1b[1;1H\x1b[5C\x1b[32m bar"
     );
     compare_diff(&screen1, &screen2, b"");
 
@@ -343,14 +343,17 @@ fn diff() {
 
     parser.process(b"\x1b[1;7H\x1b[32mbaz");
     let screen4 = parser.screen().clone();
-    assert_eq!(screen4.contents_diff(&screen3), b"\x1b[m\x1b[1;9H\x1b[32mz");
+    assert_eq!(
+        screen4.contents_diff(&screen3),
+        b"\x1b[m\x1b[1;1H\x1b[8C\x1b[32mz"
+    );
     compare_diff(&screen3, &screen4, b"\x1b[5C\x1b[32m bar\x1b[H\x1b[31mfoo");
 
     parser.process(b"\x1b[1;8H\x1b[X");
     let screen5 = parser.screen().clone();
     assert_eq!(
         screen5.contents_diff(&screen4),
-        b"\x1b[m\x1b[1;8H\x1b[X\x1b[C\x1b[1;8H"
+        b"\x1b[m\x1b[1;1H\x1b[7C\x1b[X\x1b[C\x1b[1;8H"
     );
     compare_diff(
         &screen4,
