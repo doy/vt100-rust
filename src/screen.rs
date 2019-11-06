@@ -153,7 +153,8 @@ impl Screen {
     /// codes. The result will be suitable for feeding directly to a raw
     /// terminal parser, and will result in the same visual output. Internal
     /// terminal modes (such as application keypad mode or alternate screen
-    /// mode) will not be included here.
+    /// mode) will not be included here, but modes that affect the visible
+    /// output (such as hidden cursor mode) will.
     pub fn contents_formatted(&self) -> Vec<u8> {
         let mut grid_contents = vec![];
         if self.hide_cursor() {
@@ -188,6 +189,15 @@ impl Screen {
         })
     }
 
+    /// Returns a terminal byte stream sufficient to turn the screen described
+    /// by `prev` into the screen described by `self`.
+    ///
+    /// The result of rendering `prev.contents_formatted()` followed by
+    /// `self.contents_diff(prev)` should be equivalent to the result of
+    /// rendering `self.contents_formatted()`. This is primarily useful when
+    /// you already have a terminal parser whose state is described by `prev`,
+    /// since the diff will likely require less memory and cause less
+    /// flickering than redrawing the entire screen contents.
     pub fn contents_diff(&self, prev: &Self) -> Vec<u8> {
         let mut grid_contents = vec![];
         if self.hide_cursor() != prev.hide_cursor() {
