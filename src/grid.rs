@@ -139,9 +139,13 @@ impl Grid {
     pub fn contents_formatted(&self) -> Vec<u8> {
         let mut contents = vec![];
         let mut prev_attrs = crate::attrs::Attrs::default();
+        let mut final_col = 0;
         for row in self.rows() {
-            let (mut new_contents, new_attrs) =
+            let (mut new_contents, new_attrs, new_col) =
                 row.contents_formatted(0, self.size.cols, prev_attrs);
+            if !new_contents.is_empty() {
+                final_col = new_col;
+            }
             contents.append(&mut new_contents);
             if !row.wrapped() {
                 contents.extend(b"\r\n");
@@ -149,24 +153,47 @@ impl Grid {
             prev_attrs = new_attrs;
         }
 
+        let mut final_row = self.size.rows;
         while contents.ends_with(b"\r\n") {
             contents.truncate(contents.len() - 2);
+            final_row -= 1;
         }
+
+        if final_row != self.pos.row || final_col != self.pos.col {
+            contents.extend(
+                format!("\x1b[{};{}H", self.pos.row + 1, self.pos.col + 1)
+                    .as_bytes(),
+            );
+        }
+
         contents
     }
 
     pub fn contents_diff(&self, prev: &Self) -> Vec<u8> {
         let mut contents = b"\x1b[m".to_vec();
         let mut prev_attrs = crate::attrs::Attrs::default();
+        let mut final_row = prev.pos.row;
+        let mut final_col = prev.pos.col;
         for (idx, (row, prev_row)) in self.rows().zip(prev.rows()).enumerate()
         {
-            let (mut new_contents, new_attrs) = row.contents_diff(
+            let (mut new_contents, new_attrs, new_col) = row.contents_diff(
                 idx.try_into().unwrap(),
                 prev_row,
                 prev_attrs,
             );
+            if !new_contents.is_empty() {
+                final_row = idx.try_into().unwrap();
+                final_col = new_col;
+            }
             contents.append(&mut new_contents);
             prev_attrs = new_attrs;
+        }
+
+        if self.pos.row != final_row || self.pos.col != final_col {
+            contents.extend(
+                format!("\x1b[{};{}H", self.pos.row + 1, self.pos.col + 1)
+                    .as_bytes(),
+            );
         }
 
         contents

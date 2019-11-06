@@ -155,7 +155,12 @@ impl Screen {
     /// terminal modes (such as application keypad mode or alternate screen
     /// mode) will not be included here.
     pub fn contents_formatted(&self) -> Vec<u8> {
-        self.grid().contents_formatted()
+        let mut grid_contents = vec![];
+        if self.hide_cursor() {
+            grid_contents.extend(b"\x1b[?25l");
+        }
+        grid_contents.append(&mut self.grid().contents_formatted());
+        grid_contents
     }
 
     /// Returns the formatted contents of the terminal by row, restricted to
@@ -174,7 +179,7 @@ impl Screen {
         width: u16,
     ) -> impl Iterator<Item = Vec<u8>> + '_ {
         self.grid().rows().map(move |row| {
-            let (contents, _) = row.contents_formatted(
+            let (contents, ..) = row.contents_formatted(
                 start,
                 width,
                 crate::attrs::Attrs::default(),
@@ -184,7 +189,16 @@ impl Screen {
     }
 
     pub fn contents_diff(&self, prev: &Self) -> Vec<u8> {
-        self.grid().contents_diff(prev.grid())
+        let mut grid_contents = vec![];
+        if self.hide_cursor() != prev.hide_cursor() {
+            grid_contents.extend(if self.hide_cursor() {
+                b"\x1b[?25l"
+            } else {
+                b"\x1b[?25h"
+            });
+        }
+        grid_contents.append(&mut self.grid().contents_diff(prev.grid()));
+        grid_contents
     }
 
     /// Returns the `Cell` object at the given location in the terminal, if it

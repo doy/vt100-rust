@@ -22,7 +22,7 @@ fn formatted() {
     assert!(!parser.screen().cell(0, 5).unwrap().bold());
     assert_eq!(
         parser.screen().contents_formatted(),
-        b"foo\x1b[33;1;7mb\x1b[mar"
+        b"foo\x1b[33;1;7mb\x1b[mar\x1b[1;5H"
     );
 
     parser.process(b"\x1b[1;5H\x1b[22;42ma");
@@ -33,7 +33,7 @@ fn formatted() {
     assert!(!parser.screen().cell(0, 5).unwrap().bold());
     assert_eq!(
         parser.screen().contents_formatted(),
-        b"foo\x1b[33;1;7mb\x1b[42;22ma\x1b[mr"
+        b"foo\x1b[33;1;7mb\x1b[42;22ma\x1b[mr\x1b[1;6H"
     );
 
     parser.process(b"\x1b[1;6H\x1b[35mr\r\nquux");
@@ -64,7 +64,7 @@ fn empty_cells() {
     assert_eq!(parser.screen().contents(), "foo   bar");
     assert_eq!(
         parser.screen().contents_formatted(),
-        b"\x1b[31mfoo\x1b[m\x1b[C\x1b[C\x1b[32m bar"
+        b"\x1b[31mfoo\x1b[m\x1b[C\x1b[C\x1b[32m bar\x1b[1;4H"
     );
 }
 
@@ -349,7 +349,7 @@ fn diff() {
     let screen5 = parser.screen().clone();
     assert_eq!(
         screen5.contents_diff(&screen4),
-        b"\x1b[m\x1b[1;8H\x1b[X\x1b[C"
+        b"\x1b[m\x1b[1;8H\x1b[X\x1b[C\x1b[1;8H"
     );
     compare_diff(
         &screen4,
@@ -385,7 +385,6 @@ fn diff_crawl(i: usize) {
 
     let mut all_frames: Vec<u8> = vec![];
     for two_screens in screens.windows(2) {
-        eprintln!("loop");
         match two_screens {
             [(prev_frame, prev_screen), (_, screen)] => {
                 all_frames.extend(prev_frame);
@@ -419,6 +418,11 @@ fn compare_diff(
     let mut parser = vt100::Parser::new(rows, cols);
     parser.process(&contents);
     compare_cells(parser.screen(), &prev_screen);
+    assert_eq!(parser.screen().hide_cursor(), prev_screen.hide_cursor());
+    assert_eq!(
+        parser.screen().cursor_position(),
+        prev_screen.cursor_position()
+    );
     assert_eq!(
         parser.screen().contents_formatted(),
         prev_screen.contents_formatted()
@@ -440,6 +444,8 @@ fn compare_diff(
             .unwrap();
     }
     compare_cells(parser.screen(), &screen);
+    assert_eq!(parser.screen().hide_cursor(), screen.hide_cursor());
+    assert_eq!(parser.screen().cursor_position(), screen.cursor_position());
     assert_eq!(
         parser.screen().contents_formatted(),
         screen.contents_formatted()

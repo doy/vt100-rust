@@ -93,16 +93,13 @@ impl Row {
         start: u16,
         width: u16,
         attrs: crate::attrs::Attrs,
-    ) -> (Vec<u8>, crate::attrs::Attrs) {
+    ) -> (Vec<u8>, crate::attrs::Attrs, u16) {
         let mut prev_was_wide = false;
         let mut contents = vec![];
         let mut prev_attrs = attrs;
 
-        for cell in self
-            .cells()
-            .skip(start as usize)
-            .take(width.min(self.content_width(start)) as usize)
-        {
+        let cols = width.min(self.content_width(start));
+        for cell in self.cells().skip(start as usize).take(cols as usize) {
             if prev_was_wide {
                 prev_was_wide = false;
                 continue;
@@ -123,7 +120,7 @@ impl Row {
             prev_was_wide = cell.is_wide();
         }
 
-        (contents, prev_attrs)
+        (contents, prev_attrs, cols)
     }
 
     pub fn contents_diff(
@@ -131,10 +128,11 @@ impl Row {
         row_idx: u16,
         prev: &Self,
         attrs: crate::attrs::Attrs,
-    ) -> (Vec<u8>, crate::attrs::Attrs) {
+    ) -> (Vec<u8>, crate::attrs::Attrs, u16) {
         let mut needs_move = true;
         let mut contents = vec![];
         let mut prev_attrs = attrs;
+        let mut final_col = 0;
         for (idx, (cell, prev_cell)) in
             self.cells().zip(prev.cells()).enumerate()
         {
@@ -160,10 +158,11 @@ impl Row {
                 } else {
                     b"\x1b[X\x1b[C"
                 });
+                final_col = idx + 1;
             }
         }
 
-        (contents, prev_attrs)
+        (contents, prev_attrs, final_col.try_into().unwrap())
     }
 
     fn content_width(&self, start: u16) -> u16 {

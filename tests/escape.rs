@@ -64,7 +64,7 @@ fn ris() {
     assert_eq!(parser.screen().contents(), "foo");
     assert_eq!(
         parser.screen().contents_formatted(),
-        b"f\x1b[31;47;1;3;4moo"
+        b"\x1b[?25lf\x1b[31;47;1;3;4moo\x1b[21;21H"
     );
 
     assert_eq!(parser.screen().title(), "window title");
@@ -172,13 +172,13 @@ fn decsc() {
     assert_eq!(parser.screen().cursor_position(), (0, 3));
     assert_eq!(
         parser.screen().contents_formatted(),
-        b"\x1b[32mbar\r\n\r\n\r\n\r\n\x1b[31mfoo"
+        b"\x1b[32mbar\r\n\r\n\r\n\r\n\x1b[31mfoo\x1b[1;4H"
     );
 
     parser.process(b"\x1b8\x1b[Hz");
     assert_eq!(parser.screen().cursor_position(), (4, 1));
     assert_eq!(
         parser.screen().contents_formatted(),
-        b"\x1b[32mbar\r\n\r\n\r\n\r\n\x1b[31mzoo"
+        b"\x1b[32mbar\r\n\r\n\r\n\r\n\x1b[31mzoo\x1b[5;2H"
     );
 }
