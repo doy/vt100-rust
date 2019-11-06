@@ -156,10 +156,12 @@ impl Screen {
     /// mode) will not be included here, but modes that affect the visible
     /// output (such as hidden cursor mode) will.
     pub fn contents_formatted(&self) -> Vec<u8> {
-        let mut grid_contents = vec![];
-        if self.hide_cursor() {
-            grid_contents.extend(b"\x1b[?25l");
+        let mut grid_contents = if self.hide_cursor() {
+            b"\x1b[?25l"
+        } else {
+            b"\x1b[?25h"
         }
+        .to_vec();
         grid_contents.append(&mut self.grid().contents_formatted());
         grid_contents
     }

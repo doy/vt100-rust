@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+* Make `contents_formatted` explicitly show the cursor when necessary, in case
+  the cursor was previously hidden.
+
 ## [0.3.0] - 2019-11-06
 
 ### Added

@@ -4,7 +4,10 @@ use std::io::Read as _;
 fn formatted() {
     let mut parser = vt100::Parser::new(24, 80);
     compare_formatted(parser.screen());
-    assert_eq!(parser.screen().contents_formatted(), b"\x1b[H\x1b[J");
+    assert_eq!(
+        parser.screen().contents_formatted(),
+        b"\x1b[?25h\x1b[H\x1b[J"
+    );
 
     parser.process(b"foobar");
     compare_formatted(parser.screen());
@@ -12,7 +15,10 @@ fn formatted() {
     assert!(!parser.screen().cell(0, 3).unwrap().bold());
     assert!(!parser.screen().cell(0, 4).unwrap().bold());
     assert!(!parser.screen().cell(0, 5).unwrap().bold());
-    assert_eq!(parser.screen().contents_formatted(), b"\x1b[H\x1b[Jfoobar");
+    assert_eq!(
+        parser.screen().contents_formatted(),
+        b"\x1b[?25h\x1b[H\x1b[Jfoobar"
+    );
 
     parser.process(b"\x1b[1;4H\x1b[1;7m\x1b[33mb");
     compare_formatted(parser.screen());
@@ -22,7 +28,7 @@ fn formatted() {
     assert!(!parser.screen().cell(0, 5).unwrap().bold());
     assert_eq!(
         parser.screen().contents_formatted(),
-        b"\x1b[H\x1b[Jfoo\x1b[33;1;7mb\x1b[mar\x1b[1;5H"
+        &b"\x1b[?25h\x1b[H\x1b[Jfoo\x1b[33;1;7mb\x1b[mar\x1b[1;5H"[..]
     );
 
     parser.process(b"\x1b[1;5H\x1b[22;42ma");
@@ -33,28 +39,28 @@ fn formatted() {
     assert!(!parser.screen().cell(0, 5).unwrap().bold());
     assert_eq!(
         parser.screen().contents_formatted(),
-        &b"\x1b[H\x1b[Jfoo\x1b[33;1;7mb\x1b[42;22ma\x1b[mr\x1b[1;6H"[..]
+        &b"\x1b[?25h\x1b[H\x1b[Jfoo\x1b[33;1;7mb\x1b[42;22ma\x1b[mr\x1b[1;6H"
+            [..]
     );
 
     parser.process(b"\x1b[1;6H\x1b[35mr\r\nquux");
     compare_formatted(parser.screen());
     assert_eq!(
         parser.screen().contents_formatted(),
-        &b"\x1b[H\x1b[Jfoo\x1b[33;1;7mb\x1b[42;22ma\x1b[35mr\r\nquux"[..]
+        &b"\x1b[?25h\x1b[H\x1b[Jfoo\x1b[33;1;7mb\x1b[42;22ma\x1b[35mr\r\nquux"[..]
     );
 
     parser.process(b"\x1b[2;1H\x1b[45mquux");
     compare_formatted(parser.screen());
     assert_eq!(
         parser.screen().contents_formatted(),
-        &b"\x1b[H\x1b[Jfoo\x1b[33;1;7mb\x1b[42;22ma\x1b[35mr\r\n\x1b[45mquux"
-            [..]
+        &b"\x1b[?25h\x1b[H\x1b[Jfoo\x1b[33;1;7mb\x1b[42;22ma\x1b[35mr\r\n\x1b[45mquux"[..]
     );
 
     parser
         .process(b"\x1b[2;2H\x1b[38;2;123;213;231mu\x1b[38;5;254mu\x1b[39mx");
     compare_formatted(parser.screen());
-    assert_eq!(parser.screen().contents_formatted(), &b"\x1b[H\x1b[Jfoo\x1b[33;1;7mb\x1b[42;22ma\x1b[35mr\r\n\x1b[45mq\x1b[38;2;123;213;231mu\x1b[38;5;254mu\x1b[39mx"[..]);
+    assert_eq!(parser.screen().contents_formatted(), &b"\x1b[?25h\x1b[H\x1b[Jfoo\x1b[33;1;7mb\x1b[42;22ma\x1b[35mr\r\n\x1b[45mq\x1b[38;2;123;213;231mu\x1b[38;5;254mu\x1b[39mx"[..]);
 }
 
 #[test]
@@ -65,7 +71,7 @@ fn empty_cells() {
     assert_eq!(parser.screen().contents(), "foo   bar");
     assert_eq!(
         parser.screen().contents_formatted(),
-        &b"\x1b[H\x1b[J\x1b[31mfoo\x1b[m\x1b[C\x1b[C\x1b[32m bar\x1b[1;4H"[..]
+        &b"\x1b[?25h\x1b[H\x1b[J\x1b[31mfoo\x1b[m\x1b[C\x1b[C\x1b[32m bar\x1b[1;4H"[..]
     );
 }
 
