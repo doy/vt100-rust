@@ -72,8 +72,9 @@ fn empty_cells() {
 #[test]
 fn rows() {
     let mut parser = vt100::Parser::new(24, 80);
+    let screen1 = parser.screen().clone();
     assert_eq!(
-        parser.screen().rows(0, 80).collect::<Vec<String>>(),
+        screen1.rows(0, 80).collect::<Vec<String>>(),
         vec![
             String::new(),
             String::new(),
@@ -102,10 +103,7 @@ fn rows() {
         ]
     );
     assert_eq!(
-        parser
-            .screen()
-            .rows_formatted(0, 80)
-            .collect::<Vec<Vec<u8>>>(),
+        screen1.rows_formatted(0, 80).collect::<Vec<Vec<u8>>>(),
         vec![
             vec![],
             vec![],
@@ -134,7 +132,7 @@ fn rows() {
         ]
     );
     assert_eq!(
-        parser.screen().rows(5, 15).collect::<Vec<String>>(),
+        screen1.rows(5, 15).collect::<Vec<String>>(),
         vec![
             String::new(),
             String::new(),
@@ -163,10 +161,7 @@ fn rows() {
         ]
     );
     assert_eq!(
-        parser
-            .screen()
-            .rows_formatted(5, 15)
-            .collect::<Vec<Vec<u8>>>(),
+        screen1.rows_formatted(5, 15).collect::<Vec<Vec<u8>>>(),
         vec![
             vec![],
             vec![],
@@ -197,8 +192,9 @@ fn rows() {
 
     parser
         .process(b"\x1b[31mfoo\x1b[10;10H\x1b[32mbar\x1b[20;20H\x1b[33mbaz");
+    let screen2 = parser.screen().clone();
     assert_eq!(
-        parser.screen().rows(0, 80).collect::<Vec<String>>(),
+        screen2.rows(0, 80).collect::<Vec<String>>(),
         vec![
             "foo".to_string(),
             String::new(),
@@ -227,8 +223,7 @@ fn rows() {
         ]
     );
     assert_eq!(
-        parser
-            .screen()
+        screen2
             .rows_formatted(0, 80)
             .collect::<Vec<Vec<u8>>>(),
         vec![
@@ -259,7 +254,7 @@ fn rows() {
         ]
     );
     assert_eq!(
-        parser.screen().rows(5, 15).collect::<Vec<String>>(),
+        screen2.rows(5, 15).collect::<Vec<String>>(),
         vec![
             String::new(),
             String::new(),
@@ -288,8 +283,7 @@ fn rows() {
         ]
     );
     assert_eq!(
-        parser
-            .screen()
+        screen2
             .rows_formatted(5, 15)
             .collect::<Vec<Vec<u8>>>(),
         vec![
@@ -313,6 +307,68 @@ fn rows() {
             vec![],
             vec![],
             b"\x1b[C\x1b[C\x1b[C\x1b[C\x1b[C\x1b[C\x1b[C\x1b[C\x1b[C\x1b[C\x1b[C\x1b[C\x1b[C\x1b[C\x1b[33mb".to_vec(),
+            vec![],
+            vec![],
+            vec![],
+            vec![],
+        ]
+    );
+
+    assert_eq!(
+        screen2.rows_diff(&screen1, 0, 80).collect::<Vec<Vec<u8>>>(),
+        vec![
+            b"\x1b[31mfoo".to_vec(),
+            vec![],
+            vec![],
+            vec![],
+            vec![],
+            vec![],
+            vec![],
+            vec![],
+            vec![],
+            b"\x1b[9C\x1b[32mbar".to_vec(),
+            vec![],
+            vec![],
+            vec![],
+            vec![],
+            vec![],
+            vec![],
+            vec![],
+            vec![],
+            vec![],
+            b"\x1b[19C\x1b[33mbaz".to_vec(),
+            vec![],
+            vec![],
+            vec![],
+            vec![],
+        ]
+    );
+
+    parser.process(b"\x1b[10;11Ho");
+    let screen3 = parser.screen().clone();
+    assert_eq!(
+        screen3.rows_diff(&screen2, 0, 80).collect::<Vec<Vec<u8>>>(),
+        vec![
+            vec![],
+            vec![],
+            vec![],
+            vec![],
+            vec![],
+            vec![],
+            vec![],
+            vec![],
+            vec![],
+            b"\x1b[10C\x1b[33mo".to_vec(),
+            vec![],
+            vec![],
+            vec![],
+            vec![],
+            vec![],
+            vec![],
+            vec![],
+            vec![],
+            vec![],
+            vec![],
             vec![],
             vec![],
             vec![],

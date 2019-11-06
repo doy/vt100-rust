@@ -211,6 +211,33 @@ impl Screen {
         grid_contents
     }
 
+    /// Returns a sequence of terminal byte streams sufficient to turn the
+    /// subset of each row from `prev` (as described by `start` and `width`)
+    /// into the corresponding row subset in `self`.
+    ///
+    /// You must handle the initial row positioning yourself - each row diff
+    /// expects to start out positioned at the start of that row. Internal
+    /// terminal modes (such as application keypad mode or alternate screen
+    /// mode) will not be included here.
+    pub fn rows_diff<'a>(
+        &'a self,
+        prev: &'a Self,
+        start: u16,
+        width: u16,
+    ) -> impl Iterator<Item = Vec<u8>> + 'a {
+        self.grid().rows().zip(prev.grid().rows()).map(
+            move |(row, prev_row)| {
+                let (contents, ..) = row.contents_diff(
+                    prev_row,
+                    start,
+                    width,
+                    crate::attrs::Attrs::default(),
+                );
+                contents
+            },
+        )
+    }
+
     /// Returns the `Cell` object at the given location in the terminal, if it
     /// exists.
     pub fn cell(&self, row: u16, col: u16) -> Option<&crate::cell::Cell> {

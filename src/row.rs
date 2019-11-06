@@ -126,14 +126,21 @@ impl Row {
     pub fn contents_diff(
         &self,
         prev: &Self,
+        start: u16,
+        width: u16,
         attrs: crate::attrs::Attrs,
     ) -> (Vec<u8>, crate::attrs::Attrs, u16) {
         let mut skip = 0;
         let mut contents = vec![];
         let mut prev_attrs = attrs;
         let mut final_col = 0;
-        for (idx, (cell, prev_cell)) in
-            self.cells().zip(prev.cells()).enumerate()
+
+        for (idx, (cell, prev_cell)) in self
+            .cells()
+            .zip(prev.cells())
+            .skip(start as usize)
+            .take(width as usize)
+            .enumerate()
         {
             if cell == prev_cell {
                 skip += 1;

@@ -177,7 +177,7 @@ impl Grid {
         for (idx, (row, prev_row)) in self.rows().zip(prev.rows()).enumerate()
         {
             let (mut new_contents, new_attrs, new_col) =
-                row.contents_diff(prev_row, prev_attrs);
+                row.contents_diff(prev_row, 0, self.size.cols, prev_attrs);
             if !new_contents.is_empty() {
                 contents.extend(format!("\x1b[{};1H", idx + 1).as_bytes());
                 final_row = idx.try_into().unwrap();
