@@ -18,11 +18,16 @@ fn write_to_parser(chunks: &mut Vec<Vec<u8>>) -> (String, Vec<u8>) {
     )
 }
 
-fn test_splits(filename: &str) {
+fn test_splits(filename: &str, limit: Option<usize>) {
     let bytes = get_file_contents(filename);
     let len = bytes.len();
     let expected = write_to_parser(&mut vec![bytes.clone()]);
     for i in 0..(len - 1) {
+        if let Some(limit) = limit {
+            if i > limit {
+                break;
+            }
+        }
         let bytes_copy = bytes.clone();
         let (start, end) = bytes_copy.split_at(i);
         let mut chunks = vec![start.to_vec(), end.to_vec()];
@@ -38,5 +43,11 @@ fn test_splits(filename: &str) {
 
 #[test]
 fn split_escapes_weechat() {
-    test_splits("tests/data/weechat.typescript");
+    test_splits("tests/data/weechat.typescript", Some(500));
+}
+
+#[test]
+#[ignore]
+fn split_escapes_weechat_full() {
+    test_splits("tests/data/weechat.typescript", None);
 }
