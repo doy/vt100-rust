@@ -361,7 +361,7 @@ fn diff() {
 
 #[test]
 fn diff_crawl_short() {
-    diff_crawl(1000);
+    diff_crawl(500);
 }
 
 #[test]
