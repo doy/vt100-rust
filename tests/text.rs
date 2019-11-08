@@ -10,7 +10,6 @@ fn ascii() {
     assert_eq!(parser.screen().cell(0, 3).unwrap().contents(), "");
     assert_eq!(parser.screen().cell(1, 0).unwrap().contents(), "");
     assert_eq!(parser.screen().contents(), "foo");
-    assert_eq!(parser.screen().contents(), "foo");
 }
 
 #[test]
@@ -23,7 +22,6 @@ fn utf8() {
     assert_eq!(parser.screen().cell(0, 3).unwrap().contents(), "é");
     assert_eq!(parser.screen().cell(0, 4).unwrap().contents(), "");
     assert_eq!(parser.screen().cell(1, 0).unwrap().contents(), "");
-    assert_eq!(parser.screen().contents(), "café");
     assert_eq!(parser.screen().contents(), "café");
 }
 
@@ -43,7 +41,6 @@ fn newlines() {
     assert_eq!(parser.screen().cell(0, 3).unwrap().contents(), "");
     assert_eq!(parser.screen().cell(3, 0).unwrap().contents(), "");
     assert_eq!(parser.screen().contents(), "f\noo\nood");
-    assert_eq!(parser.screen().contents(), "f\noo\nood");
 }
 
 #[test]
@@ -58,7 +55,6 @@ fn wide() {
     assert_eq!(parser.screen().cell(0, 5).unwrap().contents(), "");
     assert_eq!(parser.screen().cell(0, 6).unwrap().contents(), "");
     assert_eq!(parser.screen().cell(1, 0).unwrap().contents(), "");
-    assert_eq!(parser.screen().contents(), "aデbネ");
     assert_eq!(parser.screen().contents(), "aデbネ");
 }
 
