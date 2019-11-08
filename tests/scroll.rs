@@ -33,6 +33,9 @@ fn scroll_regions() {
     assert_eq!(parser.screen().cursor_position(), (9, 49));
     parser.process(b"\x1b[23d");
     assert_eq!(parser.screen().cursor_position(), (22, 49));
+    parser.process(b"\n");
+    assert_eq!(parser.screen().cursor_position(), (23, 49));
+    assert_eq!(parser.screen().contents(), "1\n2\n3\n4\n5\n6\n7\n8\n9\n\n10\n11\n12\n13\n14\n\n\n15\n16\n17\n21\n22\n23\n24");
 }
 
 #[test]

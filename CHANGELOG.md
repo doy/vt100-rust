@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+* Fixed cursor movement when the cursor position is already outside of an
+  active scroll region.
+
 ## [0.3.2] - 2019-11-08
 
 ### Fixed

@@ -315,28 +315,36 @@ impl Grid {
         self.pos.col = 0;
     }
 
+    fn in_scroll_region(&self) -> bool {
+        self.pos.row >= self.scroll_top && self.pos.row <= self.scroll_bottom
+    }
+
     pub fn set_origin_mode(&mut self, mode: bool) {
         self.origin_mode = mode;
         self.set_pos(Pos { row: 0, col: 0 })
     }
 
     pub fn row_inc_clamp(&mut self, count: u16) {
+        let in_scroll_region = self.in_scroll_region();
         self.pos.row = self.pos.row.saturating_add(count);
-        self.row_clamp_bottom(true);
+        self.row_clamp_bottom(in_scroll_region);
     }
 
     pub fn row_inc_scroll(&mut self, count: u16) {
+        let in_scroll_region = self.in_scroll_region();
         self.pos.row = self.pos.row.saturating_add(count);
-        let lines = self.row_clamp_bottom(true);
+        let lines = self.row_clamp_bottom(in_scroll_region);
         self.scroll_up(lines);
     }
 
     pub fn row_dec_clamp(&mut self, count: u16) {
+        let in_scroll_region = self.in_scroll_region();
         self.pos.row = self.pos.row.saturating_sub(count);
-        self.row_clamp_top(true);
+        self.row_clamp_top(in_scroll_region);
     }
 
     pub fn row_dec_scroll(&mut self, count: u16) {
+        let in_scroll_region = self.in_scroll_region();
         // need to account for clamping by both row_clamp_top and by
         // saturating_sub
         let extra_lines = if count > self.pos.row {
@@ -345,7 +353,7 @@ impl Grid {
             0
         };
         self.pos.row = self.pos.row.saturating_sub(count);
-        let lines = self.row_clamp_top(true);
+        let lines = self.row_clamp_top(in_scroll_region);
         self.scroll_down(lines + extra_lines);
     }
 
