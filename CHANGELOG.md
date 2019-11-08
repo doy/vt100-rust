@@ -12,6 +12,8 @@
 * Fixed VPA incorrectly being clamped to the scroll region.
 * Stop treating soft hyphen specially (as far as i can tell, no other terminals
   do this, and i'm not sure why i thought it was necessary to begin with).
+* `contents_formatted` now also resets attributes at the start, like
+  `contents_diff` does.
 
 ## [0.3.1] - 2019-11-06
 

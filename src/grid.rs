@@ -137,7 +137,7 @@ impl Grid {
     }
 
     pub fn contents_formatted(&self) -> Vec<u8> {
-        let mut contents = b"\x1b[H\x1b[J".to_vec();
+        let mut contents = b"\x1b[m\x1b[H\x1b[J".to_vec();
         let mut prev_attrs = crate::attrs::Attrs::default();
         let mut final_col = 0;
         for row in self.rows() {
