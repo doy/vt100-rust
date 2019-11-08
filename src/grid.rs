@@ -337,9 +337,16 @@ impl Grid {
     }
 
     pub fn row_dec_scroll(&mut self, count: u16) {
+        // need to account for clamping by both row_clamp_top and by
+        // saturating_sub
+        let extra_lines = if count > self.pos.row {
+            count - self.pos.row
+        } else {
+            0
+        };
         self.pos.row = self.pos.row.saturating_sub(count);
         let lines = self.row_clamp_top(true);
-        self.scroll_down(lines);
+        self.scroll_down(lines + extra_lines);
     }
 
     pub fn row_set(&mut self, i: u16) {

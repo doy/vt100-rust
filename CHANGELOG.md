@@ -7,6 +7,8 @@
 * Clearing cells now correctly sets the cell background color.
 * Fixed a couple bugs in wide character handling in `contents_formatted` and
   `contents_diff`.
+* Fixed RI when the cursor is at the top of the screen (fixes scrolling up in
+  `less`, for instance).
 
 ## [0.3.1] - 2019-11-06
 
