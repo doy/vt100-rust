@@ -46,9 +46,8 @@ fn newlines() {
 #[test]
 fn wide() {
     let mut parser = vt100::Parser::new(24, 80);
-    let screen1 = parser.screen().clone();
+    let screen = parser.screen().clone();
     parser.process("aデbネ".as_bytes());
-    let screen2 = parser.screen().clone();
     assert_eq!(parser.screen().cell(0, 0).unwrap().contents(), "a");
     assert_eq!(parser.screen().cell(0, 1).unwrap().contents(), "デ");
     assert_eq!(parser.screen().cell(0, 2).unwrap().contents(), "");
@@ -64,10 +63,11 @@ fn wide() {
         "\x1b[?25h\x1b[H\x1b[Jaデbネ".as_bytes()
     );
     assert_eq!(
-        parser.screen().contents_diff(&screen1),
+        parser.screen().contents_diff(&screen),
         "\x1b[m\x1b[1;1Haデbネ".as_bytes()
     );
 
+    let screen = parser.screen().clone();
     parser.process(b"\x1b[1;1H\x1b[3Cc");
     assert_eq!(parser.screen().contents(), "aデcネ");
     assert_eq!(parser.screen().cursor_position(), (0, 4));
@@ -76,8 +76,60 @@ fn wide() {
         "\x1b[?25h\x1b[H\x1b[Jaデcネ\x1b[1;5H".as_bytes()
     );
     assert_eq!(
-        parser.screen().contents_diff(&screen2),
+        parser.screen().contents_diff(&screen),
         "\x1b[m\x1b[1;1H\x1b[3Cc".as_bytes()
+    );
+
+    let screen = parser.screen().clone();
+    parser.process("\x1b[1;7Hfoobar".as_bytes());
+    assert_eq!(parser.screen().contents(), "aデcネfoobar");
+    assert_eq!(parser.screen().cursor_position(), (0, 12));
+    assert_eq!(
+        parser.screen().contents_formatted(),
+        "\x1b[?25h\x1b[H\x1b[Jaデcネfoobar".as_bytes()
+    );
+    assert_eq!(
+        parser.screen().contents_diff(&screen),
+        "\x1b[m\x1b[1;1H\x1b[6Cfoobar".as_bytes()
+    );
+
+    let screen = parser.screen().clone();
+    parser.process("\x1b[1;1Hデcネfoobar\x1b[K".as_bytes());
+    assert_eq!(parser.screen().contents(), "デcネfoobar");
+    assert_eq!(parser.screen().cursor_position(), (0, 11));
+    assert_eq!(
+        parser.screen().contents_formatted(),
+        "\x1b[?25h\x1b[H\x1b[Jデcネfoobar".as_bytes()
+    );
+    assert_eq!(
+        parser.screen().contents_diff(&screen),
+        "\x1b[m\x1b[1;1Hデcネfo\x1b[1Cbar\x1b[X\x1b[C\x1b[1;12H".as_bytes()
+    );
+
+    let screen = parser.screen().clone();
+    parser.process("\x1b[1;1Haデcネfoobar\x1b[K".as_bytes());
+    assert_eq!(parser.screen().contents(), "aデcネfoobar");
+    assert_eq!(parser.screen().cursor_position(), (0, 12));
+    assert_eq!(
+        parser.screen().contents_formatted(),
+        "\x1b[?25h\x1b[H\x1b[Jaデcネfoobar".as_bytes()
+    );
+    assert_eq!(
+        parser.screen().contents_diff(&screen),
+        "\x1b[m\x1b[1;1Haデcネf\x1b[1Cobar".as_bytes()
+    );
+
+    let screen = parser.screen().clone();
+    parser.process("\x1b[1;1Hデcネfoobar\x1b[K".as_bytes());
+    assert_eq!(parser.screen().contents(), "デcネfoobar");
+    assert_eq!(parser.screen().cursor_position(), (0, 11));
+    assert_eq!(
+        parser.screen().contents_formatted(),
+        "\x1b[?25h\x1b[H\x1b[Jデcネfoobar".as_bytes()
+    );
+    assert_eq!(
+        parser.screen().contents_diff(&screen),
+        "\x1b[m\x1b[1;1Hデcネfo\x1b[1Cbar\x1b[X\x1b[C\x1b[1;12H".as_bytes()
     );
 }
 

@@ -504,7 +504,13 @@ impl Screen {
             }
         } else {
             cell.set(c.to_string(), attrs);
-            self.grid_mut().col_inc(width);
+            self.grid_mut().col_inc(1);
+            if width > 1 {
+                let bgcolor = self.attrs.bgcolor;
+                let next_cell = self.current_cell_mut();
+                next_cell.clear(bgcolor);
+                self.grid_mut().col_inc(1);
+            }
         }
     }
 
