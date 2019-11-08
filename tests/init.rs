@@ -18,7 +18,7 @@ fn init() {
     assert_eq!(parser.screen().contents(), "");
     assert_eq!(
         parser.screen().contents_formatted(),
-        b"\x1b[?25h\x1b[H\x1b[J"
+        b"\x1b[?25h\x1b[m\x1b[H\x1b[J"
     );
 
     assert_eq!(parser.screen().title(), "");

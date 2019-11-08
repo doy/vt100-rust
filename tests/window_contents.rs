@@ -6,7 +6,7 @@ fn formatted() {
     compare_formatted(parser.screen());
     assert_eq!(
         parser.screen().contents_formatted(),
-        b"\x1b[?25h\x1b[H\x1b[J"
+        b"\x1b[?25h\x1b[m\x1b[H\x1b[J"
     );
 
     parser.process(b"foobar");
@@ -17,7 +17,7 @@ fn formatted() {
     assert!(!parser.screen().cell(0, 5).unwrap().bold());
     assert_eq!(
         parser.screen().contents_formatted(),
-        b"\x1b[?25h\x1b[H\x1b[Jfoobar"
+        b"\x1b[?25h\x1b[m\x1b[H\x1b[Jfoobar"
     );
 
     parser.process(b"\x1b[1;4H\x1b[1;7m\x1b[33mb");
@@ -28,7 +28,7 @@ fn formatted() {
     assert!(!parser.screen().cell(0, 5).unwrap().bold());
     assert_eq!(
         parser.screen().contents_formatted(),
-        &b"\x1b[?25h\x1b[H\x1b[Jfoo\x1b[33;1;7mb\x1b[mar\x1b[1;5H"[..]
+        &b"\x1b[?25h\x1b[m\x1b[H\x1b[Jfoo\x1b[33;1;7mb\x1b[mar\x1b[1;5H"[..]
     );
 
     parser.process(b"\x1b[1;5H\x1b[22;42ma");
@@ -39,7 +39,7 @@ fn formatted() {
     assert!(!parser.screen().cell(0, 5).unwrap().bold());
     assert_eq!(
         parser.screen().contents_formatted(),
-        &b"\x1b[?25h\x1b[H\x1b[Jfoo\x1b[33;1;7mb\x1b[42;22ma\x1b[mr\x1b[1;6H"
+        &b"\x1b[?25h\x1b[m\x1b[H\x1b[Jfoo\x1b[33;1;7mb\x1b[42;22ma\x1b[mr\x1b[1;6H"
             [..]
     );
 
@@ -47,20 +47,20 @@ fn formatted() {
     compare_formatted(parser.screen());
     assert_eq!(
         parser.screen().contents_formatted(),
-        &b"\x1b[?25h\x1b[H\x1b[Jfoo\x1b[33;1;7mb\x1b[42;22ma\x1b[35mr\r\nquux"[..]
+        &b"\x1b[?25h\x1b[m\x1b[H\x1b[Jfoo\x1b[33;1;7mb\x1b[42;22ma\x1b[35mr\r\nquux"[..]
     );
 
     parser.process(b"\x1b[2;1H\x1b[45mquux");
     compare_formatted(parser.screen());
     assert_eq!(
         parser.screen().contents_formatted(),
-        &b"\x1b[?25h\x1b[H\x1b[Jfoo\x1b[33;1;7mb\x1b[42;22ma\x1b[35mr\r\n\x1b[45mquux"[..]
+        &b"\x1b[?25h\x1b[m\x1b[H\x1b[Jfoo\x1b[33;1;7mb\x1b[42;22ma\x1b[35mr\r\n\x1b[45mquux"[..]
     );
 
     parser
         .process(b"\x1b[2;2H\x1b[38;2;123;213;231mu\x1b[38;5;254mu\x1b[39mx");
     compare_formatted(parser.screen());
-    assert_eq!(parser.screen().contents_formatted(), &b"\x1b[?25h\x1b[H\x1b[Jfoo\x1b[33;1;7mb\x1b[42;22ma\x1b[35mr\r\n\x1b[45mq\x1b[38;2;123;213;231mu\x1b[38;5;254mu\x1b[39mx"[..]);
+    assert_eq!(parser.screen().contents_formatted(), &b"\x1b[?25h\x1b[m\x1b[H\x1b[Jfoo\x1b[33;1;7mb\x1b[42;22ma\x1b[35mr\r\n\x1b[45mq\x1b[38;2;123;213;231mu\x1b[38;5;254mu\x1b[39mx"[..]);
 }
 
 #[test]
@@ -71,7 +71,7 @@ fn empty_cells() {
     assert_eq!(parser.screen().contents(), "foo   bar");
     assert_eq!(
         parser.screen().contents_formatted(),
-        &b"\x1b[?25h\x1b[H\x1b[J\x1b[31mfoo\x1b[m\x1b[C\x1b[C\x1b[32m bar\x1b[1;4H"[..]
+        &b"\x1b[?25h\x1b[m\x1b[H\x1b[J\x1b[31mfoo\x1b[m\x1b[C\x1b[C\x1b[32m bar\x1b[1;4H"[..]
     );
 }
 
@@ -85,7 +85,7 @@ fn cursor_positioning() {
     assert_eq!(parser.screen().cursor_position(), (0, 1));
     assert_eq!(
         parser.screen().contents_formatted(),
-        b"\x1b[?25h\x1b[H\x1b[J:"
+        b"\x1b[?25h\x1b[m\x1b[H\x1b[J:"
     );
     assert_eq!(parser.screen().contents_diff(&screen1), b"\x1b[m\x1b[1;1H:");
 
@@ -94,7 +94,7 @@ fn cursor_positioning() {
     assert_eq!(parser.screen().cursor_position(), (0, 2));
     assert_eq!(
         parser.screen().contents_formatted(),
-        b"\x1b[?25h\x1b[H\x1b[J:a"
+        b"\x1b[?25h\x1b[m\x1b[H\x1b[J:a"
     );
     assert_eq!(
         parser.screen().contents_diff(&screen2),
@@ -105,7 +105,7 @@ fn cursor_positioning() {
     assert_eq!(parser.screen().cursor_position(), (0, 1));
     assert_eq!(
         parser.screen().contents_formatted(),
-        b"\x1b[?25h\x1b[H\x1b[J:"
+        b"\x1b[?25h\x1b[m\x1b[H\x1b[J:"
     );
     assert_eq!(
         parser.screen().contents_diff(&screen3),

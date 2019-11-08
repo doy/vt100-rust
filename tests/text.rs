@@ -60,7 +60,7 @@ fn wide() {
     assert_eq!(parser.screen().cursor_position(), (0, 6));
     assert_eq!(
         parser.screen().contents_formatted(),
-        "\x1b[?25h\x1b[H\x1b[Jaデbネ".as_bytes()
+        "\x1b[?25h\x1b[m\x1b[H\x1b[Jaデbネ".as_bytes()
     );
     assert_eq!(
         parser.screen().contents_diff(&screen),
@@ -73,7 +73,7 @@ fn wide() {
     assert_eq!(parser.screen().cursor_position(), (0, 4));
     assert_eq!(
         parser.screen().contents_formatted(),
-        "\x1b[?25h\x1b[H\x1b[Jaデcネ\x1b[1;5H".as_bytes()
+        "\x1b[?25h\x1b[m\x1b[H\x1b[Jaデcネ\x1b[1;5H".as_bytes()
     );
     assert_eq!(
         parser.screen().contents_diff(&screen),
@@ -86,7 +86,7 @@ fn wide() {
     assert_eq!(parser.screen().cursor_position(), (0, 12));
     assert_eq!(
         parser.screen().contents_formatted(),
-        "\x1b[?25h\x1b[H\x1b[Jaデcネfoobar".as_bytes()
+        "\x1b[?25h\x1b[m\x1b[H\x1b[Jaデcネfoobar".as_bytes()
     );
     assert_eq!(
         parser.screen().contents_diff(&screen),
@@ -99,7 +99,7 @@ fn wide() {
     assert_eq!(parser.screen().cursor_position(), (0, 11));
     assert_eq!(
         parser.screen().contents_formatted(),
-        "\x1b[?25h\x1b[H\x1b[Jデcネfoobar".as_bytes()
+        "\x1b[?25h\x1b[m\x1b[H\x1b[Jデcネfoobar".as_bytes()
     );
     assert_eq!(
         parser.screen().contents_diff(&screen),
@@ -112,7 +112,7 @@ fn wide() {
     assert_eq!(parser.screen().cursor_position(), (0, 12));
     assert_eq!(
         parser.screen().contents_formatted(),
-        "\x1b[?25h\x1b[H\x1b[Jaデcネfoobar".as_bytes()
+        "\x1b[?25h\x1b[m\x1b[H\x1b[Jaデcネfoobar".as_bytes()
     );
     assert_eq!(
         parser.screen().contents_diff(&screen),
@@ -125,7 +125,7 @@ fn wide() {
     assert_eq!(parser.screen().cursor_position(), (0, 11));
     assert_eq!(
         parser.screen().contents_formatted(),
-        "\x1b[?25h\x1b[H\x1b[Jデcネfoobar".as_bytes()
+        "\x1b[?25h\x1b[m\x1b[H\x1b[Jデcネfoobar".as_bytes()
     );
     assert_eq!(
         parser.screen().contents_diff(&screen),

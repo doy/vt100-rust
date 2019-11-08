@@ -180,7 +180,7 @@ fn ed() {
     );
     assert_eq!(
         parser.screen().contents_formatted(),
-        b"\x1b[?25h\x1b[H\x1b[J\x1b[5;5H"
+        b"\x1b[?25h\x1b[m\x1b[H\x1b[J\x1b[5;5H"
     );
 
     parser.process(b"\x1b[41m\x1b[J");
@@ -207,7 +207,7 @@ fn ed() {
     assert_eq!(
         parser.screen().contents_formatted(),
         format!(
-            "\x1b[?25h\x1b[H\x1b[J{}{}\x1b[41m{}\r\n{}{}\x1b[5;5H",
+            "\x1b[?25h\x1b[m\x1b[H\x1b[J{}{}\x1b[41m{}\r\n{}{}\x1b[5;5H",
             "\r\n".repeat(4),
             "\x1b[C".repeat(4),
             "\x1b[X\x1b[C".repeat(76),
@@ -232,7 +232,7 @@ fn ed() {
     );
     assert_eq!(
         parser.screen().contents_formatted(),
-        b"\x1b[?25h\x1b[H\x1b[J\x1b[5;5H"
+        b"\x1b[?25h\x1b[m\x1b[H\x1b[J\x1b[5;5H"
     );
 
     parser.process(b"\x1b[41m\x1b[1J");
@@ -259,7 +259,7 @@ fn ed() {
     assert_eq!(
         parser.screen().contents_formatted(),
         format!(
-            "\x1b[?25h\x1b[H\x1b[J\x1b[41m{}{}\x1b[5;5H",
+            "\x1b[?25h\x1b[m\x1b[H\x1b[J\x1b[41m{}{}\x1b[5;5H",
             format!("{}\r\n", "\x1b[X\x1b[C".repeat(80)).repeat(4),
             "\x1b[X\x1b[C".repeat(5),
         )
@@ -281,7 +281,7 @@ fn ed() {
     );
     assert_eq!(
         parser.screen().contents_formatted(),
-        b"\x1b[?25h\x1b[H\x1b[J\x1b[5;5H"
+        b"\x1b[?25h\x1b[m\x1b[H\x1b[J\x1b[5;5H"
     );
 
     parser.process(b"\x1b[41m\x1b[2J");
@@ -308,7 +308,7 @@ fn ed() {
     assert_eq!(
         parser.screen().contents_formatted(),
         format!(
-            "\x1b[?25h\x1b[H\x1b[J\x1b[41m{}{}\x1b[5;5H",
+            "\x1b[?25h\x1b[m\x1b[H\x1b[J\x1b[41m{}{}\x1b[5;5H",
             format!("{}\r\n", "\x1b[X\x1b[C".repeat(80)).repeat(23),
             "\x1b[X\x1b[C".repeat(80),
         )
@@ -403,7 +403,7 @@ fn el() {
     );
     assert_eq!(
         parser.screen().contents_formatted(),
-        b"\x1b[?25h\x1b[H\x1b[J\x1b[5;5H"
+        b"\x1b[?25h\x1b[m\x1b[H\x1b[J\x1b[5;5H"
     );
 
     parser.process(b"\x1b[41m\x1b[K");
@@ -422,7 +422,7 @@ fn el() {
     assert_eq!(
         parser.screen().contents_formatted(),
         format!(
-            "\x1b[?25h\x1b[H\x1b[J{}{}\x1b[41m{}\x1b[5;5H",
+            "\x1b[?25h\x1b[m\x1b[H\x1b[J{}{}\x1b[41m{}\x1b[5;5H",
             "\r\n".repeat(4),
             "\x1b[C".repeat(4),
             "\x1b[X\x1b[C".repeat(76)
@@ -445,7 +445,7 @@ fn el() {
     );
     assert_eq!(
         parser.screen().contents_formatted(),
-        b"\x1b[?25h\x1b[H\x1b[J\x1b[5;5H"
+        b"\x1b[?25h\x1b[m\x1b[H\x1b[J\x1b[5;5H"
     );
 
     parser.process(b"\x1b[41m\x1b[1K");
@@ -464,7 +464,7 @@ fn el() {
     assert_eq!(
         parser.screen().contents_formatted(),
         format!(
-            "\x1b[?25h\x1b[H\x1b[J{}\x1b[41m{}\x1b[5;5H",
+            "\x1b[?25h\x1b[m\x1b[H\x1b[J{}\x1b[41m{}\x1b[5;5H",
             "\r\n".repeat(4),
             "\x1b[X\x1b[C".repeat(5),
         )
@@ -486,7 +486,7 @@ fn el() {
     );
     assert_eq!(
         parser.screen().contents_formatted(),
-        b"\x1b[?25h\x1b[H\x1b[J\x1b[5;5H"
+        b"\x1b[?25h\x1b[m\x1b[H\x1b[J\x1b[5;5H"
     );
 
     parser.process(b"\x1b[41m\x1b[2K");
@@ -505,7 +505,7 @@ fn el() {
     assert_eq!(
         parser.screen().contents_formatted(),
         format!(
-            "\x1b[?25h\x1b[H\x1b[J{}\x1b[41m{}\x1b[5;5H",
+            "\x1b[?25h\x1b[m\x1b[H\x1b[J{}\x1b[41m{}\x1b[5;5H",
             "\r\n".repeat(4),
             "\x1b[X\x1b[C".repeat(80),
         )
