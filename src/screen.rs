@@ -255,53 +255,6 @@ impl Screen {
         (pos.row, pos.col)
     }
 
-    /// Returns the currently active foreground color.
-    ///
-    /// This is the foreground color which will be used when writing text to a
-    /// new cell.
-    pub fn fgcolor(&self) -> crate::attrs::Color {
-        self.attrs.fgcolor
-    }
-
-    /// Returns the currently active background color.
-    ///
-    /// This is the background color which will be used when writing text to a
-    /// new cell.
-    pub fn bgcolor(&self) -> crate::attrs::Color {
-        self.attrs.bgcolor
-    }
-
-    /// Returns whether the bold text attribute is active.
-    ///
-    /// If true, text written to a new cell will have the bold text attribute.
-    pub fn bold(&self) -> bool {
-        self.attrs.bold()
-    }
-
-    /// Returns whether the italic text attribute is active.
-    ///
-    /// If true, text written to a new cell will have the italic text
-    /// attribute.
-    pub fn italic(&self) -> bool {
-        self.attrs.italic()
-    }
-
-    /// Returns whether the underline text attribute is active.
-    ///
-    /// If true, text written to a new cell will have the underline text
-    /// attribute.
-    pub fn underline(&self) -> bool {
-        self.attrs.underline()
-    }
-
-    /// Returns whether the inverse text attribute is active.
-    ///
-    /// If true, text written to a new cell will have the inverse text
-    /// attribute.
-    pub fn inverse(&self) -> bool {
-        self.attrs.inverse()
-    }
-
     /// Returns the terminal's window title.
     pub fn title(&self) -> &str {
         &self.title
@@ -337,11 +290,6 @@ impl Screen {
     /// Returns whether the terminal should be in hide cursor mode.
     pub fn hide_cursor(&self) -> bool {
         self.mode(Mode::HideCursor)
-    }
-
-    /// Returns whether the terminal should be in alternate screen mode.
-    pub fn alternate_screen(&self) -> bool {
-        self.mode(Mode::AlternateScreen)
     }
 
     /// Returns whether the terminal should be in bracketed paste mode.

@@ -24,14 +24,6 @@ fn init() {
     assert_eq!(parser.screen().title(), "");
     assert_eq!(parser.screen().icon_name(), "");
 
-    assert_eq!(parser.screen().fgcolor(), vt100::Color::Default);
-    assert_eq!(parser.screen().bgcolor(), vt100::Color::Default);
-
-    assert!(!parser.screen().bold());
-    assert!(!parser.screen().italic());
-    assert!(!parser.screen().underline());
-    assert!(!parser.screen().inverse());
-
     assert!(!parser.screen_mut().check_visual_bell());
     assert!(!parser.screen_mut().check_audible_bell());
     assert!(!parser.screen().application_keypad());

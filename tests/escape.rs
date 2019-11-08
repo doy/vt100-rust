@@ -40,14 +40,6 @@ fn ris() {
     assert_eq!(parser.screen().title(), "");
     assert_eq!(parser.screen().icon_name(), "");
 
-    assert_eq!(parser.screen().fgcolor(), vt100::Color::Default);
-    assert_eq!(parser.screen().bgcolor(), vt100::Color::Default);
-
-    assert!(!parser.screen().bold());
-    assert!(!parser.screen().italic());
-    assert!(!parser.screen().underline());
-    assert!(!parser.screen().inverse());
-
     assert!(!parser.screen_mut().check_visual_bell());
     assert!(!parser.screen_mut().check_audible_bell());
     assert!(!parser.screen().application_keypad());
@@ -79,14 +71,6 @@ fn ris() {
     assert_eq!(parser.screen().title(), "window title");
     assert_eq!(parser.screen().icon_name(), "window icon name");
 
-    assert_eq!(parser.screen().fgcolor(), vt100::Color::Idx(1));
-    assert_eq!(parser.screen().bgcolor(), vt100::Color::Idx(7));
-
-    assert!(parser.screen().bold());
-    assert!(parser.screen().italic());
-    assert!(parser.screen().underline());
-    assert!(parser.screen().inverse());
-
     assert!(parser.screen_mut().check_visual_bell());
     assert!(parser.screen_mut().check_audible_bell());
     assert!(parser.screen().application_keypad());
@@ -117,14 +101,6 @@ fn ris() {
     // title and icon name don't change with reset
     assert_eq!(parser.screen().title(), "window title");
     assert_eq!(parser.screen().icon_name(), "window icon name");
-
-    assert_eq!(parser.screen().fgcolor(), vt100::Color::Default);
-    assert_eq!(parser.screen().bgcolor(), vt100::Color::Default);
-
-    assert!(!parser.screen().bold());
-    assert!(!parser.screen().italic());
-    assert!(!parser.screen().underline());
-    assert!(!parser.screen().inverse());
 
     // bell states don't change with reset
     assert!(parser.screen_mut().check_visual_bell());

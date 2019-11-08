@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+### Removed
+
+* `Screen::fgcolor`, `Screen::bgcolor`, `Screen::bold`, `Screen::italic`,
+  `Screen::underline`, `Screen::inverse`, and `Screen::alternate_screen`:
+  these are just implementation details that people shouldn't need to care
+  about.
+
 ### Fixed
 
 * Fixed cursor movement when the cursor position is already outside of an
