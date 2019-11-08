@@ -5,6 +5,8 @@
 ### Fixed
 
 * Clearing cells now correctly sets the cell background color.
+* Fixed a couple bugs in wide character handling in `contents_formatted` and
+  `contents_diff`.
 
 ## [0.3.1] - 2019-11-06
 

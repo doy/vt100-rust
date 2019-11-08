@@ -98,8 +98,12 @@ impl Row {
         let mut contents = vec![];
         let mut prev_attrs = attrs;
 
-        let cols = width.min(self.content_width(start));
-        for cell in self.cells().skip(start as usize).take(cols as usize) {
+        let mut cols = 0;
+        for cell in self
+            .cells()
+            .skip(start as usize)
+            .take(width.min(self.content_width(start)) as usize)
+        {
             if prev_was_wide {
                 prev_was_wide = false;
                 continue;
@@ -120,6 +124,7 @@ impl Row {
             });
 
             prev_was_wide = cell.is_wide();
+            cols += if prev_was_wide { 2 } else { 1 };
         }
 
         (contents, prev_attrs, cols)
@@ -132,23 +137,30 @@ impl Row {
         width: u16,
         attrs: crate::attrs::Attrs,
     ) -> (Vec<u8>, crate::attrs::Attrs, u16) {
+        let mut prev_was_wide = false;
         let mut skip = 0;
         let mut contents = vec![];
         let mut prev_attrs = attrs;
-        let mut final_col = 0;
+        let mut cols = 0;
 
-        for (idx, (cell, prev_cell)) in self
+        for (cell, prev_cell) in self
             .cells()
             .zip(prev.cells())
             .skip(start as usize)
             .take(width as usize)
-            .enumerate()
         {
+            if prev_was_wide {
+                prev_was_wide = false;
+                continue;
+            }
+
             if cell == prev_cell {
-                skip += 1;
+                prev_was_wide = cell.is_wide();
+                skip += if prev_was_wide { 2 } else { 1 };
             } else {
                 if skip > 0 {
                     contents.extend(format!("\x1b[{}C", skip).as_bytes());
+                    cols += skip;
                     skip = 0;
                 }
 
@@ -163,11 +175,13 @@ impl Row {
                 } else {
                     b"\x1b[X\x1b[C"
                 });
-                final_col = idx + 1;
+
+                prev_was_wide = cell.is_wide();
+                cols += if prev_was_wide { 2 } else { 1 };
             }
         }
 
-        (contents, prev_attrs, final_col.try_into().unwrap())
+        (contents, prev_attrs, cols)
     }
 
     fn content_width(&self, start: u16) -> u16 {

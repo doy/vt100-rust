@@ -76,6 +76,44 @@ fn empty_cells() {
 }
 
 #[test]
+fn cursor_positioning() {
+    let mut parser = vt100::Parser::new(24, 80);
+    let screen1 = parser.screen().clone();
+
+    parser.process(b":\x1b[K");
+    let screen2 = parser.screen().clone();
+    assert_eq!(parser.screen().cursor_position(), (0, 1));
+    assert_eq!(
+        parser.screen().contents_formatted(),
+        b"\x1b[?25h\x1b[H\x1b[J:"
+    );
+    assert_eq!(parser.screen().contents_diff(&screen1), b"\x1b[m\x1b[1;1H:");
+
+    parser.process(b"a");
+    let screen3 = parser.screen().clone();
+    assert_eq!(parser.screen().cursor_position(), (0, 2));
+    assert_eq!(
+        parser.screen().contents_formatted(),
+        b"\x1b[?25h\x1b[H\x1b[J:a"
+    );
+    assert_eq!(
+        parser.screen().contents_diff(&screen2),
+        b"\x1b[m\x1b[1;1H\x1b[1Ca"
+    );
+
+    parser.process(b"\x1b[1;2H\x1b[K");
+    assert_eq!(parser.screen().cursor_position(), (0, 1));
+    assert_eq!(
+        parser.screen().contents_formatted(),
+        b"\x1b[?25h\x1b[H\x1b[J:"
+    );
+    assert_eq!(
+        parser.screen().contents_diff(&screen3),
+        b"\x1b[m\x1b[1;1H\x1b[1C\x1b[X\x1b[C\x1b[1;2H"
+    );
+}
+
+#[test]
 fn rows() {
     let mut parser = vt100::Parser::new(24, 80);
     let screen1 = parser.screen().clone();

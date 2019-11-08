@@ -46,7 +46,9 @@ fn newlines() {
 #[test]
 fn wide() {
     let mut parser = vt100::Parser::new(24, 80);
+    let screen1 = parser.screen().clone();
     parser.process("aデbネ".as_bytes());
+    let screen2 = parser.screen().clone();
     assert_eq!(parser.screen().cell(0, 0).unwrap().contents(), "a");
     assert_eq!(parser.screen().cell(0, 1).unwrap().contents(), "デ");
     assert_eq!(parser.screen().cell(0, 2).unwrap().contents(), "");
@@ -56,6 +58,27 @@ fn wide() {
     assert_eq!(parser.screen().cell(0, 6).unwrap().contents(), "");
     assert_eq!(parser.screen().cell(1, 0).unwrap().contents(), "");
     assert_eq!(parser.screen().contents(), "aデbネ");
+    assert_eq!(parser.screen().cursor_position(), (0, 6));
+    assert_eq!(
+        parser.screen().contents_formatted(),
+        "\x1b[?25h\x1b[H\x1b[Jaデbネ".as_bytes()
+    );
+    assert_eq!(
+        parser.screen().contents_diff(&screen1),
+        "\x1b[m\x1b[1;1Haデbネ".as_bytes()
+    );
+
+    parser.process(b"\x1b[1;1H\x1b[3Cc");
+    assert_eq!(parser.screen().contents(), "aデcネ");
+    assert_eq!(parser.screen().cursor_position(), (0, 4));
+    assert_eq!(
+        parser.screen().contents_formatted(),
+        "\x1b[?25h\x1b[H\x1b[Jaデcネ\x1b[1;5H".as_bytes()
+    );
+    assert_eq!(
+        parser.screen().contents_diff(&screen2),
+        "\x1b[m\x1b[1;1H\x1b[3Cc".as_bytes()
+    );
 }
 
 #[test]
