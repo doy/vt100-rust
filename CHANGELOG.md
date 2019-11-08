@@ -10,6 +10,8 @@
 * Fixed RI when the cursor is at the top of the screen (fixes scrolling up in
   `less`, for instance).
 * Fixed VPA incorrectly being clamped to the scroll region.
+* Stop treating soft hyphen specially (as far as i can tell, no other terminals
+  do this, and i'm not sure why i thought it was necessary to begin with).
 
 ## [0.3.1] - 2019-11-06
 

@@ -1,4 +1,5 @@
 use std::convert::TryInto as _;
+use unicode_width::UnicodeWidthChar as _;
 
 const DEFAULT_MULTI_PARAMS: &[i64] = &[0];
 
@@ -470,7 +471,7 @@ impl Screen {
             }
         }
 
-        let width = crate::unicode::char_width(c);
+        let width = c.width().unwrap_or(0).try_into().unwrap();
         let attrs = self.attrs;
 
         self.grid_mut().col_wrap(width);

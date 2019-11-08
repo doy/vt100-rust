@@ -1,4 +1,5 @@
 use unicode_normalization::UnicodeNormalization as _;
+use unicode_width::UnicodeWidthChar as _;
 
 /// Represents a single terminal cell.
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
@@ -45,7 +46,15 @@ impl Cell {
 
     /// Returns whether the text data in the cell represents a wide character.
     pub fn is_wide(&self) -> bool {
-        crate::unicode::str_width(&self.contents) > 1
+        // strings in this context should always be an arbitrary character
+        // followed by zero or more zero-width characters, so we should only
+        // have to look at the first character
+        let width = self
+            .contents
+            .chars()
+            .next()
+            .map_or(0, |c| c.width().unwrap_or(0));
+        width > 1
     }
 
     pub(crate) fn attrs(&self) -> &crate::attrs::Attrs {
