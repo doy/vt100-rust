@@ -9,6 +9,7 @@
   `contents_diff`.
 * Fixed RI when the cursor is at the top of the screen (fixes scrolling up in
   `less`, for instance).
+* Fixed VPA incorrectly being clamped to the scroll region.
 
 ## [0.3.1] - 2019-11-06
 

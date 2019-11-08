@@ -351,8 +351,6 @@ impl Grid {
 
     pub fn row_set(&mut self, i: u16) {
         self.pos.row = i;
-        self.row_clamp_top(true);
-        self.row_clamp_bottom(true);
     }
 
     pub fn col_inc(&mut self, count: u16) {
