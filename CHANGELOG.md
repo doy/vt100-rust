@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+* Clearing cells now correctly sets the cell background color.
+
 ## [0.3.1] - 2019-11-06
 
 ### Fixed

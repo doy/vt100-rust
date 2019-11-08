@@ -23,9 +23,10 @@ impl Cell {
         }
     }
 
-    pub(crate) fn clear(&mut self) {
+    pub(crate) fn clear(&mut self, bgcolor: crate::attrs::Color) {
         self.contents.clear();
         self.attrs.clear();
+        self.attrs.bgcolor = bgcolor;
     }
 
     /// Returns the text contents of the cell.

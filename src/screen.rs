@@ -458,6 +458,7 @@ impl Screen {
     fn text(&mut self, c: char) {
         let pos = self.grid().pos();
         if pos.col > 0 {
+            let bgcolor = self.attrs.bgcolor;
             let prev_cell = self
                 .cell_mut(crate::grid::Pos {
                     row: pos.row,
@@ -465,7 +466,7 @@ impl Screen {
                 })
                 .unwrap();
             if prev_cell.is_wide() {
-                prev_cell.clear();
+                prev_cell.clear(bgcolor);
             }
         }
 
@@ -625,10 +626,11 @@ impl Screen {
 
     // CSI J
     fn ed(&mut self, mode: u16) {
+        let bgcolor = self.attrs.bgcolor;
         match mode {
-            0 => self.grid_mut().erase_all_forward(),
-            1 => self.grid_mut().erase_all_backward(),
-            2 => self.grid_mut().erase_all(),
+            0 => self.grid_mut().erase_all_forward(bgcolor),
+            1 => self.grid_mut().erase_all_backward(bgcolor),
+            2 => self.grid_mut().erase_all(bgcolor),
             _ => {}
         }
     }
@@ -640,10 +642,11 @@ impl Screen {
 
     // CSI K
     fn el(&mut self, mode: u16) {
+        let bgcolor = self.attrs.bgcolor;
         match mode {
-            0 => self.grid_mut().erase_row_forward(),
-            1 => self.grid_mut().erase_row_backward(),
-            2 => self.grid_mut().erase_row(),
+            0 => self.grid_mut().erase_row_forward(bgcolor),
+            1 => self.grid_mut().erase_row_backward(bgcolor),
+            2 => self.grid_mut().erase_row(bgcolor),
             _ => {}
         }
     }
@@ -680,7 +683,8 @@ impl Screen {
 
     // CSI X
     fn ech(&mut self, count: u16) {
-        self.grid_mut().erase_cells(count);
+        let bgcolor = self.attrs.bgcolor;
+        self.grid_mut().erase_cells(count, bgcolor);
     }
 
     // CSI d

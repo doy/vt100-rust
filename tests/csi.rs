@@ -88,6 +88,7 @@ fn relative_movement() {
     assert_eq!(parser.screen().cursor_position(), (0, 0));
 }
 
+#[allow(clippy::cognitive_complexity)]
 #[test]
 fn ed() {
     let mut parser = vt100::Parser::new(24, 80);
@@ -155,8 +156,167 @@ fn ed() {
         parser.screen().contents(),
         "foo\n\n\n\n    bar\n\n\n\n\n         ba"
     );
+
+    parser.process(b"\x1bc\x1b[5;5H");
+    assert_eq!(
+        parser.screen().cell(3, 3).unwrap().bgcolor(),
+        vt100::Color::Default
+    );
+    assert_eq!(
+        parser.screen().cell(4, 3).unwrap().bgcolor(),
+        vt100::Color::Default
+    );
+    assert_eq!(
+        parser.screen().cell(4, 4).unwrap().bgcolor(),
+        vt100::Color::Default
+    );
+    assert_eq!(
+        parser.screen().cell(4, 5).unwrap().bgcolor(),
+        vt100::Color::Default
+    );
+    assert_eq!(
+        parser.screen().cell(5, 5).unwrap().bgcolor(),
+        vt100::Color::Default
+    );
+    assert_eq!(
+        parser.screen().contents_formatted(),
+        b"\x1b[?25h\x1b[H\x1b[J\x1b[5;5H"
+    );
+
+    parser.process(b"\x1b[41m\x1b[J");
+    assert_eq!(
+        parser.screen().cell(3, 3).unwrap().bgcolor(),
+        vt100::Color::Default
+    );
+    assert_eq!(
+        parser.screen().cell(4, 3).unwrap().bgcolor(),
+        vt100::Color::Default
+    );
+    assert_eq!(
+        parser.screen().cell(4, 4).unwrap().bgcolor(),
+        vt100::Color::Idx(1)
+    );
+    assert_eq!(
+        parser.screen().cell(4, 5).unwrap().bgcolor(),
+        vt100::Color::Idx(1)
+    );
+    assert_eq!(
+        parser.screen().cell(5, 5).unwrap().bgcolor(),
+        vt100::Color::Idx(1)
+    );
+    assert_eq!(
+        parser.screen().contents_formatted(),
+        format!(
+            "\x1b[?25h\x1b[H\x1b[J{}{}\x1b[41m{}\r\n{}{}\x1b[5;5H",
+            "\r\n".repeat(4),
+            "\x1b[C".repeat(4),
+            "\x1b[X\x1b[C".repeat(76),
+            format!("{}\r\n", "\x1b[X\x1b[C".repeat(80)).repeat(18),
+            "\x1b[X\x1b[C".repeat(80),
+        )
+        .as_bytes()
+    );
+
+    parser.process(b"\x1bc\x1b[5;5H");
+    assert_eq!(
+        parser.screen().cell(4, 3).unwrap().bgcolor(),
+        vt100::Color::Default
+    );
+    assert_eq!(
+        parser.screen().cell(4, 4).unwrap().bgcolor(),
+        vt100::Color::Default
+    );
+    assert_eq!(
+        parser.screen().cell(4, 5).unwrap().bgcolor(),
+        vt100::Color::Default
+    );
+    assert_eq!(
+        parser.screen().contents_formatted(),
+        b"\x1b[?25h\x1b[H\x1b[J\x1b[5;5H"
+    );
+
+    parser.process(b"\x1b[41m\x1b[1J");
+    assert_eq!(
+        parser.screen().cell(3, 3).unwrap().bgcolor(),
+        vt100::Color::Idx(1)
+    );
+    assert_eq!(
+        parser.screen().cell(4, 3).unwrap().bgcolor(),
+        vt100::Color::Idx(1)
+    );
+    assert_eq!(
+        parser.screen().cell(4, 4).unwrap().bgcolor(),
+        vt100::Color::Idx(1)
+    );
+    assert_eq!(
+        parser.screen().cell(4, 5).unwrap().bgcolor(),
+        vt100::Color::Default
+    );
+    assert_eq!(
+        parser.screen().cell(5, 5).unwrap().bgcolor(),
+        vt100::Color::Default
+    );
+    assert_eq!(
+        parser.screen().contents_formatted(),
+        format!(
+            "\x1b[?25h\x1b[H\x1b[J\x1b[41m{}{}\x1b[5;5H",
+            format!("{}\r\n", "\x1b[X\x1b[C".repeat(80)).repeat(4),
+            "\x1b[X\x1b[C".repeat(5),
+        )
+        .as_bytes()
+    );
+
+    parser.process(b"\x1bc\x1b[5;5H");
+    assert_eq!(
+        parser.screen().cell(4, 3).unwrap().bgcolor(),
+        vt100::Color::Default
+    );
+    assert_eq!(
+        parser.screen().cell(4, 4).unwrap().bgcolor(),
+        vt100::Color::Default
+    );
+    assert_eq!(
+        parser.screen().cell(4, 5).unwrap().bgcolor(),
+        vt100::Color::Default
+    );
+    assert_eq!(
+        parser.screen().contents_formatted(),
+        b"\x1b[?25h\x1b[H\x1b[J\x1b[5;5H"
+    );
+
+    parser.process(b"\x1b[41m\x1b[2J");
+    assert_eq!(
+        parser.screen().cell(3, 3).unwrap().bgcolor(),
+        vt100::Color::Idx(1)
+    );
+    assert_eq!(
+        parser.screen().cell(4, 3).unwrap().bgcolor(),
+        vt100::Color::Idx(1)
+    );
+    assert_eq!(
+        parser.screen().cell(4, 4).unwrap().bgcolor(),
+        vt100::Color::Idx(1)
+    );
+    assert_eq!(
+        parser.screen().cell(4, 5).unwrap().bgcolor(),
+        vt100::Color::Idx(1)
+    );
+    assert_eq!(
+        parser.screen().cell(5, 5).unwrap().bgcolor(),
+        vt100::Color::Idx(1)
+    );
+    assert_eq!(
+        parser.screen().contents_formatted(),
+        format!(
+            "\x1b[?25h\x1b[H\x1b[J\x1b[41m{}{}\x1b[5;5H",
+            format!("{}\r\n", "\x1b[X\x1b[C".repeat(80)).repeat(23),
+            "\x1b[X\x1b[C".repeat(80),
+        )
+        .as_bytes()
+    );
 }
 
+#[allow(clippy::cognitive_complexity)]
 #[test]
 fn el() {
     let mut parser = vt100::Parser::new(24, 80);
@@ -226,6 +386,130 @@ fn el() {
     assert_eq!(
         parser.screen().contents(),
         "          1234567890\n12345678901234567890"
+    );
+
+    parser.process(b"\x1bc\x1b[5;5H");
+    assert_eq!(
+        parser.screen().cell(4, 3).unwrap().bgcolor(),
+        vt100::Color::Default
+    );
+    assert_eq!(
+        parser.screen().cell(4, 4).unwrap().bgcolor(),
+        vt100::Color::Default
+    );
+    assert_eq!(
+        parser.screen().cell(4, 5).unwrap().bgcolor(),
+        vt100::Color::Default
+    );
+    assert_eq!(
+        parser.screen().contents_formatted(),
+        b"\x1b[?25h\x1b[H\x1b[J\x1b[5;5H"
+    );
+
+    parser.process(b"\x1b[41m\x1b[K");
+    assert_eq!(
+        parser.screen().cell(4, 3).unwrap().bgcolor(),
+        vt100::Color::Default
+    );
+    assert_eq!(
+        parser.screen().cell(4, 4).unwrap().bgcolor(),
+        vt100::Color::Idx(1)
+    );
+    assert_eq!(
+        parser.screen().cell(4, 5).unwrap().bgcolor(),
+        vt100::Color::Idx(1)
+    );
+    assert_eq!(
+        parser.screen().contents_formatted(),
+        format!(
+            "\x1b[?25h\x1b[H\x1b[J{}{}\x1b[41m{}\x1b[5;5H",
+            "\r\n".repeat(4),
+            "\x1b[C".repeat(4),
+            "\x1b[X\x1b[C".repeat(76)
+        )
+        .as_bytes()
+    );
+
+    parser.process(b"\x1bc\x1b[5;5H");
+    assert_eq!(
+        parser.screen().cell(4, 3).unwrap().bgcolor(),
+        vt100::Color::Default
+    );
+    assert_eq!(
+        parser.screen().cell(4, 4).unwrap().bgcolor(),
+        vt100::Color::Default
+    );
+    assert_eq!(
+        parser.screen().cell(4, 5).unwrap().bgcolor(),
+        vt100::Color::Default
+    );
+    assert_eq!(
+        parser.screen().contents_formatted(),
+        b"\x1b[?25h\x1b[H\x1b[J\x1b[5;5H"
+    );
+
+    parser.process(b"\x1b[41m\x1b[1K");
+    assert_eq!(
+        parser.screen().cell(4, 3).unwrap().bgcolor(),
+        vt100::Color::Idx(1)
+    );
+    assert_eq!(
+        parser.screen().cell(4, 4).unwrap().bgcolor(),
+        vt100::Color::Idx(1)
+    );
+    assert_eq!(
+        parser.screen().cell(4, 5).unwrap().bgcolor(),
+        vt100::Color::Default
+    );
+    assert_eq!(
+        parser.screen().contents_formatted(),
+        format!(
+            "\x1b[?25h\x1b[H\x1b[J{}\x1b[41m{}\x1b[5;5H",
+            "\r\n".repeat(4),
+            "\x1b[X\x1b[C".repeat(5),
+        )
+        .as_bytes()
+    );
+
+    parser.process(b"\x1bc\x1b[5;5H");
+    assert_eq!(
+        parser.screen().cell(4, 3).unwrap().bgcolor(),
+        vt100::Color::Default
+    );
+    assert_eq!(
+        parser.screen().cell(4, 4).unwrap().bgcolor(),
+        vt100::Color::Default
+    );
+    assert_eq!(
+        parser.screen().cell(4, 5).unwrap().bgcolor(),
+        vt100::Color::Default
+    );
+    assert_eq!(
+        parser.screen().contents_formatted(),
+        b"\x1b[?25h\x1b[H\x1b[J\x1b[5;5H"
+    );
+
+    parser.process(b"\x1b[41m\x1b[2K");
+    assert_eq!(
+        parser.screen().cell(4, 3).unwrap().bgcolor(),
+        vt100::Color::Idx(1)
+    );
+    assert_eq!(
+        parser.screen().cell(4, 4).unwrap().bgcolor(),
+        vt100::Color::Idx(1)
+    );
+    assert_eq!(
+        parser.screen().cell(4, 5).unwrap().bgcolor(),
+        vt100::Color::Idx(1)
+    );
+    assert_eq!(
+        parser.screen().contents_formatted(),
+        format!(
+            "\x1b[?25h\x1b[H\x1b[J{}\x1b[41m{}\x1b[5;5H",
+            "\r\n".repeat(4),
+            "\x1b[X\x1b[C".repeat(80),
+        )
+        .as_bytes()
     );
 }
 

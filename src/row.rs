@@ -14,9 +14,9 @@ impl Row {
         }
     }
 
-    pub fn clear(&mut self) {
+    pub fn clear(&mut self, bgcolor: crate::attrs::Color) {
         for cell in &mut self.cells {
-            cell.clear();
+            cell.clear(bgcolor);
         }
         self.wrapped = false;
     }
@@ -113,8 +113,10 @@ impl Row {
 
             contents.extend(if cell.has_contents() {
                 cell.contents().as_bytes()
+            } else if cell.bgcolor() == crate::attrs::Color::Default {
+                &b"\x1b[C"[..]
             } else {
-                b"\x1b[C"
+                &b"\x1b[X\x1b[C"[..]
             });
 
             prev_was_wide = cell.is_wide();
@@ -172,7 +174,9 @@ impl Row {
         for (col, cell) in
             self.cells.iter().skip(start as usize).enumerate().rev()
         {
-            if cell.has_contents() {
+            if cell.has_contents()
+                || cell.bgcolor() != crate::attrs::Color::Default
+            {
                 let width: u16 = col.try_into().unwrap();
                 return width + 1;
             }
