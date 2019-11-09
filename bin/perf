@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eux
 
-rm -f target/release/* perf.* || true
+rm -f target/release/examples/* perf.* || true
 if ! grep -q debug Cargo.toml; then
     cat >> Cargo.toml <<EOF
 
@@ -9,9 +9,8 @@ if ! grep -q debug Cargo.toml; then
 debug = true
 EOF
 fi
-cargo test --release --no-run
-bin=$(find ./target/release -maxdepth 1 -name '*split_escape*' -not -name '*.d')
-perf record -F99 --call-graph dwarf,16384 "$bin" --ignored
+cargo build --release --example perf
+perf record -F99 --call-graph dwarf,16384 target/release/examples/perf --ignored > /dev/null
 perf script > perf.script
 perl ~/coding/src/FlameGraph/stackcollapse-perf.pl perf.script > perf.collapsed
 perl ~/coding/src/FlameGraph/flamegraph.pl perf.collapsed > perf.svg
