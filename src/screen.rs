@@ -476,7 +476,7 @@ impl Screen {
                 }
             }
         } else {
-            cell.set(c.to_string(), attrs);
+            cell.set(c, attrs);
             self.grid_mut().col_inc(1);
             if width > 1 {
                 let bgcolor = self.attrs.bgcolor;

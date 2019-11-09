@@ -9,8 +9,10 @@ pub struct Cell {
 }
 
 impl Cell {
-    pub(crate) fn set(&mut self, c: String, a: crate::attrs::Attrs) {
-        self.contents = c;
+    pub(crate) fn set(&mut self, c: char, a: crate::attrs::Attrs) {
+        let mut buf = vec![0; 4];
+        c.encode_utf8(&mut buf);
+        self.contents = unsafe { String::from_utf8_unchecked(buf) };
         self.attrs = a;
     }
 
