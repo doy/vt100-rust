@@ -26,7 +26,14 @@ fn draw_frames(frames: &[Vec<u8>]) {
 
 fn main() {
     let frames: Vec<Vec<u8>> = read_frames().collect();
-    for _ in 1..10 {
+    let start = std::time::Instant::now();
+    let mut i = 0;
+    loop {
+        i += 1;
         draw_frames(&frames);
+        if (std::time::Instant::now() - start).as_secs() >= 30 {
+            break;
+        }
     }
+    eprintln!("{} iterations", i);
 }
