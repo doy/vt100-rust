@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Added
+
+* Scrollback support.
+
 ### Changed
 
 * `Cell::contents` now returns a `String` instead of a `&str`.
