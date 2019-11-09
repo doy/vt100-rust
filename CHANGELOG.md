@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+
+* `Cell::contents` now returns a `String` instead of a `&str`.
+
+### Fixed
+
+* Lots of performance optimizations.
+
 ## [0.4.0] - 2019-11-08
 
 ### Removed
