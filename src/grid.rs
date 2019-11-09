@@ -12,8 +12,9 @@ pub struct Grid {
     scroll_bottom: u16,
     origin_mode: bool,
     saved_origin_mode: bool,
-    scrollback: std::collections::VecDeque<(usize, crate::row::Row)>,
+    scrollback: std::collections::VecDeque<crate::row::Row>,
     scrollback_len: usize,
+    scrollback_offset: usize,
 }
 
 impl Grid {
@@ -29,7 +30,16 @@ impl Grid {
             saved_origin_mode: false,
             scrollback: std::collections::VecDeque::new(),
             scrollback_len,
+            scrollback_offset: 0,
         }
+    }
+
+    pub fn scrollback(&self) -> usize {
+        self.scrollback_offset
+    }
+
+    pub fn set_scrollback(&mut self, rows: usize) {
+        self.scrollback_offset = rows.min(self.scrollback.len());
     }
 
     fn new_row(&self) -> crate::row::Row {
@@ -39,7 +49,7 @@ impl Grid {
     pub fn clear(&mut self) {
         self.pos = Pos::default();
         self.saved_pos = Pos::default();
-        for row in self.rows_mut() {
+        for row in self.drawing_rows_mut() {
             row.clear(crate::attrs::Color::Default);
         }
         self.scroll_top = 0;
@@ -97,37 +107,58 @@ impl Grid {
         self.origin_mode = self.saved_origin_mode;
     }
 
-    pub fn rows(&self) -> impl Iterator<Item = &crate::row::Row> {
+    pub fn visible_rows(&self) -> impl Iterator<Item = &crate::row::Row> {
+        let scrollback_len = self.scrollback.len();
+        let rows_len = self.rows.len();
+        self.scrollback
+            .iter()
+            .skip(scrollback_len - self.scrollback_offset)
+            .chain(self.rows.iter().take(rows_len - self.scrollback_offset))
+    }
+
+    pub fn drawing_rows(&self) -> impl Iterator<Item = &crate::row::Row> {
         self.rows.iter()
     }
 
-    pub fn rows_mut(&mut self) -> impl Iterator<Item = &mut crate::row::Row> {
+    pub fn drawing_rows_mut(
+        &mut self,
+    ) -> impl Iterator<Item = &mut crate::row::Row> {
         self.rows.iter_mut()
     }
 
-    pub fn row(&self, pos: Pos) -> Option<&crate::row::Row> {
-        self.rows.get(pos.row as usize)
+    pub fn visible_row(&self, pos: Pos) -> Option<&crate::row::Row> {
+        self.visible_rows().nth(pos.row as usize)
     }
 
-    pub fn row_mut(&mut self, pos: Pos) -> Option<&mut crate::row::Row> {
-        self.rows.get_mut(pos.row as usize)
+    pub fn drawing_row(&self, pos: Pos) -> Option<&crate::row::Row> {
+        self.drawing_rows().nth(pos.row as usize)
+    }
+
+    pub fn drawing_row_mut(
+        &mut self,
+        pos: Pos,
+    ) -> Option<&mut crate::row::Row> {
+        self.drawing_rows_mut().nth(pos.row as usize)
     }
 
     pub fn current_row_mut(&mut self) -> &mut crate::row::Row {
-        self.row_mut(self.pos)
+        self.drawing_row_mut(self.pos)
             .expect("cursor not pointing to a cell")
     }
 
-    pub fn cell(&self, pos: Pos) -> Option<&crate::cell::Cell> {
-        self.row(pos).and_then(|r| r.get(pos.col))
+    pub fn visible_cell(&self, pos: Pos) -> Option<&crate::cell::Cell> {
+        self.visible_row(pos).and_then(|r| r.get(pos.col))
     }
 
-    pub fn cell_mut(&mut self, pos: Pos) -> Option<&mut crate::cell::Cell> {
-        self.row_mut(pos).and_then(|r| r.get_mut(pos.col))
+    pub fn drawing_cell_mut(
+        &mut self,
+        pos: Pos,
+    ) -> Option<&mut crate::cell::Cell> {
+        self.drawing_row_mut(pos).and_then(|r| r.get_mut(pos.col))
     }
 
     pub fn current_cell_mut(&mut self) -> &mut crate::cell::Cell {
-        self.cell_mut(self.pos)
+        self.drawing_cell_mut(self.pos)
             .expect("cursor not pointing to a cell")
     }
 
@@ -136,7 +167,7 @@ impl Grid {
     }
 
     pub fn write_contents(&self, contents: &mut String) {
-        for row in self.rows() {
+        for row in self.visible_rows() {
             row.write_contents(contents, 0, self.size.cols);
             if !row.wrapped() {
                 writeln!(contents).unwrap();
@@ -159,7 +190,7 @@ impl Grid {
 
         let mut prev_attrs = crate::attrs::Attrs::default();
         let mut final_col = 0;
-        for row in self.rows() {
+        for row in self.visible_rows() {
             let (new_attrs, new_col) = row.write_contents_formatted(
                 contents,
                 0,
@@ -192,7 +223,8 @@ impl Grid {
         let mut prev_attrs = crate::attrs::Attrs::default();
         let mut final_row = prev.pos.row;
         let mut final_col = prev.pos.col;
-        for (idx, (row, prev_row)) in self.rows().zip(prev.rows()).enumerate()
+        for (idx, (row, prev_row)) in
+            self.visible_rows().zip(prev.visible_rows()).enumerate()
         {
             let idx = idx.try_into().unwrap();
             let (new_attrs, new_col) = row.write_contents_diff(
@@ -224,14 +256,14 @@ impl Grid {
     }
 
     pub fn erase_all(&mut self, bgcolor: crate::attrs::Color) {
-        for row in self.rows_mut() {
+        for row in self.drawing_rows_mut() {
             row.clear(bgcolor);
         }
     }
 
     pub fn erase_all_forward(&mut self, bgcolor: crate::attrs::Color) {
         let pos = self.pos;
-        for row in self.rows_mut().skip(pos.row as usize + 1) {
+        for row in self.drawing_rows_mut().skip(pos.row as usize + 1) {
             row.clear(bgcolor);
         }
 
@@ -240,7 +272,7 @@ impl Grid {
 
     pub fn erase_all_backward(&mut self, bgcolor: crate::attrs::Color) {
         let pos = self.pos;
-        for row in self.rows_mut().take(pos.row as usize) {
+        for row in self.drawing_rows_mut().take(pos.row as usize) {
             row.clear(bgcolor);
         }
 
@@ -319,10 +351,13 @@ impl Grid {
                 .insert(self.scroll_bottom as usize + 1, self.new_row());
             let removed = self.rows.remove(self.scroll_top as usize);
             if self.scrollback_len > 0 && !self.scroll_region_active() {
-                let idx = self.scrollback.back().map_or(0, |r| r.0 + 1);
-                self.scrollback.push_back((idx, removed));
+                self.scrollback.push_back(removed);
                 while self.scrollback.len() > self.scrollback_len {
                     self.scrollback.pop_front();
+                }
+                if self.scrollback_offset > 0 {
+                    self.scrollback_offset =
+                        self.scrollback.len().min(self.scrollback_offset + 1);
                 }
             }
         }

@@ -112,6 +112,14 @@ impl Screen {
         }
     }
 
+    pub fn scrollback(&self) -> usize {
+        self.grid().scrollback()
+    }
+
+    pub fn set_scrollback(&mut self, rows: usize) {
+        self.grid_mut().set_scrollback(rows);
+    }
+
     /// Resizes the terminal.
     pub fn set_size(&mut self, rows: u16, cols: u16) {
         self.grid.set_size(crate::grid::Size { rows, cols });
@@ -153,7 +161,7 @@ impl Screen {
         start: u16,
         width: u16,
     ) -> impl Iterator<Item = String> + '_ {
-        self.grid().rows().map(move |row| {
+        self.grid().visible_rows().map(move |row| {
             let mut contents = String::new();
             row.write_contents(&mut contents, start, width);
             contents
@@ -199,7 +207,7 @@ impl Screen {
         start: u16,
         width: u16,
     ) -> impl Iterator<Item = Vec<u8>> + '_ {
-        self.grid().rows().map(move |row| {
+        self.grid().visible_rows().map(move |row| {
             let mut contents = vec![];
             row.write_contents_formatted(
                 &mut contents,
@@ -252,8 +260,10 @@ impl Screen {
         start: u16,
         width: u16,
     ) -> impl Iterator<Item = Vec<u8>> + 'a {
-        self.grid().rows().zip(prev.grid().rows()).map(
-            move |(row, prev_row)| {
+        self.grid()
+            .visible_rows()
+            .zip(prev.grid().visible_rows())
+            .map(move |(row, prev_row)| {
                 let mut contents = vec![];
                 row.write_contents_diff(
                     &mut contents,
@@ -264,14 +274,13 @@ impl Screen {
                     crate::attrs::Attrs::default(),
                 );
                 contents
-            },
-        )
+            })
     }
 
     /// Returns the `Cell` object at the given location in the terminal, if it
     /// exists.
     pub fn cell(&self, row: u16, col: u16) -> Option<&crate::cell::Cell> {
-        self.grid().cell(crate::grid::Pos { row, col })
+        self.grid().visible_cell(crate::grid::Pos { row, col })
     }
 
     /// Returns the current cursor position of the terminal.
@@ -350,15 +359,15 @@ impl Screen {
         }
     }
 
-    fn row(&self, pos: crate::grid::Pos) -> Option<&crate::row::Row> {
-        self.grid().row(pos)
+    fn drawing_row(&self, pos: crate::grid::Pos) -> Option<&crate::row::Row> {
+        self.grid().drawing_row(pos)
     }
 
-    fn cell_mut(
+    fn drawing_cell_mut(
         &mut self,
         pos: crate::grid::Pos,
     ) -> Option<&mut crate::cell::Cell> {
-        self.grid_mut().cell_mut(pos)
+        self.grid_mut().drawing_cell_mut(pos)
     }
 
     fn current_cell_mut(&mut self) -> &mut crate::cell::Cell {
@@ -366,6 +375,7 @@ impl Screen {
     }
 
     fn enter_alternate_grid(&mut self) {
+        self.grid_mut().set_scrollback(0);
         self.set_mode(Mode::AlternateScreen);
     }
 
@@ -436,7 +446,7 @@ impl Screen {
         if pos.col > 0 {
             let bgcolor = self.attrs.bgcolor;
             let prev_cell = self
-                .cell_mut(crate::grid::Pos {
+                .drawing_cell_mut(crate::grid::Pos {
                     row: pos.row,
                     col: pos.col - 1,
                 })
@@ -455,7 +465,7 @@ impl Screen {
         if width == 0 {
             if pos.col > 0 {
                 let prev_cell = self
-                    .cell_mut(crate::grid::Pos {
+                    .drawing_cell_mut(crate::grid::Pos {
                         row: pos.row,
                         col: pos.col - 1,
                     })
@@ -463,14 +473,14 @@ impl Screen {
                 prev_cell.append(c);
             } else if pos.row > 0 {
                 let prev_row = self
-                    .row(crate::grid::Pos {
+                    .drawing_row(crate::grid::Pos {
                         row: pos.row - 1,
                         col: 0,
                     })
                     .unwrap();
                 if prev_row.wrapped() {
                     let prev_cell = self
-                        .cell_mut(crate::grid::Pos {
+                        .drawing_cell_mut(crate::grid::Pos {
                             row: pos.row - 1,
                             col: self.grid().size().cols - 1,
                         })

@@ -69,3 +69,87 @@ fn origin_mode() {
     parser.process(b"\x1b[?47l\x1b[H");
     assert_eq!(parser.screen().cursor_position(), (4, 0));
 }
+
+#[allow(clippy::cognitive_complexity)]
+#[test]
+fn scrollback() {
+    let mut parser = vt100::Parser::new(24, 80, 10);
+
+    parser.process(b"1\r\n2\r\n3\r\n4\r\n5\r\n6\r\n7\r\n8\r\n9\r\n10\r\n11\r\n12\r\n13\r\n14\r\n15\r\n16\r\n17\r\n18\r\n19\r\n20\r\n21\r\n22\r\n23\r\n24");
+    assert_eq!(parser.screen().contents(), "1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24");
+
+    parser.process(b"\r\n25\r\n26\r\n27\r\n28\r\n29\r\n30");
+    assert_eq!(parser.screen().contents(), "7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30");
+
+    parser.scroll_to(0);
+    assert_eq!(parser.scroll_pos(), 0);
+    assert_eq!(parser.screen().contents(), "7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30");
+
+    parser.scroll_to(1);
+    assert_eq!(parser.scroll_pos(), 1);
+    assert_eq!(parser.screen().contents(), "6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29");
+
+    parser.scroll_to(3);
+    assert_eq!(parser.scroll_pos(), 3);
+    assert_eq!(parser.screen().contents(), "4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27");
+
+    parser.scroll_to(6);
+    assert_eq!(parser.scroll_pos(), 6);
+    assert_eq!(parser.screen().contents(), "1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24");
+
+    parser.scroll_to(7);
+    assert_eq!(parser.scroll_pos(), 6);
+    assert_eq!(parser.screen().contents(), "1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24");
+
+    parser.scroll_to(0);
+    assert_eq!(parser.scroll_pos(), 0);
+    assert_eq!(parser.screen().contents(), "7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30");
+
+    parser.scroll_to(7);
+    assert_eq!(parser.scroll_pos(), 6);
+    assert_eq!(parser.screen().contents(), "1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24");
+
+    parser.process(b"\r\n31");
+    assert_eq!(parser.scroll_pos(), 7);
+    assert_eq!(parser.screen().contents(), "1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24");
+
+    parser.process(b"\r\n32");
+    assert_eq!(parser.scroll_pos(), 8);
+    assert_eq!(parser.screen().contents(), "1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24");
+
+    parser.process(b"\r\n33");
+    assert_eq!(parser.scroll_pos(), 9);
+    assert_eq!(parser.screen().contents(), "1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24");
+
+    parser.process(b"\r\n34");
+    assert_eq!(parser.scroll_pos(), 10);
+    assert_eq!(parser.screen().contents(), "1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24");
+
+    parser.process(b"\r\n35");
+    assert_eq!(parser.scroll_pos(), 10);
+    assert_eq!(parser.screen().contents(), "2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25");
+
+    parser.process(b"\r\n36");
+    assert_eq!(parser.scroll_pos(), 10);
+    assert_eq!(parser.screen().contents(), "3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26");
+
+    parser.scroll_to(12);
+    assert_eq!(parser.scroll_pos(), 10);
+    assert_eq!(parser.screen().contents(), "3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26");
+
+    parser.scroll_to(0);
+    assert_eq!(parser.scroll_pos(), 0);
+    assert_eq!(parser.screen().contents(), "13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30\n31\n32\n33\n34\n35\n36");
+
+    parser.process(b"\r\n37\r\n38");
+    assert_eq!(parser.scroll_pos(), 0);
+    assert_eq!(parser.screen().contents(), "15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30\n31\n32\n33\n34\n35\n36\n37\n38");
+
+    parser.scroll_to(5);
+    assert_eq!(parser.scroll_pos(), 5);
+    assert_eq!(parser.screen().contents(), "10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30\n31\n32\n33");
+
+    parser.process(b"\r\n39\r\n40");
+    assert_eq!(parser.scroll_pos(), 7);
+    assert_eq!(parser.screen().contents(), "10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30\n31\n32\n33");
+}

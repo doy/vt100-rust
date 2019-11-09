@@ -36,4 +36,12 @@ impl Parser {
     pub fn screen_mut(&mut self) -> &mut crate::screen::Screen {
         &mut self.screen
     }
+
+    pub fn scroll_pos(&self) -> usize {
+        self.screen.scrollback()
+    }
+
+    pub fn scroll_to(&mut self, idx: usize) {
+        self.screen.set_scrollback(idx);
+    }
 }
