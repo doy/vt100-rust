@@ -149,6 +149,14 @@ fn combining() {
     parser.process("\r\n\u{0301}".as_bytes());
     assert_eq!(parser.screen().cell(9, 79).unwrap().contents(), "a");
     assert_eq!(parser.screen().cell(10, 0).unwrap().contents(), "");
+
+    parser.process("\x1bcabcdefg\x1b[1;3H\u{0301}".as_bytes());
+    assert_eq!(parser.screen().contents(), "ab́cdefg");
+    parser.process("\x1b[1;2Hb\x1b[1;8H".as_bytes());
+    assert_eq!(parser.screen().contents(), "abcdefg");
+    let screen = parser.screen().clone();
+    parser.process(b"\x1bcabcdefg");
+    assert_eq!(parser.screen().contents_diff(&screen), b"\x1b[m");
 }
 
 #[test]

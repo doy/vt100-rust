@@ -85,7 +85,7 @@ impl Row {
             if cell.has_contents() {
                 // using write! here is significantly slower, for some reason
                 // write!(contents, "{}", cell.contents()).unwrap();
-                contents.push_str(cell.contents());
+                contents.push_str(&cell.contents());
             } else {
                 contents.push(' ');
             }
