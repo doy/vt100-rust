@@ -193,7 +193,10 @@ impl Row {
                 }
 
                 if cell.has_contents() {
-                    write!(contents, "{}", cell.contents()).unwrap();
+                    // using write! here is significantly slower, for some
+                    // reason
+                    // write!(contents, "{}", cell.contents()).unwrap();
+                    contents.extend(cell.contents().as_bytes());
                 } else {
                     write!(
                         contents,
