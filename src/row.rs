@@ -1,4 +1,5 @@
 use std::convert::TryInto as _;
+use std::io::Write as _;
 
 #[derive(Clone, Debug)]
 pub struct Row {
@@ -63,46 +64,51 @@ impl Row {
         self.wrapped
     }
 
-    pub fn contents(&self, start: u16, width: u16) -> String {
+    pub fn write_contents(
+        &self,
+        contents: &mut String,
+        start: u16,
+        width: u16,
+    ) {
         let mut prev_was_wide = false;
-        let mut contents = String::new();
 
         for cell in self
             .cells()
             .skip(start as usize)
-            .take(width.min(self.content_width(start)) as usize)
+            .take(width.min(self.content_width(start, false)) as usize)
         {
             if prev_was_wide {
                 prev_was_wide = false;
                 continue;
             }
 
-            contents += if cell.has_contents() {
-                cell.contents()
+            if cell.has_contents() {
+                // using write! here is significantly slower, for some reason
+                // write!(contents, "{}", cell.contents()).unwrap();
+                contents.push_str(cell.contents());
             } else {
-                " "
-            };
+                contents.push(' ');
+            }
+
             prev_was_wide = cell.is_wide();
         }
-
-        contents.trim_end().to_string()
     }
 
-    pub fn contents_formatted(
+    pub fn write_contents_formatted(
         &self,
+        contents: &mut Vec<u8>,
         start: u16,
         width: u16,
         attrs: crate::attrs::Attrs,
-    ) -> (Vec<u8>, crate::attrs::Attrs, u16) {
+    ) -> (crate::attrs::Attrs, Option<u16>) {
         let mut prev_was_wide = false;
-        let mut contents = vec![];
         let mut prev_attrs = attrs;
 
-        let mut cols = 0;
+        let mut cols = None;
         for cell in self
             .cells()
             .skip(start as usize)
-            .take(width.min(self.content_width(start)) as usize)
+            .take(width.min(self.content_width(start, true)) as usize)
         {
             if prev_was_wide {
                 prev_was_wide = false;
@@ -111,37 +117,49 @@ impl Row {
 
             let attrs = cell.attrs();
             if &prev_attrs != attrs {
-                contents.append(&mut attrs.escape_code_diff(&prev_attrs));
+                attrs.write_escape_code_diff(contents, &prev_attrs);
                 prev_attrs = *attrs;
             }
 
-            contents.extend(if cell.has_contents() {
-                cell.contents().as_bytes()
+            if cell.has_contents() {
+                // using write! here is significantly slower, for some reason
+                // write!(contents, "{}", cell.contents()).unwrap();
+                contents.extend(cell.contents().as_bytes());
             } else if cell.bgcolor() == crate::attrs::Color::Default {
-                &b"\x1b[C"[..]
+                write!(contents, "{}", crate::term::MoveRight::default())
+                    .unwrap();
             } else {
-                &b"\x1b[X\x1b[C"[..]
-            });
+                write!(
+                    contents,
+                    "{}{}",
+                    crate::term::EraseChar::default(),
+                    crate::term::MoveRight::default()
+                )
+                .unwrap();
+            }
 
             prev_was_wide = cell.is_wide();
-            cols += if prev_was_wide { 2 } else { 1 };
+            cols =
+                Some(cols.unwrap_or(0) + if prev_was_wide { 2 } else { 1 });
         }
 
-        (contents, prev_attrs, cols)
+        (prev_attrs, cols)
     }
 
-    pub fn contents_diff(
+    pub fn write_contents_diff<F: for<'a> Fn(&'a mut Vec<u8>)>(
         &self,
+        contents: &mut Vec<u8>,
         prev: &Self,
+        initial_pos: F,
         start: u16,
         width: u16,
         attrs: crate::attrs::Attrs,
-    ) -> (Vec<u8>, crate::attrs::Attrs, u16) {
+    ) -> (crate::attrs::Attrs, Option<u16>) {
         let mut prev_was_wide = false;
-        let mut skip = 0;
-        let mut contents = vec![];
         let mut prev_attrs = attrs;
-        let mut cols = 0;
+        let mut skip = 0;
+        let mut cols = None;
+        let mut initial_pos = Some(initial_pos);
 
         for (cell, prev_cell) in self
             .cells()
@@ -158,38 +176,51 @@ impl Row {
                 prev_was_wide = cell.is_wide();
                 skip += if prev_was_wide { 2 } else { 1 };
             } else {
+                if let Some(f) = initial_pos.take() {
+                    f(contents)
+                }
                 if skip > 0 {
-                    contents.extend(format!("\x1b[{}C", skip).as_bytes());
-                    cols += skip;
+                    write!(contents, "{}", crate::term::MoveRight::new(skip))
+                        .unwrap();
+                    cols = Some(cols.unwrap_or(0) + skip);
                     skip = 0;
                 }
 
                 let attrs = cell.attrs();
                 if &prev_attrs != attrs {
-                    contents.append(&mut attrs.escape_code_diff(&prev_attrs));
+                    attrs.write_escape_code_diff(contents, &prev_attrs);
                     prev_attrs = *attrs;
                 }
 
-                contents.extend(if cell.has_contents() {
-                    cell.contents().as_bytes()
+                if cell.has_contents() {
+                    write!(contents, "{}", cell.contents()).unwrap();
                 } else {
-                    b"\x1b[X\x1b[C"
-                });
+                    write!(
+                        contents,
+                        "{}{}",
+                        crate::term::EraseChar::default(),
+                        crate::term::MoveRight::default()
+                    )
+                    .unwrap();
+                }
 
                 prev_was_wide = cell.is_wide();
-                cols += if prev_was_wide { 2 } else { 1 };
+                cols = Some(
+                    cols.unwrap_or(0) + if prev_was_wide { 2 } else { 1 },
+                );
             }
         }
 
-        (contents, prev_attrs, cols)
+        (prev_attrs, cols)
     }
 
-    fn content_width(&self, start: u16) -> u16 {
+    fn content_width(&self, start: u16, formatting: bool) -> u16 {
         for (col, cell) in
             self.cells.iter().skip(start as usize).enumerate().rev()
         {
             if cell.has_contents()
-                || cell.bgcolor() != crate::attrs::Color::Default
+                || (formatting
+                    && cell.bgcolor() != crate::attrs::Color::Default)
             {
                 let width: u16 = col.try_into().unwrap();
                 return width + 1;

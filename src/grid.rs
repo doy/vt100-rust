@@ -1,4 +1,6 @@
 use std::convert::TryInto as _;
+use std::fmt::Write as _;
+use std::io::Write as _;
 
 #[derive(Clone, Debug)]
 pub struct Grid {
@@ -125,30 +127,42 @@ impl Grid {
             .expect("cursor not pointing to a cell")
     }
 
-    pub fn contents(&self) -> String {
-        let mut contents = String::new();
+    pub fn write_contents(&self, contents: &mut String) {
         for row in self.rows() {
-            contents += &row.contents(0, self.size.cols);
+            row.write_contents(contents, 0, self.size.cols);
             if !row.wrapped() {
-                contents += "\n";
+                writeln!(contents).unwrap();
             }
         }
-        contents.trim_end().to_string()
+
+        while contents.ends_with('\n') {
+            contents.truncate(contents.len() - 1);
+        }
     }
 
-    pub fn contents_formatted(&self) -> Vec<u8> {
-        let mut contents = b"\x1b[m\x1b[H\x1b[J".to_vec();
+    pub fn write_contents_formatted(&self, contents: &mut Vec<u8>) {
+        write!(
+            contents,
+            "{}{}",
+            crate::term::Attrs::new(),
+            crate::term::ClearScreen::new()
+        )
+        .unwrap();
+
         let mut prev_attrs = crate::attrs::Attrs::default();
         let mut final_col = 0;
         for row in self.rows() {
-            let (mut new_contents, new_attrs, new_col) =
-                row.contents_formatted(0, self.size.cols, prev_attrs);
-            if !new_contents.is_empty() {
-                final_col = new_col;
+            let (new_attrs, new_col) = row.write_contents_formatted(
+                contents,
+                0,
+                self.size.cols,
+                prev_attrs,
+            );
+            if let Some(col) = new_col {
+                final_col = col;
             }
-            contents.append(&mut new_contents);
             if !row.wrapped() {
-                contents.extend(b"\r\n");
+                write!(contents, "{}", crate::term::CRLF::new()).unwrap();
             }
             prev_attrs = new_attrs;
         }
@@ -160,41 +174,45 @@ impl Grid {
         }
 
         if final_row != self.pos.row || final_col != self.pos.col {
-            contents.extend(
-                format!("\x1b[{};{}H", self.pos.row + 1, self.pos.col + 1)
-                    .as_bytes(),
-            );
+            write!(contents, "{}", crate::term::MoveTo::new(self.pos))
+                .unwrap();
         }
-
-        contents
     }
 
-    pub fn contents_diff(&self, prev: &Self) -> Vec<u8> {
-        let mut contents = b"\x1b[m".to_vec();
+    pub fn write_contents_diff(&self, contents: &mut Vec<u8>, prev: &Self) {
+        write!(contents, "{}", crate::term::Attrs::default()).unwrap();
         let mut prev_attrs = crate::attrs::Attrs::default();
         let mut final_row = prev.pos.row;
         let mut final_col = prev.pos.col;
         for (idx, (row, prev_row)) in self.rows().zip(prev.rows()).enumerate()
         {
-            let (mut new_contents, new_attrs, new_col) =
-                row.contents_diff(prev_row, 0, self.size.cols, prev_attrs);
-            if !new_contents.is_empty() {
-                contents.extend(format!("\x1b[{};1H", idx + 1).as_bytes());
-                final_row = idx.try_into().unwrap();
-                final_col = new_col;
+            let idx = idx.try_into().unwrap();
+            let (new_attrs, new_col) = row.write_contents_diff(
+                contents,
+                prev_row,
+                |contents| {
+                    write!(
+                        contents,
+                        "{}",
+                        crate::term::MoveTo::new(Pos { row: idx, col: 0 })
+                    )
+                    .unwrap();
+                },
+                0,
+                self.size.cols,
+                prev_attrs,
+            );
+            if let Some(col) = new_col {
+                final_row = idx;
+                final_col = col;
             }
-            contents.append(&mut new_contents);
             prev_attrs = new_attrs;
         }
 
         if self.pos.row != final_row || self.pos.col != final_col {
-            contents.extend(
-                format!("\x1b[{};{}H", self.pos.row + 1, self.pos.col + 1)
-                    .as_bytes(),
-            );
+            write!(contents, "{}", crate::term::MoveTo::new(self.pos))
+                .unwrap();
         }
-
-        contents
     }
 
     pub fn erase_all(&mut self, bgcolor: crate::attrs::Color) {

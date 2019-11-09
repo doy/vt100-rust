@@ -1,4 +1,5 @@
 use std::convert::TryInto as _;
+use std::io::Write as _;
 use unicode_width::UnicodeWidthChar as _;
 
 const DEFAULT_MULTI_PARAMS: &[i64] = &[0];
@@ -128,7 +129,13 @@ impl Screen {
     /// This will not include any formatting information, and will be in plain
     /// text format.
     pub fn contents(&self) -> String {
-        self.grid().contents()
+        let mut contents = String::new();
+        self.write_contents(&mut contents);
+        contents
+    }
+
+    fn write_contents(&self, contents: &mut String) {
+        self.grid().write_contents(contents);
     }
 
     /// Returns the text contents of the terminal by row, restricted to the
@@ -143,9 +150,11 @@ impl Screen {
         start: u16,
         width: u16,
     ) -> impl Iterator<Item = String> + '_ {
-        self.grid()
-            .rows()
-            .map(move |row| row.contents(start, width))
+        self.grid().rows().map(move |row| {
+            let mut contents = String::new();
+            row.write_contents(&mut contents, start, width);
+            contents
+        })
     }
 
     /// Returns the formatted contents of the terminal.
@@ -157,14 +166,19 @@ impl Screen {
     /// mode) will not be included here, but modes that affect the visible
     /// output (such as hidden cursor mode) will.
     pub fn contents_formatted(&self) -> Vec<u8> {
-        let mut grid_contents = if self.hide_cursor() {
-            b"\x1b[?25l"
-        } else {
-            b"\x1b[?25h"
-        }
-        .to_vec();
-        grid_contents.append(&mut self.grid().contents_formatted());
-        grid_contents
+        let mut contents = vec![];
+        self.write_contents_formatted(&mut contents);
+        contents
+    }
+
+    fn write_contents_formatted(&self, contents: &mut Vec<u8>) {
+        write!(
+            contents,
+            "{}",
+            crate::term::HideCursor::new(self.hide_cursor())
+        )
+        .unwrap();
+        self.grid().write_contents_formatted(contents);
     }
 
     /// Returns the formatted contents of the terminal by row, restricted to
@@ -183,7 +197,9 @@ impl Screen {
         width: u16,
     ) -> impl Iterator<Item = Vec<u8>> + '_ {
         self.grid().rows().map(move |row| {
-            let (contents, ..) = row.contents_formatted(
+            let mut contents = vec![];
+            row.write_contents_formatted(
+                &mut contents,
                 start,
                 width,
                 crate::attrs::Attrs::default(),
@@ -202,16 +218,21 @@ impl Screen {
     /// since the diff will likely require less memory and cause less
     /// flickering than redrawing the entire screen contents.
     pub fn contents_diff(&self, prev: &Self) -> Vec<u8> {
-        let mut grid_contents = vec![];
+        let mut contents = vec![];
+        self.write_contents_diff(&mut contents, prev);
+        contents
+    }
+
+    fn write_contents_diff(&self, contents: &mut Vec<u8>, prev: &Self) {
         if self.hide_cursor() != prev.hide_cursor() {
-            grid_contents.extend(if self.hide_cursor() {
-                b"\x1b[?25l"
-            } else {
-                b"\x1b[?25h"
-            });
+            write!(
+                contents,
+                "{}",
+                crate::term::HideCursor::new(self.hide_cursor())
+            )
+            .unwrap();
         }
-        grid_contents.append(&mut self.grid().contents_diff(prev.grid()));
-        grid_contents
+        self.grid().write_contents_diff(contents, prev.grid());
     }
 
     /// Returns a sequence of terminal byte streams sufficient to turn the
@@ -230,8 +251,11 @@ impl Screen {
     ) -> impl Iterator<Item = Vec<u8>> + 'a {
         self.grid().rows().zip(prev.grid().rows()).map(
             move |(row, prev_row)| {
-                let (contents, ..) = row.contents_diff(
+                let mut contents = vec![];
+                row.write_contents_diff(
+                    &mut contents,
                     prev_row,
+                    |_| (),
                     start,
                     width,
                     crate::attrs::Attrs::default(),

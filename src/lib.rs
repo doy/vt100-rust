@@ -33,6 +33,7 @@ mod grid;
 mod parser;
 mod row;
 mod screen;
+mod term;
 
 pub use attrs::Color;
 pub use cell::Cell;
