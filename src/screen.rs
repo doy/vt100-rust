@@ -91,10 +91,13 @@ pub struct Screen {
 }
 
 impl Screen {
-    pub(crate) fn new(size: crate::grid::Size) -> Self {
+    pub(crate) fn new(
+        size: crate::grid::Size,
+        scrollback_len: usize,
+    ) -> Self {
         Self {
-            grid: crate::grid::Grid::new(size),
-            alternate_grid: crate::grid::Grid::new(size),
+            grid: crate::grid::Grid::new(size, scrollback_len),
+            alternate_grid: crate::grid::Grid::new(size, 0),
 
             attrs: crate::attrs::Attrs::default(),
             saved_attrs: crate::attrs::Attrs::default(),
@@ -551,7 +554,7 @@ impl Screen {
         let title = self.title.clone();
         let icon_name = self.icon_name.clone();
 
-        *self = Self::new(self.grid().size());
+        *self = Self::new(self.grid.size(), self.grid.scrollback_len());
 
         self.outputs = outputs;
         self.title = title;

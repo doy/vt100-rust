@@ -1,12 +1,12 @@
 #[test]
 fn object_creation() {
-    let parser = vt100::Parser::new(24, 80);
+    let parser = vt100::Parser::new(24, 80, 0);
     assert_eq!(parser.screen().size(), (24, 80));
 }
 
 #[test]
 fn process_text() {
-    let mut parser = vt100::Parser::new(24, 80);
+    let mut parser = vt100::Parser::new(24, 80, 0);
     let input = b"foo\x1b[31m\x1b[32mb\x1b[3;7;42ma\x1b[23mr";
     parser.process(input);
     assert_eq!(parser.screen().contents(), "foobar");
@@ -14,7 +14,7 @@ fn process_text() {
 
 #[test]
 fn set_size() {
-    let mut parser = vt100::Parser::new(24, 80);
+    let mut parser = vt100::Parser::new(24, 80, 0);
     assert_eq!(parser.screen().size(), (24, 80));
     assert_eq!(parser.screen().cursor_position(), (0, 0));
 
@@ -58,7 +58,7 @@ fn set_size() {
 
 #[test]
 fn cell_contents() {
-    let mut parser = vt100::Parser::new(24, 80);
+    let mut parser = vt100::Parser::new(24, 80, 0);
     let input = b"foo\x1b[31m\x1b[32mb\x1b[3;7;42ma\x1b[23mr";
     parser.process(input);
     assert_eq!(parser.screen().cell(0, 0).unwrap().contents(), "f");
@@ -72,7 +72,7 @@ fn cell_contents() {
 
 #[test]
 fn cell_colors() {
-    let mut parser = vt100::Parser::new(24, 80);
+    let mut parser = vt100::Parser::new(24, 80, 0);
     let input = b"foo\x1b[31m\x1b[32mb\x1b[3;7;42ma\x1b[23mr";
     parser.process(input);
 
@@ -96,7 +96,7 @@ fn cell_colors() {
 
 #[test]
 fn cell_attrs() {
-    let mut parser = vt100::Parser::new(24, 80);
+    let mut parser = vt100::Parser::new(24, 80, 0);
     let input = b"foo\x1b[31m\x1b[32mb\x1b[3;7;42ma\x1b[23mr";
     parser.process(input);
 

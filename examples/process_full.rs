@@ -13,7 +13,7 @@ fn read_frames() -> impl Iterator<Item = Vec<u8>> {
 
 fn draw_frames(frames: &[Vec<u8>]) {
     let mut stdout = std::io::stdout();
-    let mut parser = vt100::Parser::new(24, 80);
+    let mut parser = vt100::Parser::new(24, 80, 0);
     for frame in frames {
         parser.process(&frame);
         let contents = parser.screen().contents_formatted();

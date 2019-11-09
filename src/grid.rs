@@ -12,10 +12,12 @@ pub struct Grid {
     scroll_bottom: u16,
     origin_mode: bool,
     saved_origin_mode: bool,
+    scrollback: std::collections::VecDeque<(usize, crate::row::Row)>,
+    scrollback_len: usize,
 }
 
 impl Grid {
-    pub fn new(size: Size) -> Self {
+    pub fn new(size: Size, scrollback_len: usize) -> Self {
         Self {
             size,
             pos: Pos::default(),
@@ -25,6 +27,8 @@ impl Grid {
             scroll_bottom: size.rows - 1,
             origin_mode: false,
             saved_origin_mode: false,
+            scrollback: std::collections::VecDeque::new(),
+            scrollback_len,
         }
     }
 
@@ -125,6 +129,10 @@ impl Grid {
     pub fn current_cell_mut(&mut self) -> &mut crate::cell::Cell {
         self.cell_mut(self.pos)
             .expect("cursor not pointing to a cell")
+    }
+
+    pub fn scrollback_len(&self) -> usize {
+        self.scrollback_len
     }
 
     pub fn write_contents(&self, contents: &mut String) {
@@ -309,7 +317,14 @@ impl Grid {
         for _ in 0..(count.min(self.size.rows - self.scroll_top)) {
             self.rows
                 .insert(self.scroll_bottom as usize + 1, self.new_row());
-            self.rows.remove(self.scroll_top as usize);
+            let removed = self.rows.remove(self.scroll_top as usize);
+            if self.scrollback_len > 0 && !self.scroll_region_active() {
+                let idx = self.scrollback.back().map_or(0, |r| r.0 + 1);
+                self.scrollback.push_back((idx, removed));
+                while self.scrollback.len() > self.scrollback_len {
+                    self.scrollback.pop_front();
+                }
+            }
         }
     }
 
@@ -335,6 +350,10 @@ impl Grid {
 
     fn in_scroll_region(&self) -> bool {
         self.pos.row >= self.scroll_top && self.pos.row <= self.scroll_bottom
+    }
+
+    fn scroll_region_active(&self) -> bool {
+        self.scroll_top != 0 || self.scroll_bottom != self.size.rows - 1
     }
 
     pub fn set_origin_mode(&mut self, mode: bool) {

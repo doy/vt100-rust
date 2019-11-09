@@ -1,6 +1,6 @@
 #[test]
 fn absolute_movement() {
-    let mut parser = vt100::Parser::new(24, 80);
+    let mut parser = vt100::Parser::new(24, 80, 0);
     assert_eq!(parser.screen().cursor_position(), (0, 0));
 
     parser.process(b"\x1b[10;10H");
@@ -36,7 +36,7 @@ fn absolute_movement() {
 
 #[test]
 fn relative_movement() {
-    let mut parser = vt100::Parser::new(24, 80);
+    let mut parser = vt100::Parser::new(24, 80, 0);
     assert_eq!(parser.screen().cursor_position(), (0, 0));
 
     parser.process(b"\x1b[C");
@@ -91,7 +91,7 @@ fn relative_movement() {
 #[allow(clippy::cognitive_complexity)]
 #[test]
 fn ed() {
-    let mut parser = vt100::Parser::new(24, 80);
+    let mut parser = vt100::Parser::new(24, 80, 0);
     assert_eq!(parser.screen().contents(), "");
 
     parser.process(b"foo\x1b[5;5Hbar\x1b[10;10Hbaz\x1b[20;20Hquux");
@@ -319,7 +319,7 @@ fn ed() {
 #[allow(clippy::cognitive_complexity)]
 #[test]
 fn el() {
-    let mut parser = vt100::Parser::new(24, 80);
+    let mut parser = vt100::Parser::new(24, 80, 0);
     assert_eq!(parser.screen().contents(), "");
 
     parser.process(b"foo\x1b[5;5Hbarbar\x1b[10;10Hbazbaz\x1b[20;20Hquux");
@@ -515,7 +515,7 @@ fn el() {
 
 #[test]
 fn ich_dch_ech() {
-    let mut parser = vt100::Parser::new(24, 80);
+    let mut parser = vt100::Parser::new(24, 80, 0);
     assert_eq!(parser.screen().contents(), "");
 
     parser.process(b"\x1b[10;10Hfoobar");
@@ -581,7 +581,7 @@ fn ich_dch_ech() {
 
 #[test]
 fn il_dl() {
-    let mut parser = vt100::Parser::new(24, 80);
+    let mut parser = vt100::Parser::new(24, 80, 0);
     assert_eq!(parser.screen().contents(), "");
 
     parser.process(b"\x1b[10;10Hfoobar\x1b[3D");
@@ -634,7 +634,7 @@ fn il_dl() {
 
 #[test]
 fn scroll() {
-    let mut parser = vt100::Parser::new(24, 80);
+    let mut parser = vt100::Parser::new(24, 80, 0);
     assert_eq!(parser.screen().contents(), "");
 
     parser.process(b"1\r\n2\r\n3\r\n4\r\n5\r\n6\r\n7\r\n8\r\n9\r\n10\r\n11\r\n12\r\n13\r\n14\r\n15\r\n16\r\n17\r\n18\r\n19\r\n20\r\n21\r\n22\r\n23\r\n24");

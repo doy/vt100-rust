@@ -7,13 +7,13 @@ pub struct Parser {
 
 impl Parser {
     /// Creates a new terminal parser of the given size.
-    pub fn new(rows: u16, cols: u16) -> Self {
+    pub fn new(rows: u16, cols: u16, scrollback_len: usize) -> Self {
         Self {
             parser: vte::Parser::new(),
-            screen: crate::screen::Screen::new(crate::grid::Size {
-                rows,
-                cols,
-            }),
+            screen: crate::screen::Screen::new(
+                crate::grid::Size { rows, cols },
+                scrollback_len,
+            ),
         }
     }
 

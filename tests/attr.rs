@@ -2,7 +2,7 @@
 
 #[test]
 fn colors() {
-    let mut parser = vt100::Parser::new(24, 80);
+    let mut parser = vt100::Parser::new(24, 80, 0);
 
     parser.process(b"foo\x1b[31mbar");
 
@@ -175,7 +175,7 @@ fn colors() {
 
 #[test]
 fn attrs() {
-    let mut parser = vt100::Parser::new(24, 80);
+    let mut parser = vt100::Parser::new(24, 80, 0);
 
     parser.process(b"f\x1b[1mo\x1b[3mo\x1b[4mo\x1b[7mo");
     assert!(!parser.screen().cell(0, 0).unwrap().bold());

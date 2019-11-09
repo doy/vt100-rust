@@ -2,7 +2,7 @@
 
 #[test]
 fn deckpam() {
-    let mut parser = vt100::Parser::new(24, 80);
+    let mut parser = vt100::Parser::new(24, 80, 0);
     assert!(!parser.screen().application_keypad());
     parser.process(b"\x1b=");
     assert!(parser.screen().application_keypad());
@@ -12,7 +12,7 @@ fn deckpam() {
 
 #[test]
 fn ri() {
-    let mut parser = vt100::Parser::new(24, 80);
+    let mut parser = vt100::Parser::new(24, 80, 0);
     parser.process(b"foo\nbar\x1bMbaz");
     assert_eq!(parser.screen().contents(), "foo   baz\n   bar");
 
@@ -25,7 +25,7 @@ fn ri() {
 
 #[test]
 fn ris() {
-    let mut parser = vt100::Parser::new(24, 80);
+    let mut parser = vt100::Parser::new(24, 80, 0);
     assert_eq!(parser.screen().cursor_position(), (0, 0));
 
     let cell = parser.screen().cell(0, 0).unwrap();
@@ -122,7 +122,7 @@ fn ris() {
 
 #[test]
 fn vb() {
-    let mut parser = vt100::Parser::new(24, 80);
+    let mut parser = vt100::Parser::new(24, 80, 0);
     assert!(!parser.screen_mut().check_visual_bell());
     parser.process(b"\x1bg");
     assert!(parser.screen_mut().check_visual_bell());
@@ -131,7 +131,7 @@ fn vb() {
 
 #[test]
 fn decsc() {
-    let mut parser = vt100::Parser::new(24, 80);
+    let mut parser = vt100::Parser::new(24, 80, 0);
     parser.process(b"foo\x1b7\r\n\r\n\r\n         bar\x1b8baz");
     assert_eq!(parser.screen().contents(), "foobaz\n\n\n         bar");
     assert_eq!(parser.screen().cursor_position(), (0, 6));

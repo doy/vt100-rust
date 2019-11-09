@@ -2,7 +2,7 @@
 
 #[test]
 fn split_escape_sequences() {
-    let mut parser = vt100::Parser::new(24, 80);
+    let mut parser = vt100::Parser::new(24, 80, 0);
     let contents = parser.screen().contents();
     parser.process(b"abc");
     assert_ne!(parser.screen().contents(), contents);
@@ -193,7 +193,7 @@ fn split_escape_sequences() {
 
 #[test]
 fn split_utf8() {
-    let mut parser = vt100::Parser::new(24, 80);
+    let mut parser = vt100::Parser::new(24, 80, 0);
     let contents = parser.screen().contents();
     parser.process(b"a");
     assert_ne!(parser.screen().contents(), contents);

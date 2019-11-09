@@ -1,6 +1,6 @@
 #[test]
 fn intermediate_control() {
-    let mut parser = vt100::Parser::new(24, 80);
+    let mut parser = vt100::Parser::new(24, 80, 0);
     assert_eq!(parser.screen().cursor_position(), (0, 0));
 
     parser.process(b"\x1b");

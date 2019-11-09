@@ -2,7 +2,7 @@ use std::io::Read as _;
 
 #[test]
 fn formatted() {
-    let mut parser = vt100::Parser::new(24, 80);
+    let mut parser = vt100::Parser::new(24, 80, 0);
     compare_formatted(parser.screen());
     assert_eq!(
         parser.screen().contents_formatted(),
@@ -65,7 +65,7 @@ fn formatted() {
 
 #[test]
 fn empty_cells() {
-    let mut parser = vt100::Parser::new(24, 80);
+    let mut parser = vt100::Parser::new(24, 80, 0);
     parser.process(b"\x1b[5C\x1b[32m bar\x1b[H\x1b[31mfoo");
     compare_formatted(parser.screen());
     assert_eq!(parser.screen().contents(), "foo   bar");
@@ -77,7 +77,7 @@ fn empty_cells() {
 
 #[test]
 fn cursor_positioning() {
-    let mut parser = vt100::Parser::new(24, 80);
+    let mut parser = vt100::Parser::new(24, 80, 0);
     let screen1 = parser.screen().clone();
 
     parser.process(b":\x1b[K");
@@ -115,7 +115,7 @@ fn cursor_positioning() {
 
 #[test]
 fn rows() {
-    let mut parser = vt100::Parser::new(24, 80);
+    let mut parser = vt100::Parser::new(24, 80, 0);
     let screen1 = parser.screen().clone();
     assert_eq!(
         screen1.rows(0, 80).collect::<Vec<String>>(),
@@ -423,7 +423,7 @@ fn rows() {
 
 #[test]
 fn diff() {
-    let mut parser = vt100::Parser::new(24, 80);
+    let mut parser = vt100::Parser::new(24, 80, 0);
     let screen1 = parser.screen().clone();
     parser.process(b"\x1b[5C\x1b[32m bar");
     let screen2 = parser.screen().clone();
@@ -471,7 +471,7 @@ fn diff_crawl_full() {
 }
 
 fn diff_crawl(i: usize) {
-    let mut parser = vt100::Parser::new(24, 80);
+    let mut parser = vt100::Parser::new(24, 80, 0);
     let screens: Vec<_> = (1..=i)
         .map(|i| {
             let mut file =
@@ -498,7 +498,7 @@ fn diff_crawl(i: usize) {
 
 fn compare_formatted(screen: &vt100::Screen) {
     let (rows, cols) = screen.size();
-    let mut parser = vt100::Parser::new(rows, cols);
+    let mut parser = vt100::Parser::new(rows, cols, 0);
     let contents = screen.contents_formatted();
     parser.process(&contents);
     compare_cells(screen, parser.screen());
@@ -510,13 +510,13 @@ fn compare_diff(
     prev_parsed: &[u8],
 ) {
     let (rows, cols) = screen.size();
-    let mut parser = vt100::Parser::new(rows, cols);
+    let mut parser = vt100::Parser::new(rows, cols, 0);
     parser.process(prev_parsed);
     // need to reparse the formatted contents here in case we're in the middle
     // of parsing an escape sequence, since applying the diff at that location
     // directly won't work in that case
     let contents = parser.screen().contents_formatted();
-    let mut parser = vt100::Parser::new(rows, cols);
+    let mut parser = vt100::Parser::new(rows, cols, 0);
     parser.process(&contents);
     compare_cells(parser.screen(), &prev_screen);
     assert_eq!(parser.screen().hide_cursor(), prev_screen.hide_cursor());
