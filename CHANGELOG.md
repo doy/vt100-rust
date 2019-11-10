@@ -12,7 +12,7 @@
 
 ### Fixed
 
-* Lots of performance optimizations.
+* Lots of performance and output optimizations.
 
 ## [0.4.0] - 2019-11-08
 

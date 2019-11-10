@@ -94,12 +94,12 @@ impl Attrs {
         contents: &mut Vec<u8>,
         other: &Self,
     ) {
-        let attrs = crate::term::Attrs::default();
-
         if self != other && self == &Self::default() {
-            write!(contents, "{}", attrs).unwrap();
+            write!(contents, "{}", crate::term::ClearAttrs::new()).unwrap();
             return;
         }
+
+        let attrs = crate::term::Attrs::default();
 
         let attrs = if self.fgcolor == other.fgcolor {
             attrs

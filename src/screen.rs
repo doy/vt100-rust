@@ -189,7 +189,8 @@ impl Screen {
             crate::term::HideCursor::new(self.hide_cursor())
         )
         .unwrap();
-        self.grid().write_contents_formatted(contents);
+        let prev_attrs = self.grid().write_contents_formatted(contents);
+        self.attrs.write_escape_code_diff(contents, &prev_attrs);
     }
 
     /// Returns the formatted contents of the terminal by row, restricted to
@@ -247,7 +248,12 @@ impl Screen {
             )
             .unwrap();
         }
-        self.grid().write_contents_diff(contents, prev.grid());
+        let prev_attrs = self.grid().write_contents_diff(
+            contents,
+            prev.grid(),
+            prev.attrs,
+        );
+        self.attrs.write_escape_code_diff(contents, &prev_attrs);
     }
 
     /// Returns a sequence of terminal byte streams sufficient to turn the

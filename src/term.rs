@@ -56,6 +56,21 @@ impl std::fmt::Display for MoveTo {
 }
 
 #[derive(Default, Debug)]
+pub struct ClearAttrs;
+
+impl ClearAttrs {
+    pub fn new() -> Self {
+        Self::default()
+    }
+}
+
+impl std::fmt::Display for ClearAttrs {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("\x1b[m")
+    }
+}
+
+#[derive(Default, Debug)]
 pub struct Attrs {
     fgcolor: Option<crate::attrs::Color>,
     bgcolor: Option<crate::attrs::Color>,
@@ -66,10 +81,6 @@ pub struct Attrs {
 }
 
 impl Attrs {
-    pub fn new() -> Self {
-        Self::default()
-    }
-
     pub fn fgcolor(mut self, fgcolor: crate::attrs::Color) -> Self {
         self.fgcolor = Some(fgcolor);
         self
@@ -102,8 +113,22 @@ impl Attrs {
 }
 
 impl std::fmt::Display for Attrs {
-    #[allow(unused_assignments, clippy::cognitive_complexity)]
+    #[allow(
+        unused_assignments,
+        clippy::cognitive_complexity,
+        clippy::too_many_lines
+    )]
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if self.fgcolor.is_none()
+            && self.bgcolor.is_none()
+            && self.bold.is_none()
+            && self.italic.is_none()
+            && self.underline.is_none()
+            && self.inverse.is_none()
+        {
+            return Ok(());
+        }
+
         f.write_str("\x1b[")?;
         let mut first = true;
 

@@ -165,12 +165,13 @@ impl Row {
                 }
 
                 let attrs = cell.attrs();
-                if &prev_attrs != attrs {
-                    attrs.write_escape_code_diff(contents, &prev_attrs);
-                    prev_attrs = *attrs;
-                }
 
                 if has_contents {
+                    if &prev_attrs != attrs {
+                        attrs.write_escape_code_diff(contents, &prev_attrs);
+                        prev_attrs = *attrs;
+                    }
+
                     // using write! here is significantly slower, for some
                     // reason
                     // write!(contents, "{}", cell.contents()).unwrap();
@@ -179,6 +180,11 @@ impl Row {
                     prev_pos.col += width;
                     new_pos.col += width;
                 } else {
+                    if prev_attrs.bgcolor != attrs.bgcolor {
+                        attrs.write_escape_code_diff(contents, &prev_attrs);
+                        prev_attrs = *attrs;
+                    }
+
                     write!(
                         contents,
                         "{}",
@@ -262,12 +268,13 @@ impl Row {
                 }
 
                 let attrs = cell.attrs();
-                if &prev_attrs != attrs {
-                    attrs.write_escape_code_diff(contents, &prev_attrs);
-                    prev_attrs = *attrs;
-                }
 
                 if cell.has_contents() {
+                    if &prev_attrs != attrs {
+                        attrs.write_escape_code_diff(contents, &prev_attrs);
+                        prev_attrs = *attrs;
+                    }
+
                     // using write! here is significantly slower, for some
                     // reason
                     // write!(contents, "{}", cell.contents()).unwrap();
@@ -276,6 +283,11 @@ impl Row {
                     prev_pos.col += width;
                     new_pos.col += width;
                 } else {
+                    if prev_attrs.bgcolor != attrs.bgcolor {
+                        attrs.write_escape_code_diff(contents, &prev_attrs);
+                        prev_attrs = *attrs;
+                    }
+
                     write!(
                         contents,
                         "{}",

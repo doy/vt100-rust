@@ -11,15 +11,22 @@ pub struct Cell {
     attrs: crate::attrs::Attrs,
 }
 
+#[allow(clippy::collapsible_if)]
 impl PartialEq<Cell> for Cell {
     fn eq(&self, other: &Self) -> bool {
-        if self.attrs != other.attrs {
-            return false;
-        }
         if self.len != other.len {
             return false;
         }
         let len = self.len as usize;
+        if len > 0 {
+            if self.attrs != other.attrs {
+                return false;
+            }
+        } else {
+            if self.attrs.bgcolor != other.attrs.bgcolor {
+                return false;
+            }
+        }
         self.contents[..len] == other.contents[..len]
     }
 }

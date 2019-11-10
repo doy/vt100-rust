@@ -179,11 +179,14 @@ impl Grid {
         }
     }
 
-    pub fn write_contents_formatted(&self, contents: &mut Vec<u8>) {
+    pub fn write_contents_formatted(
+        &self,
+        contents: &mut Vec<u8>,
+    ) -> crate::attrs::Attrs {
         write!(
             contents,
             "{}{}",
-            crate::term::Attrs::new(),
+            crate::term::ClearAttrs::new(),
             crate::term::ClearScreen::new()
         )
         .unwrap();
@@ -211,13 +214,17 @@ impl Grid {
             write!(contents, "{}", crate::term::MoveTo::new(self.pos))
                 .unwrap();
         }
+
+        prev_attrs
     }
 
-    pub fn write_contents_diff(&self, contents: &mut Vec<u8>, prev: &Self) {
-        write!(contents, "{}", crate::term::Attrs::default()).unwrap();
-
+    pub fn write_contents_diff(
+        &self,
+        contents: &mut Vec<u8>,
+        prev: &Self,
+        mut prev_attrs: crate::attrs::Attrs,
+    ) -> crate::attrs::Attrs {
         let mut prev_pos = prev.pos;
-        let mut prev_attrs = crate::attrs::Attrs::default();
         let mut wrapping = false;
         for (i, (row, prev_row)) in
             self.visible_rows().zip(prev.visible_rows()).enumerate()
@@ -242,6 +249,8 @@ impl Grid {
             write!(contents, "{}", crate::term::MoveTo::new(self.pos))
                 .unwrap();
         }
+
+        prev_attrs
     }
 
     pub fn erase_all(&mut self, bgcolor: crate::attrs::Color) {
