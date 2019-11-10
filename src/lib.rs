@@ -26,6 +26,7 @@
 #![warn(clippy::nursery)]
 #![allow(clippy::missing_const_for_fn)]
 #![allow(clippy::single_match)]
+#![allow(clippy::too_many_arguments)]
 
 mod attrs;
 mod cell;

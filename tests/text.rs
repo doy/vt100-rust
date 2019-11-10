@@ -64,7 +64,7 @@ fn wide() {
     );
     assert_eq!(
         parser.screen().contents_diff(&screen),
-        "\x1b[m\x1b[Haデbネ".as_bytes()
+        "\x1b[maデbネ".as_bytes()
     );
 
     let screen = parser.screen().clone();
@@ -77,7 +77,7 @@ fn wide() {
     );
     assert_eq!(
         parser.screen().contents_diff(&screen),
-        "\x1b[m\x1b[H\x1b[3Cc".as_bytes()
+        "\x1b[m\x1b[1;4Hc".as_bytes()
     );
 
     let screen = parser.screen().clone();
@@ -90,7 +90,7 @@ fn wide() {
     );
     assert_eq!(
         parser.screen().contents_diff(&screen),
-        "\x1b[m\x1b[H\x1b[6Cfoobar".as_bytes()
+        "\x1b[m\x1b[2Cfoobar".as_bytes()
     );
 
     let screen = parser.screen().clone();
@@ -103,7 +103,7 @@ fn wide() {
     );
     assert_eq!(
         parser.screen().contents_diff(&screen),
-        "\x1b[m\x1b[Hデcネfo\x1b[Cbar\x1b[X\x1b[C\x1b[1;12H".as_bytes()
+        "\x1b[m\x1b[Hデcネfo\x1b[Cbar\x1b[X".as_bytes()
     );
 
     let screen = parser.screen().clone();
@@ -129,7 +129,7 @@ fn wide() {
     );
     assert_eq!(
         parser.screen().contents_diff(&screen),
-        "\x1b[m\x1b[Hデcネfo\x1b[Cbar\x1b[X\x1b[C\x1b[1;12H".as_bytes()
+        "\x1b[m\x1b[Hデcネfo\x1b[Cbar\x1b[X".as_bytes()
     );
 }
 

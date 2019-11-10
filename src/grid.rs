@@ -189,30 +189,25 @@ impl Grid {
         .unwrap();
 
         let mut prev_attrs = crate::attrs::Attrs::default();
-        let mut final_col = 0;
-        for row in self.visible_rows() {
-            let (new_attrs, new_col) = row.write_contents_formatted(
+        let mut prev_pos = Pos::default();
+        let mut wrapping = false;
+        for (i, row) in self.visible_rows().enumerate() {
+            let i = i.try_into().unwrap();
+            let (new_pos, new_attrs) = row.write_contents_formatted(
                 contents,
                 0,
                 self.size.cols,
+                i,
+                wrapping,
+                prev_pos,
                 prev_attrs,
             );
-            if let Some(col) = new_col {
-                final_col = col;
-            }
-            if !row.wrapped() {
-                write!(contents, "{}", crate::term::CRLF::new()).unwrap();
-            }
+            prev_pos = new_pos;
             prev_attrs = new_attrs;
+            wrapping = row.wrapped();
         }
 
-        let mut final_row = self.size.rows;
-        while contents.ends_with(b"\r\n") {
-            contents.truncate(contents.len() - 2);
-            final_row -= 1;
-        }
-
-        if final_row != self.pos.row || final_col != self.pos.col {
+        if prev_pos != self.pos {
             write!(contents, "{}", crate::term::MoveTo::new(self.pos))
                 .unwrap();
         }
@@ -220,36 +215,30 @@ impl Grid {
 
     pub fn write_contents_diff(&self, contents: &mut Vec<u8>, prev: &Self) {
         write!(contents, "{}", crate::term::Attrs::default()).unwrap();
+
+        let mut prev_pos = prev.pos;
         let mut prev_attrs = crate::attrs::Attrs::default();
-        let mut final_row = prev.pos.row;
-        let mut final_col = prev.pos.col;
-        for (idx, (row, prev_row)) in
+        let mut wrapping = false;
+        for (i, (row, prev_row)) in
             self.visible_rows().zip(prev.visible_rows()).enumerate()
         {
-            let idx = idx.try_into().unwrap();
-            let (new_attrs, new_col) = row.write_contents_diff(
+            let i = i.try_into().unwrap();
+            let (new_pos, new_attrs) = row.write_contents_diff(
                 contents,
                 prev_row,
-                |contents| {
-                    write!(
-                        contents,
-                        "{}",
-                        crate::term::MoveTo::new(Pos { row: idx, col: 0 })
-                    )
-                    .unwrap();
-                },
                 0,
                 self.size.cols,
+                i,
+                wrapping,
+                prev_pos,
                 prev_attrs,
             );
-            if let Some(col) = new_col {
-                final_row = idx;
-                final_col = col;
-            }
+            prev_pos = new_pos;
             prev_attrs = new_attrs;
+            wrapping = row.wrapped();
         }
 
-        if self.pos.row != final_row || self.pos.col != final_col {
+        if prev_pos != self.pos {
             write!(contents, "{}", crate::term::MoveTo::new(self.pos))
                 .unwrap();
         }

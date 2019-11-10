@@ -153,3 +153,21 @@ fn scrollback() {
     assert_eq!(parser.scroll_pos(), 7);
     assert_eq!(parser.screen().contents(), "10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30\n31\n32\n33");
 }
+
+#[test]
+fn edge_of_screen() {
+    let mut parser = vt100::Parser::new(24, 80, 0);
+    let screen = parser.screen().clone();
+
+    parser.process(b"\x1b[31m\x1b[24;75Hfooba\x08r\x08\x1b[1@a");
+    assert_eq!(parser.screen().cursor_position(), (23, 79));
+    assert_eq!(parser.screen().contents(), "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n                                                                          foobar");
+    assert_eq!(
+        parser.screen().contents_formatted(),
+        &b"\x1b[?25h\x1b[m\x1b[H\x1b[J\x1b[24;75H\x1b[31mfoobar\x1b[24;80H"[..]
+    );
+    assert_eq!(
+        parser.screen().contents_diff(&screen),
+        b"\x1b[24;75H\x1b[31mfoobar\x1b[24;80H"
+    );
+}

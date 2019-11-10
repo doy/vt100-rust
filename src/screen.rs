@@ -207,12 +207,16 @@ impl Screen {
         start: u16,
         width: u16,
     ) -> impl Iterator<Item = Vec<u8>> + '_ {
-        self.grid().visible_rows().map(move |row| {
+        self.grid().visible_rows().enumerate().map(move |(i, row)| {
+            let i = i.try_into().unwrap();
             let mut contents = vec![];
             row.write_contents_formatted(
                 &mut contents,
                 start,
                 width,
+                i,
+                false,
+                crate::grid::Pos { row: i, col: start },
                 crate::attrs::Attrs::default(),
             );
             contents
@@ -263,14 +267,18 @@ impl Screen {
         self.grid()
             .visible_rows()
             .zip(prev.grid().visible_rows())
-            .map(move |(row, prev_row)| {
+            .enumerate()
+            .map(move |(i, (row, prev_row))| {
+                let i = i.try_into().unwrap();
                 let mut contents = vec![];
                 row.write_contents_diff(
                     &mut contents,
                     prev_row,
-                    |_| (),
                     start,
                     width,
+                    i,
+                    false,
+                    crate::grid::Pos { row: i, col: start },
                     crate::attrs::Attrs::default(),
                 );
                 contents
