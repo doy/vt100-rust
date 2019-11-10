@@ -112,14 +112,6 @@ impl Screen {
         }
     }
 
-    pub fn scrollback(&self) -> usize {
-        self.grid().scrollback()
-    }
-
-    pub fn set_scrollback(&mut self, rows: usize) {
-        self.grid_mut().set_scrollback(rows);
-    }
-
     /// Resizes the terminal.
     pub fn set_size(&mut self, rows: u16, cols: u16) {
         self.grid.set_size(crate::grid::Size { rows, cols });
@@ -133,6 +125,29 @@ impl Screen {
     pub fn size(&self) -> (u16, u16) {
         let size = self.grid().size();
         (size.rows, size.cols)
+    }
+
+    /// Returns the current position in the scrollback.
+    ///
+    /// This position indicates the offset from the top of the screen, and is
+    /// `0` when the normal screen is in view.
+    pub fn scrollback(&self) -> usize {
+        self.grid().scrollback()
+    }
+
+    /// Scrolls to the given position in the scrollback.
+    ///
+    /// This position indicates the offset from the top of the screen, and
+    /// should be `0` to put the normal screen in view.
+    ///
+    /// This affects the return values of methods called on `parser.screen()`:
+    /// for instance, `parser.screen().cell(0, 0)` will return the top left
+    /// corner of the screen after taking the scrollback offset into account.
+    /// It does not affect `parser.process()` at all.
+    ///
+    /// The value given will be clamped to the actual size of the scrollback.
+    pub fn set_scrollback(&mut self, rows: usize) {
+        self.grid_mut().set_scrollback(rows);
     }
 
     /// Returns the text contents of the terminal.

@@ -6,7 +6,8 @@ pub struct Parser {
 }
 
 impl Parser {
-    /// Creates a new terminal parser of the given size.
+    /// Creates a new terminal parser of the given size and with the given
+    /// amount of scrollback.
     pub fn new(rows: u16, cols: u16, scrollback_len: usize) -> Self {
         Self {
             parser: vte::Parser::new(),
