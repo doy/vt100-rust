@@ -34,14 +34,6 @@ impl Grid {
         }
     }
 
-    pub fn scrollback(&self) -> usize {
-        self.scrollback_offset
-    }
-
-    pub fn set_scrollback(&mut self, rows: usize) {
-        self.scrollback_offset = rows.min(self.scrollback.len());
-    }
-
     fn new_row(&self) -> crate::row::Row {
         crate::row::Row::new(self.size.cols)
     }
@@ -164,6 +156,14 @@ impl Grid {
 
     pub fn scrollback_len(&self) -> usize {
         self.scrollback_len
+    }
+
+    pub fn scrollback(&self) -> usize {
+        self.scrollback_offset
+    }
+
+    pub fn set_scrollback(&mut self, rows: usize) {
+        self.scrollback_offset = rows.min(self.scrollback.len());
     }
 
     pub fn write_contents(&self, contents: &mut String) {
