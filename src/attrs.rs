@@ -95,7 +95,8 @@ impl Attrs {
         other: &Self,
     ) {
         if self != other && self == &Self::default() {
-            write!(contents, "{}", crate::term::ClearAttrs::new()).unwrap();
+            write!(contents, "{}", crate::term::ClearAttrs::default())
+                .unwrap();
             return;
         }
 

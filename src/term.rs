@@ -3,12 +3,6 @@
 #[derive(Default, Debug)]
 pub struct ClearScreen;
 
-impl ClearScreen {
-    pub fn new() -> Self {
-        Self::default()
-    }
-}
-
 impl std::fmt::Display for ClearScreen {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str("\x1b[H\x1b[J")
@@ -17,12 +11,6 @@ impl std::fmt::Display for ClearScreen {
 
 #[derive(Default, Debug)]
 pub struct CRLF;
-
-impl CRLF {
-    pub fn new() -> Self {
-        Self::default()
-    }
-}
 
 impl std::fmt::Display for CRLF {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -57,12 +45,6 @@ impl std::fmt::Display for MoveTo {
 
 #[derive(Default, Debug)]
 pub struct ClearAttrs;
-
-impl ClearAttrs {
-    pub fn new() -> Self {
-        Self::default()
-    }
-}
 
 impl std::fmt::Display for ClearAttrs {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

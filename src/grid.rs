@@ -186,8 +186,8 @@ impl Grid {
         write!(
             contents,
             "{}{}",
-            crate::term::ClearAttrs::new(),
-            crate::term::ClearScreen::new()
+            crate::term::ClearAttrs::default(),
+            crate::term::ClearScreen::default()
         )
         .unwrap();
 
