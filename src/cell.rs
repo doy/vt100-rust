@@ -17,7 +17,7 @@ impl PartialEq<Cell> for Cell {
         if self.len != other.len {
             return false;
         }
-        let len = self.len as usize;
+        let len = self.len();
         if len > 0 {
             if self.attrs != other.attrs {
                 return false;
@@ -32,18 +32,31 @@ impl PartialEq<Cell> for Cell {
 }
 
 impl Cell {
+    #[inline]
+    fn len(&self) -> usize {
+        (self.len & 0x0f) as usize
+    }
+
+    fn set_len(&mut self, len: u8) {
+        self.len = (self.len & 0x80) | (len & 0x0f);
+    }
+
     pub(crate) fn set(&mut self, c: char, a: crate::attrs::Attrs) {
         self.contents[0] = c;
-        self.len = 1;
+        self.set_len(1);
+        // strings in this context should always be an arbitrary character
+        // followed by zero or more zero-width characters, so we should only
+        // have to look at the first character
+        self.set_wide(c.width().unwrap_or(0) > 1);
         self.attrs = a;
     }
 
     pub(crate) fn append(&mut self, c: char) {
-        if self.len as usize >= CODEPOINTS_IN_CELL {
+        if self.len() >= CODEPOINTS_IN_CELL {
             return;
         }
 
-        self.contents[self.len as usize] = c;
+        self.contents[self.len()] = c;
         self.len += 1;
 
         // some fonts have combined characters but can't render combining
@@ -62,7 +75,7 @@ impl Cell {
             .contents
             .iter()
             .copied()
-            .take(self.len as usize)
+            .take(self.len())
             .nfc()
             .take(CODEPOINTS_IN_CELL)
         {
@@ -70,7 +83,8 @@ impl Cell {
             new_len += 1;
         }
         self.contents = new_contents;
-        self.len = new_len;
+        self.set_len(new_len);
+        self.set_wide(new_contents[0].width().unwrap_or(0) > 1);
     }
 
     pub(crate) fn clear(&mut self, bgcolor: crate::attrs::Color) {
@@ -85,10 +99,7 @@ impl Cell {
     /// used, but will contain at most one character with a non-zero character
     /// width.
     pub fn contents(&self) -> String {
-        self.contents
-            .iter()
-            .take(self.len as usize)
-            .collect::<String>()
+        self.contents.iter().take(self.len()).collect::<String>()
     }
 
     /// Returns whether the cell contains any text data.
@@ -98,13 +109,14 @@ impl Cell {
 
     /// Returns whether the text data in the cell represents a wide character.
     pub fn is_wide(&self) -> bool {
-        // strings in this context should always be an arbitrary character
-        // followed by zero or more zero-width characters, so we should only
-        // have to look at the first character
-        if self.len == 0 {
-            false
+        self.len & 0x80 == 0x80
+    }
+
+    fn set_wide(&mut self, wide: bool) {
+        if wide {
+            self.len |= 0x80;
         } else {
-            self.contents[0].width().unwrap_or(0) > 1
+            self.len &= 0x7f;
         }
     }
 
