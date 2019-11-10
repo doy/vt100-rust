@@ -105,16 +105,14 @@ impl Row {
         width: u16,
         row: u16,
         wrapping: bool,
-        pos: crate::grid::Pos,
-        attrs: crate::attrs::Attrs,
+        mut prev_pos: crate::grid::Pos,
+        mut prev_attrs: crate::attrs::Attrs,
     ) -> (crate::grid::Pos, crate::attrs::Attrs) {
         let mut prev_was_wide = false;
-        let mut prev_pos = pos;
-        let mut prev_attrs = attrs;
 
-        let mut new_pos = crate::grid::Pos { row, col: start };
-        for cell in self
+        for (col, cell) in self
             .cells()
+            .enumerate()
             .skip(start as usize)
             .take(width.min(self.content_width(start, true)) as usize)
         {
@@ -122,51 +120,48 @@ impl Row {
                 prev_was_wide = false;
                 continue;
             }
-
             prev_was_wide = cell.is_wide();
 
-            let has_contents = cell.has_contents();
-            if !has_contents && cell.bgcolor() == crate::attrs::Color::Default
+            let pos = crate::grid::Pos {
+                row,
+                col: col.try_into().unwrap(),
+            };
+            if cell.has_contents()
+                || cell.bgcolor() != crate::attrs::Color::Default
             {
-                new_pos.col += 1;
-            } else {
-                if new_pos != prev_pos {
-                    if new_pos.row == prev_pos.row + 1 {
+                if pos != prev_pos {
+                    if pos.row == prev_pos.row + 1 {
                         if !wrapping
                             || prev_pos.col != self.cols()
-                            || new_pos.col != 0
+                            || pos.col != 0
                         {
                             write!(
                                 contents,
                                 "{}{}",
                                 crate::term::CRLF::default(),
-                                crate::term::MoveRight::new(new_pos.col)
+                                crate::term::MoveRight::new(pos.col)
                             )
                             .unwrap();
                         }
-                    } else if prev_pos.row == new_pos.row {
+                    } else if prev_pos.row == pos.row {
                         write!(
                             contents,
                             "{}",
                             crate::term::MoveRight::new(
-                                new_pos.col - prev_pos.col
+                                pos.col - prev_pos.col
                             )
                         )
                         .unwrap();
                     } else {
-                        write!(
-                            contents,
-                            "{}",
-                            crate::term::MoveTo::new(new_pos)
-                        )
-                        .unwrap();
+                        write!(contents, "{}", crate::term::MoveTo::new(pos))
+                            .unwrap();
                     }
-                    prev_pos = new_pos;
+                    prev_pos = pos;
                 }
 
                 let attrs = cell.attrs();
 
-                if has_contents {
+                if cell.has_contents() {
                     if &prev_attrs != attrs {
                         attrs.write_escape_code_diff(contents, &prev_attrs);
                         prev_attrs = *attrs;
@@ -176,9 +171,7 @@ impl Row {
                     // reason
                     // write!(contents, "{}", cell.contents()).unwrap();
                     contents.extend(cell.contents().as_bytes());
-                    let width = if prev_was_wide { 2 } else { 1 };
-                    prev_pos.col += width;
-                    new_pos.col += width;
+                    prev_pos.col += if cell.is_wide() { 2 } else { 1 };
                 } else {
                     if prev_attrs.bgcolor != attrs.bgcolor {
                         attrs.write_escape_code_diff(contents, &prev_attrs);
@@ -191,7 +184,6 @@ impl Row {
                         crate::term::EraseChar::default(),
                     )
                     .unwrap();
-                    new_pos.col += 1;
                 }
             }
         }
@@ -207,17 +199,15 @@ impl Row {
         width: u16,
         row: u16,
         wrapping: bool,
-        pos: crate::grid::Pos,
-        attrs: crate::attrs::Attrs,
+        mut prev_pos: crate::grid::Pos,
+        mut prev_attrs: crate::attrs::Attrs,
     ) -> (crate::grid::Pos, crate::attrs::Attrs) {
         let mut prev_was_wide = false;
-        let mut prev_pos = pos;
-        let mut prev_attrs = attrs;
 
-        let mut new_pos = crate::grid::Pos { row, col: start };
-        for (cell, prev_cell) in self
+        for (col, (cell, prev_cell)) in self
             .cells()
             .zip(prev.cells())
+            .enumerate()
             .skip(start as usize)
             .take(width as usize)
         {
@@ -225,46 +215,43 @@ impl Row {
                 prev_was_wide = false;
                 continue;
             }
-
             prev_was_wide = cell.is_wide();
 
-            if cell == prev_cell {
-                new_pos.col += if prev_was_wide { 2 } else { 1 };
-            } else {
-                if new_pos != prev_pos {
-                    if new_pos.row == prev_pos.row + 1 {
+            let pos = crate::grid::Pos {
+                row,
+                col: col.try_into().unwrap(),
+            };
+            if cell != prev_cell {
+                if pos != prev_pos {
+                    if pos.row == prev_pos.row + 1 {
                         if !wrapping
                             || prev_pos.col != self.cols()
-                            || new_pos.col != 0
+                            || pos.col != 0
                         {
                             write!(
                                 contents,
                                 "{}{}",
                                 crate::term::CRLF::default(),
-                                crate::term::MoveRight::new(new_pos.col)
+                                crate::term::MoveRight::new(pos.col)
                             )
                             .unwrap();
                         }
-                    } else if prev_pos.row == new_pos.row
-                        && prev_pos.col < new_pos.col
+                    } else if prev_pos.row == pos.row
+                        && prev_pos.col < pos.col
                     {
                         write!(
                             contents,
                             "{}",
                             crate::term::MoveRight::new(
-                                new_pos.col - prev_pos.col
+                                pos.col - prev_pos.col
                             )
                         )
                         .unwrap();
                     } else {
-                        write!(
-                            contents,
-                            "{}",
-                            crate::term::MoveTo::new(new_pos)
-                        )
-                        .unwrap();
+                        write!(contents, "{}", crate::term::MoveTo::new(pos))
+                            .unwrap();
                     }
-                    prev_pos = new_pos;
+                    prev_pos = pos;
                 }
 
                 let attrs = cell.attrs();
@@ -279,9 +266,7 @@ impl Row {
                     // reason
                     // write!(contents, "{}", cell.contents()).unwrap();
                     contents.extend(cell.contents().as_bytes());
-                    let width = if prev_was_wide { 2 } else { 1 };
-                    prev_pos.col += width;
-                    new_pos.col += width;
+                    prev_pos.col += if cell.is_wide() { 2 } else { 1 };
                 } else {
                     if prev_attrs.bgcolor != attrs.bgcolor {
                         attrs.write_escape_code_diff(contents, &prev_attrs);
@@ -294,7 +279,6 @@ impl Row {
                         crate::term::EraseChar::default(),
                     )
                     .unwrap();
-                    new_pos.col += 1;
                 }
             }
         }
