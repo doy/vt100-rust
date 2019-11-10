@@ -5,6 +5,8 @@
 ### Added
 
 * Scrollback support.
+* `Default` impl for `Parser` which creates an 80x24 terminal with no
+  scrollback.
 
 ### Changed
 

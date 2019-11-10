@@ -1,6 +1,6 @@
 #[test]
 fn bel() {
-    let mut parser = vt100::Parser::new(24, 80, 0);
+    let mut parser = vt100::Parser::default();
 
     assert!(!parser.screen_mut().check_audible_bell());
 
@@ -11,7 +11,7 @@ fn bel() {
 
 #[test]
 fn bs() {
-    let mut parser = vt100::Parser::new(24, 80, 0);
+    let mut parser = vt100::Parser::default();
 
     parser.process(b"foo\x08\x08aa");
     assert_eq!(parser.screen().cell(0, 0).unwrap().contents(), "f");
@@ -33,7 +33,7 @@ fn bs() {
 
 #[test]
 fn tab() {
-    let mut parser = vt100::Parser::new(24, 80, 0);
+    let mut parser = vt100::Parser::default();
 
     parser.process(b"foo\tbar");
     assert_eq!(parser.screen().cell(0, 0).unwrap().contents(), "f");
@@ -52,7 +52,7 @@ fn tab() {
 }
 
 fn lf_with(b: u8) {
-    let mut parser = vt100::Parser::new(24, 80, 0);
+    let mut parser = vt100::Parser::default();
 
     parser.process(b"foo");
     parser.process(&[b]);
@@ -88,7 +88,7 @@ fn ff() {
 
 #[test]
 fn cr() {
-    let mut parser = vt100::Parser::new(24, 80, 0);
+    let mut parser = vt100::Parser::default();
 
     parser.process(b"fooo\rbar");
     assert_eq!(parser.screen().cell(0, 0).unwrap().contents(), "b");

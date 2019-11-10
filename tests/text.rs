@@ -2,7 +2,7 @@
 
 #[test]
 fn ascii() {
-    let mut parser = vt100::Parser::new(24, 80, 0);
+    let mut parser = vt100::Parser::default();
     parser.process(b"foo");
     assert_eq!(parser.screen().cell(0, 0).unwrap().contents(), "f");
     assert_eq!(parser.screen().cell(0, 1).unwrap().contents(), "o");
@@ -14,7 +14,7 @@ fn ascii() {
 
 #[test]
 fn utf8() {
-    let mut parser = vt100::Parser::new(24, 80, 0);
+    let mut parser = vt100::Parser::default();
     parser.process("café".as_bytes());
     assert_eq!(parser.screen().cell(0, 0).unwrap().contents(), "c");
     assert_eq!(parser.screen().cell(0, 1).unwrap().contents(), "a");
@@ -27,7 +27,7 @@ fn utf8() {
 
 #[test]
 fn newlines() {
-    let mut parser = vt100::Parser::new(24, 80, 0);
+    let mut parser = vt100::Parser::default();
     parser.process(b"f\r\noo\r\nood");
     assert_eq!(parser.screen().cell(0, 0).unwrap().contents(), "f");
     assert_eq!(parser.screen().cell(0, 1).unwrap().contents(), "");
@@ -45,7 +45,7 @@ fn newlines() {
 
 #[test]
 fn wide() {
-    let mut parser = vt100::Parser::new(24, 80, 0);
+    let mut parser = vt100::Parser::default();
     let screen = parser.screen().clone();
     parser.process("aデbネ".as_bytes());
     assert_eq!(parser.screen().cell(0, 0).unwrap().contents(), "a");
@@ -132,7 +132,7 @@ fn wide() {
 
 #[test]
 fn combining() {
-    let mut parser = vt100::Parser::new(24, 80, 0);
+    let mut parser = vt100::Parser::default();
     parser.process(b"a");
     assert_eq!(parser.screen().cell(0, 0).unwrap().contents(), "a");
     parser.process("\u{0301}".as_bytes());
@@ -158,7 +158,7 @@ fn combining() {
 
 #[test]
 fn wrap() {
-    let mut parser = vt100::Parser::new(24, 80, 0);
+    let mut parser = vt100::Parser::default();
     parser.process(b"0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789");
     assert_eq!(parser.screen().contents(), "0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789");
     parser.process(b"\x1b[5H01234567890123456789012345678901234567890123456789012345678901234567890123456789");

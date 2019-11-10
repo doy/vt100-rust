@@ -1,6 +1,6 @@
 #[test]
 fn title() {
-    let mut parser = vt100::Parser::new(24, 80, 0);
+    let mut parser = vt100::Parser::default();
     assert_eq!(parser.screen().title(), "");
     assert_eq!(parser.screen().icon_name(), "");
     parser.process(b"\x1b]2;it's a title\x07");
@@ -13,7 +13,7 @@ fn title() {
 
 #[test]
 fn icon_name() {
-    let mut parser = vt100::Parser::new(24, 80, 0);
+    let mut parser = vt100::Parser::default();
     assert_eq!(parser.screen().title(), "");
     assert_eq!(parser.screen().icon_name(), "");
     parser.process(b"\x1b]1;it's an icon name\x07");
@@ -26,7 +26,7 @@ fn icon_name() {
 
 #[test]
 fn title_icon_name() {
-    let mut parser = vt100::Parser::new(24, 80, 0);
+    let mut parser = vt100::Parser::default();
     assert_eq!(parser.screen().title(), "");
     assert_eq!(parser.screen().icon_name(), "");
     parser.process(b"\x1b]0;it's both\x07");
@@ -39,7 +39,7 @@ fn title_icon_name() {
 
 #[test]
 fn unknown_sequence() {
-    let mut parser = vt100::Parser::new(24, 80, 0);
+    let mut parser = vt100::Parser::default();
     assert_eq!(parser.screen().cell(0, 0).unwrap().contents(), "");
     parser.process(b"\x1b]499;some long, long string?\x07");
     assert_eq!(parser.screen().cell(0, 0).unwrap().contents(), "");

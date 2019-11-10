@@ -2,7 +2,7 @@ use std::io::Read as _;
 
 #[test]
 fn formatted() {
-    let mut parser = vt100::Parser::new(24, 80, 0);
+    let mut parser = vt100::Parser::default();
     compare_formatted(parser.screen());
     assert_eq!(
         parser.screen().contents_formatted(),
@@ -65,7 +65,7 @@ fn formatted() {
 
 #[test]
 fn empty_cells() {
-    let mut parser = vt100::Parser::new(24, 80, 0);
+    let mut parser = vt100::Parser::default();
     parser.process(b"\x1b[5C\x1b[32m bar\x1b[H\x1b[31mfoo");
     compare_formatted(parser.screen());
     assert_eq!(parser.screen().contents(), "foo   bar");
@@ -77,7 +77,7 @@ fn empty_cells() {
 
 #[test]
 fn cursor_positioning() {
-    let mut parser = vt100::Parser::new(24, 80, 0);
+    let mut parser = vt100::Parser::default();
     let screen1 = parser.screen().clone();
 
     parser.process(b":\x1b[K");
@@ -109,7 +109,7 @@ fn cursor_positioning() {
 
 #[test]
 fn rows() {
-    let mut parser = vt100::Parser::new(24, 80, 0);
+    let mut parser = vt100::Parser::default();
     let screen1 = parser.screen().clone();
     assert_eq!(
         screen1.rows(0, 80).collect::<Vec<String>>(),
@@ -413,7 +413,7 @@ fn rows() {
 
 #[test]
 fn diff() {
-    let mut parser = vt100::Parser::new(24, 80, 0);
+    let mut parser = vt100::Parser::default();
     let screen1 = parser.screen().clone();
     parser.process(b"\x1b[5C\x1b[32m bar");
     let screen2 = parser.screen().clone();
@@ -452,7 +452,7 @@ fn diff_crawl_full() {
 }
 
 fn diff_crawl(i: usize) {
-    let mut parser = vt100::Parser::new(24, 80, 0);
+    let mut parser = vt100::Parser::default();
     let screens: Vec<_> = (1..=i)
         .map(|i| {
             let mut file =

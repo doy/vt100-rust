@@ -12,7 +12,7 @@ fn read_frames() -> impl Iterator<Item = Vec<u8>> {
 }
 
 fn process_frames(frames: &[Vec<u8>]) {
-    let mut parser = vt100::Parser::new(24, 80, 0);
+    let mut parser = vt100::Parser::default();
     for frame in frames {
         parser.process(&frame);
     }

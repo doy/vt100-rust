@@ -38,3 +38,9 @@ impl Parser {
         &mut self.screen
     }
 }
+
+impl Default for Parser {
+    fn default() -> Self {
+        Self::new(24, 80, 0)
+    }
+}

@@ -2,7 +2,7 @@
 
 #[test]
 fn modes() {
-    let mut parser = vt100::Parser::new(24, 80, 0);
+    let mut parser = vt100::Parser::default();
     assert!(!parser.screen().application_keypad());
     assert!(!parser.screen().application_cursor());
     assert!(!parser.screen().hide_cursor());
@@ -319,7 +319,7 @@ fn modes() {
 
 #[test]
 fn alternate_buffer() {
-    let mut parser = vt100::Parser::new(24, 80, 0);
+    let mut parser = vt100::Parser::default();
 
     // 47
 
