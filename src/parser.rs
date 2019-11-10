@@ -40,6 +40,7 @@ impl Parser {
 }
 
 impl Default for Parser {
+    /// Returns a parser with dimensions 80x24 and no scrollback.
     fn default() -> Self {
         Self::new(24, 80, 0)
     }
