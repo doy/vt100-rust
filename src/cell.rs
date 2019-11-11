@@ -37,13 +37,9 @@ impl Cell {
         (self.len & 0x0f) as usize
     }
 
-    fn set_len(&mut self, len: u8) {
-        self.len = (self.len & 0x80) | (len & 0x0f);
-    }
-
     pub(crate) fn set(&mut self, c: char, a: crate::attrs::Attrs) {
         self.contents[0] = c;
-        self.set_len(1);
+        self.len = 1;
         // strings in this context should always be an arbitrary character
         // followed by zero or more zero-width characters, so we should only
         // have to look at the first character
@@ -83,7 +79,7 @@ impl Cell {
             new_len += 1;
         }
         self.contents = new_contents;
-        self.set_len(new_len);
+        self.len = new_len;
         self.set_wide(new_contents[0].width().unwrap_or(0) > 1);
     }
 
