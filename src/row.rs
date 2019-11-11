@@ -19,9 +19,9 @@ impl Row {
         self.cells.len().try_into().unwrap()
     }
 
-    pub fn clear(&mut self, bgcolor: crate::attrs::Color) {
+    pub fn clear(&mut self, attrs: crate::attrs::Attrs) {
         for cell in &mut self.cells {
-            cell.clear(bgcolor);
+            cell.clear(attrs);
         }
         self.wrapped = false;
     }
@@ -147,21 +147,15 @@ impl Row {
                 }
 
                 let attrs = cell.attrs();
+                if &prev_attrs != attrs {
+                    attrs.write_escape_code_diff(contents, &prev_attrs);
+                    prev_attrs = *attrs;
+                }
 
                 if cell.has_contents() {
-                    if &prev_attrs != attrs {
-                        attrs.write_escape_code_diff(contents, &prev_attrs);
-                        prev_attrs = *attrs;
-                    }
-
                     contents.extend(cell.contents().as_bytes());
                     prev_pos.col += if cell.is_wide() { 2 } else { 1 };
                 } else {
-                    if prev_attrs.bgcolor != attrs.bgcolor {
-                        attrs.write_escape_code_diff(contents, &prev_attrs);
-                        prev_attrs = *attrs;
-                    }
-
                     crate::term::EraseChar::default().write_buf(contents);
                 }
             }
@@ -223,21 +217,15 @@ impl Row {
                 }
 
                 let attrs = cell.attrs();
+                if &prev_attrs != attrs {
+                    attrs.write_escape_code_diff(contents, &prev_attrs);
+                    prev_attrs = *attrs;
+                }
 
                 if cell.has_contents() {
-                    if &prev_attrs != attrs {
-                        attrs.write_escape_code_diff(contents, &prev_attrs);
-                        prev_attrs = *attrs;
-                    }
-
                     contents.extend(cell.contents().as_bytes());
                     prev_pos.col += if cell.is_wide() { 2 } else { 1 };
                 } else {
-                    if prev_attrs.bgcolor != attrs.bgcolor {
-                        attrs.write_escape_code_diff(contents, &prev_attrs);
-                        prev_attrs = *attrs;
-                    }
-
                     crate::term::EraseChar::default().write_buf(contents);
                 }
             }

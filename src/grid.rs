@@ -41,7 +41,7 @@ impl Grid {
         self.pos = Pos::default();
         self.saved_pos = Pos::default();
         for row in self.drawing_rows_mut() {
-            row.clear(crate::attrs::Color::Default);
+            row.clear(crate::attrs::Attrs::default());
         }
         self.scroll_top = 0;
         self.scroll_bottom = self.size.rows - 1;
@@ -245,48 +245,48 @@ impl Grid {
         prev_attrs
     }
 
-    pub fn erase_all(&mut self, bgcolor: crate::attrs::Color) {
+    pub fn erase_all(&mut self, attrs: crate::attrs::Attrs) {
         for row in self.drawing_rows_mut() {
-            row.clear(bgcolor);
+            row.clear(attrs);
         }
     }
 
-    pub fn erase_all_forward(&mut self, bgcolor: crate::attrs::Color) {
+    pub fn erase_all_forward(&mut self, attrs: crate::attrs::Attrs) {
         let pos = self.pos;
         for row in self.drawing_rows_mut().skip(pos.row as usize + 1) {
-            row.clear(bgcolor);
+            row.clear(attrs);
         }
 
-        self.erase_row_forward(bgcolor);
+        self.erase_row_forward(attrs);
     }
 
-    pub fn erase_all_backward(&mut self, bgcolor: crate::attrs::Color) {
+    pub fn erase_all_backward(&mut self, attrs: crate::attrs::Attrs) {
         let pos = self.pos;
         for row in self.drawing_rows_mut().take(pos.row as usize) {
-            row.clear(bgcolor);
+            row.clear(attrs);
         }
 
-        self.erase_row_backward(bgcolor);
+        self.erase_row_backward(attrs);
     }
 
-    pub fn erase_row(&mut self, bgcolor: crate::attrs::Color) {
-        self.current_row_mut().clear(bgcolor);
+    pub fn erase_row(&mut self, attrs: crate::attrs::Attrs) {
+        self.current_row_mut().clear(attrs);
     }
 
-    pub fn erase_row_forward(&mut self, bgcolor: crate::attrs::Color) {
+    pub fn erase_row_forward(&mut self, attrs: crate::attrs::Attrs) {
         let pos = self.pos;
         let row = self.current_row_mut();
         row.wrap(false);
         for cell in row.cells_mut().skip(pos.col as usize) {
-            cell.clear(bgcolor);
+            cell.clear(attrs);
         }
     }
 
-    pub fn erase_row_backward(&mut self, bgcolor: crate::attrs::Color) {
+    pub fn erase_row_backward(&mut self, attrs: crate::attrs::Attrs) {
         let pos = self.pos;
         let row = self.current_row_mut();
         for cell in row.cells_mut().take(pos.col as usize + 1) {
-            cell.clear(bgcolor);
+            cell.clear(attrs);
         }
     }
 
@@ -310,13 +310,13 @@ impl Grid {
         row.resize(size.cols as usize, crate::cell::Cell::default());
     }
 
-    pub fn erase_cells(&mut self, count: u16, bgcolor: crate::attrs::Color) {
+    pub fn erase_cells(&mut self, count: u16, attrs: crate::attrs::Attrs) {
         let pos = self.pos;
         let row = self.current_row_mut();
         for cell in
             row.cells_mut().skip(pos.col as usize).take(count as usize)
         {
-            cell.clear(bgcolor);
+            cell.clear(attrs);
         }
     }
 

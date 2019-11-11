@@ -17,16 +17,10 @@ impl PartialEq<Cell> for Cell {
         if self.len != other.len {
             return false;
         }
-        let len = self.len();
-        if len > 0 {
-            if self.attrs != other.attrs {
-                return false;
-            }
-        } else {
-            if self.attrs.bgcolor != other.attrs.bgcolor {
-                return false;
-            }
+        if self.attrs != other.attrs {
+            return false;
         }
+        let len = self.len();
         self.contents[..len] == other.contents[..len]
     }
 }
@@ -83,10 +77,9 @@ impl Cell {
         self.set_wide(new_contents[0].width().unwrap_or(0) > 1);
     }
 
-    pub(crate) fn clear(&mut self, bgcolor: crate::attrs::Color) {
+    pub(crate) fn clear(&mut self, attrs: crate::attrs::Attrs) {
         self.len = 0;
-        self.attrs.clear();
-        self.attrs.bgcolor = bgcolor;
+        self.attrs = attrs;
     }
 
     /// Returns the text contents of the cell.

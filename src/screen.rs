@@ -464,7 +464,7 @@ impl Screen {
     fn text(&mut self, c: char) {
         let pos = self.grid().pos();
         if pos.col > 0 {
-            let bgcolor = self.attrs.bgcolor;
+            let attrs = self.attrs;
             let prev_cell = self
                 .drawing_cell_mut(crate::grid::Pos {
                     row: pos.row,
@@ -472,7 +472,7 @@ impl Screen {
                 })
                 .unwrap();
             if prev_cell.is_wide() {
-                prev_cell.clear(bgcolor);
+                prev_cell.clear(attrs);
             }
         }
 
@@ -512,9 +512,9 @@ impl Screen {
             cell.set(c, attrs);
             self.grid_mut().col_inc(1);
             if width > 1 {
-                let bgcolor = self.attrs.bgcolor;
+                let attrs = self.attrs;
                 let next_cell = self.current_cell_mut();
-                next_cell.clear(bgcolor);
+                next_cell.clear(attrs);
                 self.grid_mut().col_inc(1);
             }
         }
@@ -638,11 +638,11 @@ impl Screen {
 
     // CSI J
     fn ed(&mut self, mode: u16) {
-        let bgcolor = self.attrs.bgcolor;
+        let attrs = self.attrs;
         match mode {
-            0 => self.grid_mut().erase_all_forward(bgcolor),
-            1 => self.grid_mut().erase_all_backward(bgcolor),
-            2 => self.grid_mut().erase_all(bgcolor),
+            0 => self.grid_mut().erase_all_forward(attrs),
+            1 => self.grid_mut().erase_all_backward(attrs),
+            2 => self.grid_mut().erase_all(attrs),
             _ => {}
         }
     }
@@ -654,11 +654,11 @@ impl Screen {
 
     // CSI K
     fn el(&mut self, mode: u16) {
-        let bgcolor = self.attrs.bgcolor;
+        let attrs = self.attrs;
         match mode {
-            0 => self.grid_mut().erase_row_forward(bgcolor),
-            1 => self.grid_mut().erase_row_backward(bgcolor),
-            2 => self.grid_mut().erase_row(bgcolor),
+            0 => self.grid_mut().erase_row_forward(attrs),
+            1 => self.grid_mut().erase_row_backward(attrs),
+            2 => self.grid_mut().erase_row(attrs),
             _ => {}
         }
     }
@@ -695,8 +695,8 @@ impl Screen {
 
     // CSI X
     fn ech(&mut self, count: u16) {
-        let bgcolor = self.attrs.bgcolor;
-        self.grid_mut().erase_cells(count, bgcolor);
+        let attrs = self.attrs;
+        self.grid_mut().erase_cells(count, attrs);
     }
 
     // CSI d

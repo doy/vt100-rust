@@ -171,6 +171,30 @@ fn colors() {
         parser.screen().cell(0, 1).unwrap().bgcolor(),
         vt100::Color::Idx(15)
     );
+
+    // make sure bgcolor is properly preserved on cleared cells
+    parser.process(b"\x1bcfoo");
+
+    assert_eq!(
+        parser.screen().cell(0, 1).unwrap().bgcolor(),
+        vt100::Color::Default
+    );
+    parser.process(b"\x1b[1;2H\x1b[41mo\x1b[m");
+    assert_eq!(
+        parser.screen().cell(0, 1).unwrap().bgcolor(),
+        vt100::Color::Idx(1)
+    );
+
+    assert_eq!(
+        parser.screen().cell(0, 0).unwrap().bgcolor(),
+        vt100::Color::Default
+    );
+    parser.process(b"\x1b[1;1H\x1b[41m\x1b[X\x1b[m");
+    assert_eq!(
+        parser.screen().cell(0, 0).unwrap().bgcolor(),
+        vt100::Color::Idx(1)
+    );
+    assert!(!parser.screen().cell(0, 0).unwrap().has_contents());
 }
 
 #[test]
@@ -222,4 +246,24 @@ fn attrs() {
     assert!(parser.screen().cell(0, 3).unwrap().italic());
     assert!(parser.screen().cell(0, 3).unwrap().underline());
     assert!(parser.screen().cell(0, 3).unwrap().inverse());
+
+    // alacritty renders underline and inverse status for empty cells, so make
+    // sure we reflect that here (so that we generate diffs correctly and
+    // such). unclear who is right here - other terminals don't do this, but
+    // terminals do generally render bgcolor for empty cells, which feels
+    // similar.
+    parser.process(b"\x1bcfoo");
+
+    assert!(!parser.screen().cell(0, 1).unwrap().underline());
+    assert!(!parser.screen().cell(0, 1).unwrap().inverse());
+    parser.process(b"\x1b[1;2H\x1b[4;7mo\x1b[m");
+    assert!(parser.screen().cell(0, 1).unwrap().underline());
+    assert!(parser.screen().cell(0, 1).unwrap().inverse());
+
+    assert!(!parser.screen().cell(0, 0).unwrap().underline());
+    assert!(!parser.screen().cell(0, 0).unwrap().inverse());
+    parser.process(b"\x1b[1;1H\x1b[4;7m\x1b[X\x1b[m");
+    assert!(parser.screen().cell(0, 0).unwrap().underline());
+    assert!(parser.screen().cell(0, 0).unwrap().inverse());
+    assert!(!parser.screen().cell(0, 0).unwrap().has_contents());
 }
