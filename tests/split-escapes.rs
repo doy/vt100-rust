@@ -1,3 +1,5 @@
+#![allow(clippy::cognitive_complexity)]
+
 use std::io::Read as _;
 
 fn get_file_contents(name: &str) -> Vec<u8> {

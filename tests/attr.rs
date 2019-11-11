@@ -1,3 +1,5 @@
+#![allow(clippy::cognitive_complexity)]
+
 #[test]
 fn colors() {
     let mut parser = vt100::Parser::default();
