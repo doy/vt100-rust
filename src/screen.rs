@@ -527,7 +527,6 @@ impl Screen {
     }
 
     fn bs(&mut self) {
-        // XXX is this correct? is backwards wrapping a thing?
         self.grid_mut().col_dec(1);
     }
 
