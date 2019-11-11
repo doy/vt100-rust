@@ -107,6 +107,7 @@ impl Row {
         mut prev_attrs: crate::attrs::Attrs,
     ) -> (crate::grid::Pos, crate::attrs::Attrs) {
         let mut prev_was_wide = false;
+        let default_cell = crate::cell::Cell::default();
 
         for (col, cell) in self
             .cells()
@@ -124,9 +125,7 @@ impl Row {
                 row,
                 col: col.try_into().unwrap(),
             };
-            if cell.has_contents()
-                || cell.bgcolor() != crate::attrs::Color::Default
-            {
+            if cell != &default_cell {
                 if pos != prev_pos {
                     if pos.row == prev_pos.row + 1 {
                         if !wrapping
