@@ -204,9 +204,7 @@ impl Grid {
             wrapping = row.wrapped();
         }
 
-        if prev_pos != self.pos {
-            crate::term::MoveTo::new(self.pos).write_buf(contents);
-        }
+        crate::term::MoveFromTo::new(prev_pos, self.pos).write_buf(contents);
 
         prev_attrs
     }
@@ -238,9 +236,7 @@ impl Grid {
             wrapping = row.wrapped();
         }
 
-        if prev_pos != self.pos {
-            crate::term::MoveTo::new(self.pos).write_buf(contents);
-        }
+        crate::term::MoveFromTo::new(prev_pos, self.pos).write_buf(contents);
 
         prev_attrs
     }

@@ -314,7 +314,7 @@ impl BufWrite for MoveFromTo {
         {
             crate::term::MoveRight::new(self.to.col - self.from.col)
                 .write_buf(buf);
-        } else {
+        } else if self.to != self.from {
             crate::term::MoveTo::new(self.to).write_buf(buf);
         }
     }
