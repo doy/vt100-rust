@@ -221,12 +221,12 @@ impl Row {
     }
 
     fn content_width(&self, start: u16, formatting: bool) -> u16 {
+        let default_attrs = crate::attrs::Attrs::default();
         for (col, cell) in
             self.cells.iter().skip(start as usize).enumerate().rev()
         {
             if cell.has_contents()
-                || (formatting
-                    && cell.bgcolor() != crate::attrs::Color::Default)
+                || (formatting && cell.attrs() != &default_attrs)
             {
                 let width: u16 = col.try_into().unwrap();
                 return width + 1;
