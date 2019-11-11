@@ -163,6 +163,9 @@ impl Row {
         (prev_pos, prev_attrs)
     }
 
+    // while it's true that most of the logic in this is identical to
+    // write_contents_formatted, i can't figure out how to break out the
+    // common parts without making things noticeably slower.
     pub fn write_contents_diff(
         &self,
         contents: &mut Vec<u8>,
