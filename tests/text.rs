@@ -100,7 +100,7 @@ fn wide() {
     );
     assert_eq!(
         parser.screen().contents_diff(&screen),
-        "\x1b[Hデcネfo\x1b[Cbar\x1b[X".as_bytes()
+        "\x1b[Hデcネfo\x1b[Cbar\x1b[K".as_bytes()
     );
 
     let screen = parser.screen().clone();
@@ -126,7 +126,7 @@ fn wide() {
     );
     assert_eq!(
         parser.screen().contents_diff(&screen),
-        "\x1b[Hデcネfo\x1b[Cbar\x1b[X".as_bytes()
+        "\x1b[Hデcネfo\x1b[Cbar\x1b[K".as_bytes()
     );
 }
 

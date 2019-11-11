@@ -106,7 +106,7 @@ fn cursor_positioning() {
         parser.screen().contents_formatted(),
         b"\x1b[?25h\x1b[m\x1b[H\x1b[J:"
     );
-    assert_eq!(parser.screen().contents_diff(&screen3), b"\x1b[1;2H\x1b[X");
+    assert_eq!(parser.screen().contents_diff(&screen3), b"\x1b[1;2H\x1b[K");
 }
 
 #[test]

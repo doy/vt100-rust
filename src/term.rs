@@ -14,6 +14,15 @@ impl BufWrite for ClearScreen {
 }
 
 #[derive(Default, Debug)]
+pub struct ClearRowForward;
+
+impl BufWrite for ClearRowForward {
+    fn write_buf(&self, buf: &mut Vec<u8>) {
+        buf.extend_from_slice(b"\x1b[K");
+    }
+}
+
+#[derive(Default, Debug)]
 pub struct CRLF;
 
 impl BufWrite for CRLF {
@@ -251,6 +260,12 @@ impl BufWrite for MoveRight {
 #[derive(Debug)]
 pub struct EraseChar {
     count: u16,
+}
+
+impl EraseChar {
+    pub fn new(count: u16) -> Self {
+        Self { count }
+    }
 }
 
 impl Default for EraseChar {

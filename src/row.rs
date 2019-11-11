@@ -115,6 +115,7 @@ impl Row {
         let mut prev_was_wide = false;
         let default_cell = crate::cell::Cell::default();
 
+        let mut erase: Option<(u16, &crate::attrs::Attrs)> = None;
         for (col, cell) in self
             .cells()
             .enumerate()
@@ -131,32 +132,60 @@ impl Row {
                 row,
                 col: col.try_into().unwrap(),
             };
-            if cell != &default_cell {
-                if pos != prev_pos {
-                    if !wrapping
-                        || prev_pos.row + 1 != pos.row
-                        || prev_pos.col != self.cols()
-                        || pos.col != 0
-                    {
-                        crate::term::MoveFromTo::new(prev_pos, pos)
-                            .write_buf(contents);
+
+            if let Some((prev_col, attrs)) = erase {
+                if cell.has_contents() || cell.attrs() != attrs {
+                    let new_pos = crate::grid::Pos { row, col: prev_col };
+                    crate::term::MoveFromTo::new(prev_pos, new_pos)
+                        .write_buf(contents);
+                    prev_pos = new_pos;
+                    if &prev_attrs != attrs {
+                        attrs.write_escape_code_diff(contents, &prev_attrs);
+                        prev_attrs = *attrs;
                     }
-                    prev_pos = pos;
-                }
-
-                let attrs = cell.attrs();
-                if &prev_attrs != attrs {
-                    attrs.write_escape_code_diff(contents, &prev_attrs);
-                    prev_attrs = *attrs;
-                }
-
-                if cell.has_contents() {
-                    contents.extend(cell.contents().as_bytes());
-                    prev_pos.col += if cell.is_wide() { 2 } else { 1 };
-                } else {
-                    crate::term::EraseChar::default().write_buf(contents);
+                    crate::term::EraseChar::new(pos.col - prev_col)
+                        .write_buf(contents);
+                    erase = None;
                 }
             }
+
+            if cell != &default_cell {
+                let attrs = cell.attrs();
+                if cell.has_contents() {
+                    if pos != prev_pos {
+                        if !wrapping
+                            || prev_pos.row + 1 != pos.row
+                            || prev_pos.col != self.cols()
+                            || pos.col != 0
+                        {
+                            crate::term::MoveFromTo::new(prev_pos, pos)
+                                .write_buf(contents);
+                        }
+                        prev_pos = pos;
+                    }
+
+                    if &prev_attrs != attrs {
+                        attrs.write_escape_code_diff(contents, &prev_attrs);
+                        prev_attrs = *attrs;
+                    }
+
+                    contents.extend(cell.contents().as_bytes());
+                    prev_pos.col += if cell.is_wide() { 2 } else { 1 };
+                } else if erase.is_none() {
+                    erase = Some((pos.col, attrs));
+                }
+            }
+        }
+        if let Some((prev_col, attrs)) = erase {
+            let new_pos = crate::grid::Pos { row, col: prev_col };
+            crate::term::MoveFromTo::new(prev_pos, new_pos)
+                .write_buf(contents);
+            prev_pos = new_pos;
+            if &prev_attrs != attrs {
+                attrs.write_escape_code_diff(contents, &prev_attrs);
+                prev_attrs = *attrs;
+            }
+            crate::term::ClearRowForward::default().write_buf(contents);
         }
 
         (prev_pos, prev_attrs)
@@ -178,6 +207,7 @@ impl Row {
     ) -> (crate::grid::Pos, crate::attrs::Attrs) {
         let mut prev_was_wide = false;
 
+        let mut erase: Option<(u16, &crate::attrs::Attrs)> = None;
         for (col, (cell, prev_cell)) in self
             .cells()
             .zip(prev.cells())
@@ -195,32 +225,60 @@ impl Row {
                 row,
                 col: col.try_into().unwrap(),
             };
-            if cell != prev_cell {
-                if pos != prev_pos {
-                    if !wrapping
-                        || prev_pos.row + 1 != pos.row
-                        || prev_pos.col != self.cols()
-                        || pos.col != 0
-                    {
-                        crate::term::MoveFromTo::new(prev_pos, pos)
-                            .write_buf(contents);
+
+            if let Some((prev_col, attrs)) = erase {
+                if cell.has_contents() || cell.attrs() != attrs {
+                    let new_pos = crate::grid::Pos { row, col: prev_col };
+                    crate::term::MoveFromTo::new(prev_pos, new_pos)
+                        .write_buf(contents);
+                    prev_pos = new_pos;
+                    if &prev_attrs != attrs {
+                        attrs.write_escape_code_diff(contents, &prev_attrs);
+                        prev_attrs = *attrs;
                     }
-                    prev_pos = pos;
-                }
-
-                let attrs = cell.attrs();
-                if &prev_attrs != attrs {
-                    attrs.write_escape_code_diff(contents, &prev_attrs);
-                    prev_attrs = *attrs;
-                }
-
-                if cell.has_contents() {
-                    contents.extend(cell.contents().as_bytes());
-                    prev_pos.col += if cell.is_wide() { 2 } else { 1 };
-                } else {
-                    crate::term::EraseChar::default().write_buf(contents);
+                    crate::term::EraseChar::new(pos.col - prev_col)
+                        .write_buf(contents);
+                    erase = None;
                 }
             }
+
+            if cell != prev_cell {
+                let attrs = cell.attrs();
+                if cell.has_contents() {
+                    if pos != prev_pos {
+                        if !wrapping
+                            || prev_pos.row + 1 != pos.row
+                            || prev_pos.col != self.cols()
+                            || pos.col != 0
+                        {
+                            crate::term::MoveFromTo::new(prev_pos, pos)
+                                .write_buf(contents);
+                        }
+                        prev_pos = pos;
+                    }
+
+                    if &prev_attrs != attrs {
+                        attrs.write_escape_code_diff(contents, &prev_attrs);
+                        prev_attrs = *attrs;
+                    }
+
+                    contents.extend(cell.contents().as_bytes());
+                    prev_pos.col += if cell.is_wide() { 2 } else { 1 };
+                } else if erase.is_none() {
+                    erase = Some((pos.col, attrs));
+                }
+            }
+        }
+        if let Some((prev_col, attrs)) = erase {
+            let new_pos = crate::grid::Pos { row, col: prev_col };
+            crate::term::MoveFromTo::new(prev_pos, new_pos)
+                .write_buf(contents);
+            prev_pos = new_pos;
+            if &prev_attrs != attrs {
+                attrs.write_escape_code_diff(contents, &prev_attrs);
+                prev_attrs = *attrs;
+            }
+            crate::term::ClearRowForward::default().write_buf(contents);
         }
 
         (prev_pos, prev_attrs)
