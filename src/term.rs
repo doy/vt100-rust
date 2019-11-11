@@ -5,6 +5,7 @@ pub trait BufWrite {
 }
 
 #[derive(Default, Debug)]
+#[must_use = "this struct does nothing unless you call write_buf"]
 pub struct ClearScreen;
 
 impl BufWrite for ClearScreen {
@@ -14,6 +15,7 @@ impl BufWrite for ClearScreen {
 }
 
 #[derive(Default, Debug)]
+#[must_use = "this struct does nothing unless you call write_buf"]
 pub struct ClearRowForward;
 
 impl BufWrite for ClearRowForward {
@@ -23,6 +25,7 @@ impl BufWrite for ClearRowForward {
 }
 
 #[derive(Default, Debug)]
+#[must_use = "this struct does nothing unless you call write_buf"]
 pub struct CRLF;
 
 impl BufWrite for CRLF {
@@ -32,6 +35,7 @@ impl BufWrite for CRLF {
 }
 
 #[derive(Default, Debug)]
+#[must_use = "this struct does nothing unless you call write_buf"]
 pub struct MoveTo {
     row: u16,
     col: u16,
@@ -61,6 +65,7 @@ impl BufWrite for MoveTo {
 }
 
 #[derive(Default, Debug)]
+#[must_use = "this struct does nothing unless you call write_buf"]
 pub struct ClearAttrs;
 
 impl BufWrite for ClearAttrs {
@@ -70,6 +75,7 @@ impl BufWrite for ClearAttrs {
 }
 
 #[derive(Default, Debug)]
+#[must_use = "this struct does nothing unless you call write_buf"]
 pub struct Attrs {
     fgcolor: Option<crate::attrs::Color>,
     bgcolor: Option<crate::attrs::Color>,
@@ -227,6 +233,7 @@ impl BufWrite for Attrs {
 }
 
 #[derive(Debug)]
+#[must_use = "this struct does nothing unless you call write_buf"]
 pub struct MoveRight {
     count: u16,
 }
@@ -258,6 +265,7 @@ impl BufWrite for MoveRight {
 }
 
 #[derive(Debug)]
+#[must_use = "this struct does nothing unless you call write_buf"]
 pub struct EraseChar {
     count: u16,
 }
@@ -289,6 +297,7 @@ impl BufWrite for EraseChar {
 }
 
 #[derive(Default, Debug)]
+#[must_use = "this struct does nothing unless you call write_buf"]
 pub struct HideCursor {
     hide: bool,
 }
@@ -310,6 +319,7 @@ impl BufWrite for HideCursor {
 }
 
 #[derive(Debug)]
+#[must_use = "this struct does nothing unless you call write_buf"]
 pub struct MoveFromTo {
     from: crate::grid::Pos,
     to: crate::grid::Pos,
