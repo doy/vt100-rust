@@ -76,23 +76,29 @@ impl Row {
     ) {
         let mut prev_was_wide = false;
 
-        for cell in self
+        let mut prev_col = start;
+        for (col, cell) in self
             .cells()
+            .enumerate()
             .skip(start as usize)
-            .take(width.min(self.content_width(start, false)) as usize)
+            .take(width as usize)
         {
             if prev_was_wide {
                 prev_was_wide = false;
                 continue;
             }
-
-            if cell.has_contents() {
-                contents.push_str(&cell.contents());
-            } else {
-                contents.push(' ');
-            }
-
             prev_was_wide = cell.is_wide();
+
+            let col: u16 = col.try_into().unwrap();
+            if cell.has_contents() {
+                for _ in 0..(col - prev_col) {
+                    contents.push(' ');
+                }
+                prev_col += col - prev_col;
+
+                contents.push_str(&cell.contents());
+                prev_col += if cell.is_wide() { 2 } else { 1 };
+            }
         }
     }
 
@@ -113,7 +119,7 @@ impl Row {
             .cells()
             .enumerate()
             .skip(start as usize)
-            .take(width.min(self.content_width(start, true)) as usize)
+            .take(width as usize)
         {
             if prev_was_wide {
                 prev_was_wide = false;
@@ -218,20 +224,5 @@ impl Row {
         }
 
         (prev_pos, prev_attrs)
-    }
-
-    fn content_width(&self, start: u16, formatting: bool) -> u16 {
-        let default_attrs = crate::attrs::Attrs::default();
-        for (col, cell) in
-            self.cells.iter().skip(start as usize).enumerate().rev()
-        {
-            if cell.has_contents()
-                || (formatting && cell.attrs() != &default_attrs)
-            {
-                let width: u16 = col.try_into().unwrap();
-                return width + 1;
-            }
-        }
-        0
     }
 }
