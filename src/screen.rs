@@ -1,5 +1,5 @@
+use crate::term::BufWrite as _;
 use std::convert::TryInto as _;
-use std::io::Write as _;
 use unicode_width::UnicodeWidthChar as _;
 
 const DEFAULT_MULTI_PARAMS: &[i64] = &[0];
@@ -198,12 +198,7 @@ impl Screen {
     }
 
     fn write_contents_formatted(&self, contents: &mut Vec<u8>) {
-        write!(
-            contents,
-            "{}",
-            crate::term::HideCursor::new(self.hide_cursor())
-        )
-        .unwrap();
+        crate::term::HideCursor::new(self.hide_cursor()).write_buf(contents);
         let prev_attrs = self.grid().write_contents_formatted(contents);
         self.attrs.write_escape_code_diff(contents, &prev_attrs);
     }
@@ -256,12 +251,8 @@ impl Screen {
 
     fn write_contents_diff(&self, contents: &mut Vec<u8>, prev: &Self) {
         if self.hide_cursor() != prev.hide_cursor() {
-            write!(
-                contents,
-                "{}",
-                crate::term::HideCursor::new(self.hide_cursor())
-            )
-            .unwrap();
+            crate::term::HideCursor::new(self.hide_cursor())
+                .write_buf(contents);
         }
         let prev_attrs = self.grid().write_contents_diff(
             contents,

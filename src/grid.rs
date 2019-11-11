@@ -1,6 +1,5 @@
+use crate::term::BufWrite as _;
 use std::convert::TryInto as _;
-use std::fmt::Write as _;
-use std::io::Write as _;
 
 #[derive(Clone, Debug)]
 pub struct Grid {
@@ -170,7 +169,7 @@ impl Grid {
         for row in self.visible_rows() {
             row.write_contents(contents, 0, self.size.cols);
             if !row.wrapped() {
-                writeln!(contents).unwrap();
+                contents.push_str("\n");
             }
         }
 
@@ -183,13 +182,8 @@ impl Grid {
         &self,
         contents: &mut Vec<u8>,
     ) -> crate::attrs::Attrs {
-        write!(
-            contents,
-            "{}{}",
-            crate::term::ClearAttrs::default(),
-            crate::term::ClearScreen::default()
-        )
-        .unwrap();
+        crate::term::ClearAttrs::default().write_buf(contents);
+        crate::term::ClearScreen::default().write_buf(contents);
 
         let mut prev_attrs = crate::attrs::Attrs::default();
         let mut prev_pos = Pos::default();
@@ -211,8 +205,7 @@ impl Grid {
         }
 
         if prev_pos != self.pos {
-            write!(contents, "{}", crate::term::MoveTo::new(self.pos))
-                .unwrap();
+            crate::term::MoveTo::new(self.pos).write_buf(contents);
         }
 
         prev_attrs
@@ -246,8 +239,7 @@ impl Grid {
         }
 
         if prev_pos != self.pos {
-            write!(contents, "{}", crate::term::MoveTo::new(self.pos))
-                .unwrap();
+            crate::term::MoveTo::new(self.pos).write_buf(contents);
         }
 
         prev_attrs

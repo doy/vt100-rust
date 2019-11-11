@@ -1,20 +1,24 @@
 // TODO: read all of this from terminfo
 
+pub trait BufWrite {
+    fn write_buf(&self, buf: &mut Vec<u8>);
+}
+
 #[derive(Default, Debug)]
 pub struct ClearScreen;
 
-impl std::fmt::Display for ClearScreen {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str("\x1b[H\x1b[J")
+impl BufWrite for ClearScreen {
+    fn write_buf(&self, buf: &mut Vec<u8>) {
+        buf.extend_from_slice(b"\x1b[H\x1b[J");
     }
 }
 
 #[derive(Default, Debug)]
 pub struct CRLF;
 
-impl std::fmt::Display for CRLF {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str("\r\n")
+impl BufWrite for CRLF {
+    fn write_buf(&self, buf: &mut Vec<u8>) {
+        buf.extend_from_slice(b"\r\n");
     }
 }
 
@@ -33,12 +37,16 @@ impl MoveTo {
     }
 }
 
-impl std::fmt::Display for MoveTo {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl BufWrite for MoveTo {
+    fn write_buf(&self, buf: &mut Vec<u8>) {
         if self.row == 0 && self.col == 0 {
-            f.write_str("\x1b[H")
+            buf.extend_from_slice(b"\x1b[H");
         } else {
-            write!(f, "\x1b[{};{}H", self.row + 1, self.col + 1)
+            buf.extend_from_slice(b"\x1b[");
+            itoa::write(&mut *buf, self.row + 1).unwrap();
+            buf.push(b';');
+            itoa::write(&mut *buf, self.col + 1).unwrap();
+            buf.push(b'H');
         }
     }
 }
@@ -46,9 +54,9 @@ impl std::fmt::Display for MoveTo {
 #[derive(Default, Debug)]
 pub struct ClearAttrs;
 
-impl std::fmt::Display for ClearAttrs {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str("\x1b[m")
+impl BufWrite for ClearAttrs {
+    fn write_buf(&self, buf: &mut Vec<u8>) {
+        buf.extend_from_slice(b"\x1b[m")
     }
 }
 
@@ -94,13 +102,9 @@ impl Attrs {
     }
 }
 
-impl std::fmt::Display for Attrs {
-    #[allow(
-        unused_assignments,
-        clippy::cognitive_complexity,
-        clippy::too_many_lines
-    )]
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl BufWrite for Attrs {
+    #[allow(unused_assignments, clippy::cognitive_complexity)]
+    fn write_buf(&self, buf: &mut Vec<u8>) {
         if self.fgcolor.is_none()
             && self.bgcolor.is_none()
             && self.bold.is_none()
@@ -108,10 +112,10 @@ impl std::fmt::Display for Attrs {
             && self.underline.is_none()
             && self.inverse.is_none()
         {
-            return Ok(());
+            return;
         }
 
-        f.write_str("\x1b[")?;
+        buf.extend_from_slice(b"\x1b[");
         let mut first = true;
 
         macro_rules! write_param {
@@ -119,9 +123,9 @@ impl std::fmt::Display for Attrs {
                 if first {
                     first = false;
                 } else {
-                    f.write_str(";")?;
+                    buf.push(b';');
                 }
-                write!(f, "{}", $i)?;
+                itoa::write(&mut *buf, $i).unwrap();
             };
         }
 
@@ -209,8 +213,7 @@ impl std::fmt::Display for Attrs {
             }
         }
 
-        f.write_str("m")?;
-        Ok(())
+        buf.push(b'm');
     }
 }
 
@@ -231,12 +234,16 @@ impl Default for MoveRight {
     }
 }
 
-impl std::fmt::Display for MoveRight {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl BufWrite for MoveRight {
+    fn write_buf(&self, buf: &mut Vec<u8>) {
         match self.count {
-            0 => Ok(()),
-            1 => f.write_str("\x1b[C"),
-            n => write!(f, "\x1b[{}C", n),
+            0 => {}
+            1 => buf.extend_from_slice(b"\x1b[C"),
+            n => {
+                buf.extend_from_slice(b"\x1b[");
+                itoa::write(&mut *buf, n).unwrap();
+                buf.push(b'C');
+            }
         }
     }
 }
@@ -252,12 +259,16 @@ impl Default for EraseChar {
     }
 }
 
-impl std::fmt::Display for EraseChar {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl BufWrite for EraseChar {
+    fn write_buf(&self, buf: &mut Vec<u8>) {
         match self.count {
-            0 => Ok(()),
-            1 => f.write_str("\x1b[X"),
-            n => write!(f, "\x1b[{}X", n),
+            0 => {}
+            1 => buf.extend_from_slice(b"\x1b[X"),
+            n => {
+                buf.extend_from_slice(b"\x1b[");
+                itoa::write(&mut *buf, n).unwrap();
+                buf.push(b'X');
+            }
         }
     }
 }
@@ -273,12 +284,12 @@ impl HideCursor {
     }
 }
 
-impl std::fmt::Display for HideCursor {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl BufWrite for HideCursor {
+    fn write_buf(&self, buf: &mut Vec<u8>) {
         if self.hide {
-            f.write_str("\x1b[?25l")
+            buf.extend_from_slice(b"\x1b[?25l")
         } else {
-            f.write_str("\x1b[?25h")
+            buf.extend_from_slice(b"\x1b[?25h")
         }
     }
 }

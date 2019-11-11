@@ -1,4 +1,4 @@
-use std::io::Write as _;
+use crate::term::BufWrite as _;
 
 /// Represents a foreground or background color for cells.
 #[derive(Eq, PartialEq, Debug, Copy, Clone)]
@@ -95,8 +95,7 @@ impl Attrs {
         other: &Self,
     ) {
         if self != other && self == &Self::default() {
-            write!(contents, "{}", crate::term::ClearAttrs::default())
-                .unwrap();
+            crate::term::ClearAttrs::default().write_buf(contents);
             return;
         }
 
@@ -133,6 +132,6 @@ impl Attrs {
             attrs.inverse(self.inverse())
         };
 
-        write!(contents, "{}", attrs).unwrap();
+        attrs.write_buf(contents);
     }
 }

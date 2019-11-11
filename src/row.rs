@@ -1,5 +1,5 @@
+use crate::term::BufWrite as _;
 use std::convert::TryInto as _;
-use std::io::Write as _;
 
 #[derive(Clone, Debug)]
 pub struct Row {
@@ -87,8 +87,6 @@ impl Row {
             }
 
             if cell.has_contents() {
-                // using write! here is significantly slower, for some reason
-                // write!(contents, "{}", cell.contents()).unwrap();
                 contents.push_str(&cell.contents());
             } else {
                 contents.push(' ');
@@ -135,26 +133,15 @@ impl Row {
                             || prev_pos.col != self.cols()
                             || pos.col != 0
                         {
-                            write!(
-                                contents,
-                                "{}{}",
-                                crate::term::CRLF::default(),
-                                crate::term::MoveRight::new(pos.col)
-                            )
-                            .unwrap();
+                            crate::term::CRLF::default().write_buf(contents);
+                            crate::term::MoveRight::new(pos.col)
+                                .write_buf(contents);
                         }
                     } else if prev_pos.row == pos.row {
-                        write!(
-                            contents,
-                            "{}",
-                            crate::term::MoveRight::new(
-                                pos.col - prev_pos.col
-                            )
-                        )
-                        .unwrap();
+                        crate::term::MoveRight::new(pos.col - prev_pos.col)
+                            .write_buf(contents);
                     } else {
-                        write!(contents, "{}", crate::term::MoveTo::new(pos))
-                            .unwrap();
+                        crate::term::MoveTo::new(pos).write_buf(contents);
                     }
                     prev_pos = pos;
                 }
@@ -167,9 +154,6 @@ impl Row {
                         prev_attrs = *attrs;
                     }
 
-                    // using write! here is significantly slower, for some
-                    // reason
-                    // write!(contents, "{}", cell.contents()).unwrap();
                     contents.extend(cell.contents().as_bytes());
                     prev_pos.col += if cell.is_wide() { 2 } else { 1 };
                 } else {
@@ -178,12 +162,7 @@ impl Row {
                         prev_attrs = *attrs;
                     }
 
-                    write!(
-                        contents,
-                        "{}",
-                        crate::term::EraseChar::default(),
-                    )
-                    .unwrap();
+                    crate::term::EraseChar::default().write_buf(contents);
                 }
             }
         }
@@ -228,28 +207,17 @@ impl Row {
                             || prev_pos.col != self.cols()
                             || pos.col != 0
                         {
-                            write!(
-                                contents,
-                                "{}{}",
-                                crate::term::CRLF::default(),
-                                crate::term::MoveRight::new(pos.col)
-                            )
-                            .unwrap();
+                            crate::term::CRLF::default().write_buf(contents);
+                            crate::term::MoveRight::new(pos.col)
+                                .write_buf(contents);
                         }
                     } else if prev_pos.row == pos.row
                         && prev_pos.col < pos.col
                     {
-                        write!(
-                            contents,
-                            "{}",
-                            crate::term::MoveRight::new(
-                                pos.col - prev_pos.col
-                            )
-                        )
-                        .unwrap();
+                        crate::term::MoveRight::new(pos.col - prev_pos.col)
+                            .write_buf(contents);
                     } else {
-                        write!(contents, "{}", crate::term::MoveTo::new(pos))
-                            .unwrap();
+                        crate::term::MoveTo::new(pos).write_buf(contents);
                     }
                     prev_pos = pos;
                 }
@@ -262,9 +230,6 @@ impl Row {
                         prev_attrs = *attrs;
                     }
 
-                    // using write! here is significantly slower, for some
-                    // reason
-                    // write!(contents, "{}", cell.contents()).unwrap();
                     contents.extend(cell.contents().as_bytes());
                     prev_pos.col += if cell.is_wide() { 2 } else { 1 };
                 } else {
@@ -273,12 +238,7 @@ impl Row {
                         prev_attrs = *attrs;
                     }
 
-                    write!(
-                        contents,
-                        "{}",
-                        crate::term::EraseChar::default(),
-                    )
-                    .unwrap();
+                    crate::term::EraseChar::default().write_buf(contents);
                 }
             }
         }

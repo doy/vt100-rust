@@ -13,6 +13,7 @@ categories = ["command-line-interface", "encoding"]
 license = "MIT"
 
 [dependencies]
+itoa = "0.4"
 enumset = "0.4"
 log = "0.4"
 unicode-normalization = "0.1"
