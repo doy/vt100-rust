@@ -1,5 +1,3 @@
-#![allow(clippy::cognitive_complexity)]
-
 #[test]
 fn split_escape_sequences() {
     let mut parser = vt100::Parser::default();

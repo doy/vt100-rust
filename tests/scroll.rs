@@ -70,7 +70,6 @@ fn origin_mode() {
     assert_eq!(parser.screen().cursor_position(), (4, 0));
 }
 
-#[allow(clippy::cognitive_complexity)]
 #[test]
 fn scrollback() {
     let mut parser = vt100::Parser::new(24, 80, 10);

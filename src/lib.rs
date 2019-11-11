@@ -37,6 +37,7 @@
 // #![warn(clippy::cargo)]
 #![warn(clippy::pedantic)]
 #![warn(clippy::nursery)]
+#![allow(clippy::cognitive_complexity)]
 #![allow(clippy::missing_const_for_fn)]
 #![allow(clippy::single_match)]
 #![allow(clippy::too_many_arguments)]

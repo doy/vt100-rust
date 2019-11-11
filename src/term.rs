@@ -103,7 +103,7 @@ impl Attrs {
 }
 
 impl BufWrite for Attrs {
-    #[allow(unused_assignments, clippy::cognitive_complexity)]
+    #[allow(unused_assignments)]
     fn write_buf(&self, buf: &mut Vec<u8>) {
         if self.fgcolor.is_none()
             && self.bgcolor.is_none()
