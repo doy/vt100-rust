@@ -293,3 +293,29 @@ impl BufWrite for HideCursor {
         }
     }
 }
+
+#[derive(Debug)]
+pub struct MoveFromTo {
+    from: crate::grid::Pos,
+    to: crate::grid::Pos,
+}
+
+impl MoveFromTo {
+    pub fn new(from: crate::grid::Pos, to: crate::grid::Pos) -> Self {
+        Self { from, to }
+    }
+}
+
+impl BufWrite for MoveFromTo {
+    fn write_buf(&self, buf: &mut Vec<u8>) {
+        if self.to.row == self.from.row + 1 && self.to.col == 0 {
+            crate::term::CRLF::default().write_buf(buf);
+        } else if self.from.row == self.to.row && self.from.col < self.to.col
+        {
+            crate::term::MoveRight::new(self.to.col - self.from.col)
+                .write_buf(buf);
+        } else {
+            crate::term::MoveTo::new(self.to).write_buf(buf);
+        }
+    }
+}

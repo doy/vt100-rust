@@ -127,20 +127,13 @@ impl Row {
             };
             if cell != &default_cell {
                 if pos != prev_pos {
-                    if pos.row == prev_pos.row + 1 {
-                        if !wrapping
-                            || prev_pos.col != self.cols()
-                            || pos.col != 0
-                        {
-                            crate::term::CRLF::default().write_buf(contents);
-                            crate::term::MoveRight::new(pos.col)
-                                .write_buf(contents);
-                        }
-                    } else if prev_pos.row == pos.row {
-                        crate::term::MoveRight::new(pos.col - prev_pos.col)
+                    if !wrapping
+                        || prev_pos.row + 1 != pos.row
+                        || prev_pos.col != self.cols()
+                        || pos.col != 0
+                    {
+                        crate::term::MoveFromTo::new(prev_pos, pos)
                             .write_buf(contents);
-                    } else {
-                        crate::term::MoveTo::new(pos).write_buf(contents);
                     }
                     prev_pos = pos;
                 }
@@ -198,22 +191,13 @@ impl Row {
             };
             if cell != prev_cell {
                 if pos != prev_pos {
-                    if pos.row == prev_pos.row + 1 {
-                        if !wrapping
-                            || prev_pos.col != self.cols()
-                            || pos.col != 0
-                        {
-                            crate::term::CRLF::default().write_buf(contents);
-                            crate::term::MoveRight::new(pos.col)
-                                .write_buf(contents);
-                        }
-                    } else if prev_pos.row == pos.row
-                        && prev_pos.col < pos.col
+                    if !wrapping
+                        || prev_pos.row + 1 != pos.row
+                        || prev_pos.col != self.cols()
+                        || pos.col != 0
                     {
-                        crate::term::MoveRight::new(pos.col - prev_pos.col)
+                        crate::term::MoveFromTo::new(prev_pos, pos)
                             .write_buf(contents);
-                    } else {
-                        crate::term::MoveTo::new(pos).write_buf(contents);
                     }
                     prev_pos = pos;
                 }
