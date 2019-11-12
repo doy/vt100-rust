@@ -60,7 +60,15 @@ impl Grid {
             }
         }
 
+        if self.scroll_bottom == self.size.rows - 1 {
+            self.scroll_bottom = size.rows - 1;
+        }
+
         self.size = size;
+        for row in &mut self.rows {
+            row.resize(size.cols as usize, crate::cell::Cell::default());
+        }
+        self.rows.resize(size.rows as usize, self.new_row());
 
         if self.scroll_bottom >= size.rows {
             self.scroll_bottom = size.rows - 1;

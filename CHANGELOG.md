@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+* `Screen::set_size` now actually resizes when requested (previously the
+  underlying storage was not being resized, leading to panics when writing
+  outside of the original screen).
+
 ## [0.5.0] - 2019-11-12
 
 ### Added
