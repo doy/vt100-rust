@@ -443,6 +443,27 @@ fn diff_basic() {
 }
 
 #[test]
+fn diff_erase() {
+    let mut parser = vt100::Parser::default();
+
+    let screen = parser.screen().clone();
+    parser.process(b"foo\x1b[5;5Hbar");
+    assert_eq!(parser.screen().contents_diff(&screen), b"foo\x1b[5;5Hbar");
+
+    let screen = parser.screen().clone();
+    parser.process(b"\x1b[3D\x1b[2X");
+    assert_eq!(parser.screen().contents_diff(&screen), b"\x1b[5;5H\x1b[2X");
+
+    let screen = parser.screen().clone();
+    parser.process(b"\x1bcfoo\x1b[5;5Hbar");
+    assert_eq!(parser.screen().contents_diff(&screen), b"ba\x1b[C");
+
+    let screen = parser.screen().clone();
+    parser.process(b"\x1b[3D\x1b[3X");
+    assert_eq!(parser.screen().contents_diff(&screen), b"\x1b[5;5H\x1b[K");
+}
+
+#[test]
 fn diff_crawl_short() {
     diff_crawl(500);
 }
