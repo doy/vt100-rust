@@ -68,6 +68,10 @@ fn ris() {
         &b"\x1b[?25l\x1b[m\x1b[H\x1b[Jf\x1b[31;47;1;3;4moo\x1b[21;21H\x1b[7m"
             [..]
     );
+    assert_eq!(
+        parser.screen().title_formatted(),
+        &b"\x1b]1;window icon name\x07\x1b]2;window title\x07"[..]
+    );
 
     assert_eq!(parser.screen().title(), "window title");
     assert_eq!(parser.screen().icon_name(), "window icon name");
@@ -96,7 +100,11 @@ fn ris() {
     assert_eq!(parser.screen().contents(), "");
     assert_eq!(
         parser.screen().contents_formatted(),
-        b"\x1b[?25h\x1b[m\x1b[H\x1b[J"
+        &b"\x1b[?25h\x1b[m\x1b[H\x1b[J"[..]
+    );
+    assert_eq!(
+        parser.screen().title_formatted(),
+        &b"\x1b]1;window icon name\x07\x1b]2;window title\x07"[..]
     );
 
     // title and icon name don't change with reset
@@ -130,27 +138,32 @@ fn vb() {
     parser.process(b"\x1bg");
     assert_eq!(parser.screen().visual_bell_count(), 1);
     assert_eq!(parser.screen().visual_bell_count(), 1);
-    assert_eq!(parser.screen().contents_diff(&screen), b"\x1bg");
+    assert_eq!(parser.screen().contents_diff(&screen), b"");
+    assert_eq!(parser.screen().bells_diff(&screen), b"\x1bg");
 
     let screen = parser.screen().clone();
     parser.process(b"\x1bg");
     assert_eq!(parser.screen().visual_bell_count(), 2);
-    assert_eq!(parser.screen().contents_diff(&screen), b"\x1bg");
+    assert_eq!(parser.screen().contents_diff(&screen), b"");
+    assert_eq!(parser.screen().bells_diff(&screen), b"\x1bg");
 
     let screen = parser.screen().clone();
     parser.process(b"\x1bg\x1bg\x1bg");
     assert_eq!(parser.screen().visual_bell_count(), 5);
-    assert_eq!(parser.screen().contents_diff(&screen), b"\x1bg");
+    assert_eq!(parser.screen().contents_diff(&screen), b"");
+    assert_eq!(parser.screen().bells_diff(&screen), b"\x1bg");
 
     let screen = parser.screen().clone();
     parser.process(b"foo");
     assert_eq!(parser.screen().visual_bell_count(), 5);
     assert_eq!(parser.screen().contents_diff(&screen), b"foo");
+    assert_eq!(parser.screen().bells_diff(&screen), b"");
 
     let screen = parser.screen().clone();
     parser.process(b"ba\x1bgr");
     assert_eq!(parser.screen().visual_bell_count(), 6);
-    assert_eq!(parser.screen().contents_diff(&screen), b"bar\x1bg");
+    assert_eq!(parser.screen().contents_diff(&screen), b"bar");
+    assert_eq!(parser.screen().bells_diff(&screen), b"\x1bg");
 }
 
 #[test]

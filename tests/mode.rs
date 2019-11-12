@@ -15,7 +15,16 @@ fn modes() {
         parser.screen().mouse_protocol_encoding(),
         vt100::MouseProtocolEncoding::Default
     );
+    assert_eq!(
+        parser.screen().contents_formatted(),
+        b"\x1b[?25h\x1b[m\x1b[H\x1b[J"
+    );
+    assert_eq!(
+        parser.screen().input_mode_formatted(),
+        b"\x1b>\x1b[?1l\x1b[?2004l"
+    );
 
+    let screen = parser.screen().clone();
     parser.process(b"\x1b[?1h");
 
     assert!(!parser.screen().application_keypad());
@@ -30,7 +39,18 @@ fn modes() {
         parser.screen().mouse_protocol_encoding(),
         vt100::MouseProtocolEncoding::Default
     );
+    assert_eq!(
+        parser.screen().contents_formatted(),
+        b"\x1b[?25h\x1b[m\x1b[H\x1b[J"
+    );
+    assert_eq!(parser.screen().contents_diff(&screen), b"");
+    assert_eq!(
+        parser.screen().input_mode_formatted(),
+        b"\x1b>\x1b[?1h\x1b[?2004l"
+    );
+    assert_eq!(parser.screen().input_mode_diff(&screen), b"\x1b[?1h");
 
+    let screen = parser.screen().clone();
     parser.process(b"\x1b[?9h");
 
     assert!(!parser.screen().application_keypad());
@@ -45,7 +65,18 @@ fn modes() {
         parser.screen().mouse_protocol_encoding(),
         vt100::MouseProtocolEncoding::Default
     );
+    assert_eq!(
+        parser.screen().contents_formatted(),
+        b"\x1b[?25h\x1b[m\x1b[H\x1b[J"
+    );
+    assert_eq!(parser.screen().contents_diff(&screen), b"");
+    assert_eq!(
+        parser.screen().input_mode_formatted(),
+        b"\x1b>\x1b[?1h\x1b[?2004l\x1b[?9h"
+    );
+    assert_eq!(parser.screen().input_mode_diff(&screen), b"\x1b[?9h");
 
+    let screen = parser.screen().clone();
     parser.process(b"\x1b[?25l");
 
     assert!(!parser.screen().application_keypad());
@@ -60,7 +91,18 @@ fn modes() {
         parser.screen().mouse_protocol_encoding(),
         vt100::MouseProtocolEncoding::Default
     );
+    assert_eq!(
+        parser.screen().contents_formatted(),
+        b"\x1b[?25l\x1b[m\x1b[H\x1b[J"
+    );
+    assert_eq!(parser.screen().contents_diff(&screen), b"\x1b[?25l");
+    assert_eq!(
+        parser.screen().input_mode_formatted(),
+        b"\x1b>\x1b[?1h\x1b[?2004l\x1b[?9h"
+    );
+    assert_eq!(parser.screen().input_mode_diff(&screen), b"");
 
+    let screen = parser.screen().clone();
     parser.process(b"\x1b[?1000h");
 
     assert!(!parser.screen().application_keypad());
@@ -75,7 +117,18 @@ fn modes() {
         parser.screen().mouse_protocol_encoding(),
         vt100::MouseProtocolEncoding::Default
     );
+    assert_eq!(
+        parser.screen().contents_formatted(),
+        b"\x1b[?25l\x1b[m\x1b[H\x1b[J"
+    );
+    assert_eq!(parser.screen().contents_diff(&screen), b"");
+    assert_eq!(
+        parser.screen().input_mode_formatted(),
+        b"\x1b>\x1b[?1h\x1b[?2004l\x1b[?1000h"
+    );
+    assert_eq!(parser.screen().input_mode_diff(&screen), b"\x1b[?1000h");
 
+    let screen = parser.screen().clone();
     parser.process(b"\x1b[?1002h");
 
     assert!(!parser.screen().application_keypad());
@@ -90,7 +143,18 @@ fn modes() {
         parser.screen().mouse_protocol_encoding(),
         vt100::MouseProtocolEncoding::Default
     );
+    assert_eq!(
+        parser.screen().contents_formatted(),
+        b"\x1b[?25l\x1b[m\x1b[H\x1b[J"
+    );
+    assert_eq!(parser.screen().contents_diff(&screen), b"");
+    assert_eq!(
+        parser.screen().input_mode_formatted(),
+        b"\x1b>\x1b[?1h\x1b[?2004l\x1b[?1002h"
+    );
+    assert_eq!(parser.screen().input_mode_diff(&screen), b"\x1b[?1002h");
 
+    let screen = parser.screen().clone();
     parser.process(b"\x1b[?1003h");
 
     assert!(!parser.screen().application_keypad());
@@ -105,7 +169,18 @@ fn modes() {
         parser.screen().mouse_protocol_encoding(),
         vt100::MouseProtocolEncoding::Default
     );
+    assert_eq!(
+        parser.screen().contents_formatted(),
+        b"\x1b[?25l\x1b[m\x1b[H\x1b[J"
+    );
+    assert_eq!(parser.screen().contents_diff(&screen), b"");
+    assert_eq!(
+        parser.screen().input_mode_formatted(),
+        b"\x1b>\x1b[?1h\x1b[?2004l\x1b[?1003h"
+    );
+    assert_eq!(parser.screen().input_mode_diff(&screen), b"\x1b[?1003h");
 
+    let screen = parser.screen().clone();
     parser.process(b"\x1b[?1005h");
 
     assert!(!parser.screen().application_keypad());
@@ -120,7 +195,18 @@ fn modes() {
         parser.screen().mouse_protocol_encoding(),
         vt100::MouseProtocolEncoding::Utf8
     );
+    assert_eq!(
+        parser.screen().contents_formatted(),
+        b"\x1b[?25l\x1b[m\x1b[H\x1b[J"
+    );
+    assert_eq!(parser.screen().contents_diff(&screen), b"");
+    assert_eq!(
+        parser.screen().input_mode_formatted(),
+        b"\x1b>\x1b[?1h\x1b[?2004l\x1b[?1003h\x1b[?1005h"
+    );
+    assert_eq!(parser.screen().input_mode_diff(&screen), b"\x1b[?1005h");
 
+    let screen = parser.screen().clone();
     parser.process(b"\x1b[?1006h");
 
     assert!(!parser.screen().application_keypad());
@@ -135,7 +221,18 @@ fn modes() {
         parser.screen().mouse_protocol_encoding(),
         vt100::MouseProtocolEncoding::Sgr
     );
+    assert_eq!(
+        parser.screen().contents_formatted(),
+        b"\x1b[?25l\x1b[m\x1b[H\x1b[J"
+    );
+    assert_eq!(parser.screen().contents_diff(&screen), b"");
+    assert_eq!(
+        parser.screen().input_mode_formatted(),
+        b"\x1b>\x1b[?1h\x1b[?2004l\x1b[?1003h\x1b[?1006h"
+    );
+    assert_eq!(parser.screen().input_mode_diff(&screen), b"\x1b[?1006h");
 
+    let screen = parser.screen().clone();
     parser.process(b"\x1b[?2004h");
 
     assert!(!parser.screen().application_keypad());
@@ -150,7 +247,18 @@ fn modes() {
         parser.screen().mouse_protocol_encoding(),
         vt100::MouseProtocolEncoding::Sgr
     );
+    assert_eq!(
+        parser.screen().contents_formatted(),
+        b"\x1b[?25l\x1b[m\x1b[H\x1b[J"
+    );
+    assert_eq!(parser.screen().contents_diff(&screen), b"");
+    assert_eq!(
+        parser.screen().input_mode_formatted(),
+        b"\x1b>\x1b[?1h\x1b[?2004h\x1b[?1003h\x1b[?1006h"
+    );
+    assert_eq!(parser.screen().input_mode_diff(&screen), b"\x1b[?2004h");
 
+    let screen = parser.screen().clone();
     parser.process(b"\x1b=");
 
     assert!(parser.screen().application_keypad());
@@ -165,7 +273,18 @@ fn modes() {
         parser.screen().mouse_protocol_encoding(),
         vt100::MouseProtocolEncoding::Sgr
     );
+    assert_eq!(
+        parser.screen().contents_formatted(),
+        b"\x1b[?25l\x1b[m\x1b[H\x1b[J"
+    );
+    assert_eq!(parser.screen().contents_diff(&screen), b"");
+    assert_eq!(
+        parser.screen().input_mode_formatted(),
+        b"\x1b=\x1b[?1h\x1b[?2004h\x1b[?1003h\x1b[?1006h"
+    );
+    assert_eq!(parser.screen().input_mode_diff(&screen), b"\x1b=");
 
+    let screen = parser.screen().clone();
     parser.process(b"\x1b[?1l");
 
     assert!(parser.screen().application_keypad());
@@ -180,7 +299,18 @@ fn modes() {
         parser.screen().mouse_protocol_encoding(),
         vt100::MouseProtocolEncoding::Sgr
     );
+    assert_eq!(
+        parser.screen().contents_formatted(),
+        b"\x1b[?25l\x1b[m\x1b[H\x1b[J"
+    );
+    assert_eq!(parser.screen().contents_diff(&screen), b"");
+    assert_eq!(
+        parser.screen().input_mode_formatted(),
+        b"\x1b=\x1b[?1l\x1b[?2004h\x1b[?1003h\x1b[?1006h"
+    );
+    assert_eq!(parser.screen().input_mode_diff(&screen), b"\x1b[?1l");
 
+    let screen = parser.screen().clone();
     parser.process(b"\x1b[?9l");
 
     assert!(parser.screen().application_keypad());
@@ -195,7 +325,18 @@ fn modes() {
         parser.screen().mouse_protocol_encoding(),
         vt100::MouseProtocolEncoding::Sgr
     );
+    assert_eq!(
+        parser.screen().contents_formatted(),
+        b"\x1b[?25l\x1b[m\x1b[H\x1b[J"
+    );
+    assert_eq!(parser.screen().contents_diff(&screen), b"");
+    assert_eq!(
+        parser.screen().input_mode_formatted(),
+        b"\x1b=\x1b[?1l\x1b[?2004h\x1b[?1003h\x1b[?1006h"
+    );
+    assert_eq!(parser.screen().input_mode_diff(&screen), b"");
 
+    let screen = parser.screen().clone();
     parser.process(b"\x1b[?25h");
 
     assert!(parser.screen().application_keypad());
@@ -210,7 +351,18 @@ fn modes() {
         parser.screen().mouse_protocol_encoding(),
         vt100::MouseProtocolEncoding::Sgr
     );
+    assert_eq!(
+        parser.screen().contents_formatted(),
+        b"\x1b[?25h\x1b[m\x1b[H\x1b[J"
+    );
+    assert_eq!(parser.screen().contents_diff(&screen), b"\x1b[?25h");
+    assert_eq!(
+        parser.screen().input_mode_formatted(),
+        b"\x1b=\x1b[?1l\x1b[?2004h\x1b[?1003h\x1b[?1006h"
+    );
+    assert_eq!(parser.screen().input_mode_diff(&screen), b"");
 
+    let screen = parser.screen().clone();
     parser.process(b"\x1b[?1000l");
 
     assert!(parser.screen().application_keypad());
@@ -225,7 +377,18 @@ fn modes() {
         parser.screen().mouse_protocol_encoding(),
         vt100::MouseProtocolEncoding::Sgr
     );
+    assert_eq!(
+        parser.screen().contents_formatted(),
+        b"\x1b[?25h\x1b[m\x1b[H\x1b[J"
+    );
+    assert_eq!(parser.screen().contents_diff(&screen), b"");
+    assert_eq!(
+        parser.screen().input_mode_formatted(),
+        b"\x1b=\x1b[?1l\x1b[?2004h\x1b[?1003h\x1b[?1006h"
+    );
+    assert_eq!(parser.screen().input_mode_diff(&screen), b"");
 
+    let screen = parser.screen().clone();
     parser.process(b"\x1b[?1002l");
 
     assert!(parser.screen().application_keypad());
@@ -240,7 +403,18 @@ fn modes() {
         parser.screen().mouse_protocol_encoding(),
         vt100::MouseProtocolEncoding::Sgr
     );
+    assert_eq!(
+        parser.screen().contents_formatted(),
+        b"\x1b[?25h\x1b[m\x1b[H\x1b[J"
+    );
+    assert_eq!(parser.screen().contents_diff(&screen), b"");
+    assert_eq!(
+        parser.screen().input_mode_formatted(),
+        b"\x1b=\x1b[?1l\x1b[?2004h\x1b[?1003h\x1b[?1006h"
+    );
+    assert_eq!(parser.screen().input_mode_diff(&screen), b"");
 
+    let screen = parser.screen().clone();
     parser.process(b"\x1b[?1003l");
 
     assert!(parser.screen().application_keypad());
@@ -255,7 +429,18 @@ fn modes() {
         parser.screen().mouse_protocol_encoding(),
         vt100::MouseProtocolEncoding::Sgr
     );
+    assert_eq!(
+        parser.screen().contents_formatted(),
+        b"\x1b[?25h\x1b[m\x1b[H\x1b[J"
+    );
+    assert_eq!(parser.screen().contents_diff(&screen), b"");
+    assert_eq!(
+        parser.screen().input_mode_formatted(),
+        b"\x1b=\x1b[?1l\x1b[?2004h\x1b[?1006h"
+    );
+    assert_eq!(parser.screen().input_mode_diff(&screen), b"\x1b[?1003l");
 
+    let screen = parser.screen().clone();
     parser.process(b"\x1b[?1005l");
 
     assert!(parser.screen().application_keypad());
@@ -270,7 +455,18 @@ fn modes() {
         parser.screen().mouse_protocol_encoding(),
         vt100::MouseProtocolEncoding::Sgr
     );
+    assert_eq!(
+        parser.screen().contents_formatted(),
+        b"\x1b[?25h\x1b[m\x1b[H\x1b[J"
+    );
+    assert_eq!(parser.screen().contents_diff(&screen), b"");
+    assert_eq!(
+        parser.screen().input_mode_formatted(),
+        b"\x1b=\x1b[?1l\x1b[?2004h\x1b[?1006h"
+    );
+    assert_eq!(parser.screen().input_mode_diff(&screen), b"");
 
+    let screen = parser.screen().clone();
     parser.process(b"\x1b[?1006l");
 
     assert!(parser.screen().application_keypad());
@@ -285,7 +481,18 @@ fn modes() {
         parser.screen().mouse_protocol_encoding(),
         vt100::MouseProtocolEncoding::Default
     );
+    assert_eq!(
+        parser.screen().contents_formatted(),
+        b"\x1b[?25h\x1b[m\x1b[H\x1b[J"
+    );
+    assert_eq!(parser.screen().contents_diff(&screen), b"");
+    assert_eq!(
+        parser.screen().input_mode_formatted(),
+        b"\x1b=\x1b[?1l\x1b[?2004h"
+    );
+    assert_eq!(parser.screen().input_mode_diff(&screen), b"\x1b[?1006l");
 
+    let screen = parser.screen().clone();
     parser.process(b"\x1b[?2004l");
 
     assert!(parser.screen().application_keypad());
@@ -300,7 +507,18 @@ fn modes() {
         parser.screen().mouse_protocol_encoding(),
         vt100::MouseProtocolEncoding::Default
     );
+    assert_eq!(
+        parser.screen().contents_formatted(),
+        b"\x1b[?25h\x1b[m\x1b[H\x1b[J"
+    );
+    assert_eq!(parser.screen().contents_diff(&screen), b"");
+    assert_eq!(
+        parser.screen().input_mode_formatted(),
+        b"\x1b=\x1b[?1l\x1b[?2004l"
+    );
+    assert_eq!(parser.screen().input_mode_diff(&screen), b"\x1b[?2004l");
 
+    let screen = parser.screen().clone();
     parser.process(b"\x1b>");
 
     assert!(!parser.screen().application_keypad());
@@ -315,6 +533,16 @@ fn modes() {
         parser.screen().mouse_protocol_encoding(),
         vt100::MouseProtocolEncoding::Default
     );
+    assert_eq!(
+        parser.screen().contents_formatted(),
+        b"\x1b[?25h\x1b[m\x1b[H\x1b[J"
+    );
+    assert_eq!(parser.screen().contents_diff(&screen), b"");
+    assert_eq!(
+        parser.screen().input_mode_formatted(),
+        b"\x1b>\x1b[?1l\x1b[?2004l"
+    );
+    assert_eq!(parser.screen().input_mode_diff(&screen), b"\x1b>");
 }
 
 #[test]

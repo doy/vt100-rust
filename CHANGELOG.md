@@ -1,5 +1,21 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+* `Screen::input_mode_formatted` and `Screen::input_mode_diff` give escape
+  codes to set the current terminal input modes.
+* `Screen::title_formatted` and `Screen::title_diff` give escape codes to set
+  the terminal window title.
+* `Screen::bells_diff` gives escape codes to trigger any audible or visual
+  bells which have been seen since the previous state.
+
+### Changed
+
+* `Screen::contents_diff` no longer includes audible or visual bells (see
+  `Screen::bells_diff` instead).
+
 ## [0.5.1] - 2019-11-12
 
 ### Fixed

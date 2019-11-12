@@ -299,18 +299,18 @@ impl BufWrite for EraseChar {
 #[derive(Default, Debug)]
 #[must_use = "this struct does nothing unless you call write_buf"]
 pub struct HideCursor {
-    hide: bool,
+    state: bool,
 }
 
 impl HideCursor {
-    pub fn new(hide: bool) -> Self {
-        Self { hide }
+    pub fn new(state: bool) -> Self {
+        Self { state }
     }
 }
 
 impl BufWrite for HideCursor {
     fn write_buf(&self, buf: &mut Vec<u8>) {
-        if self.hide {
+        if self.state {
             buf.extend_from_slice(b"\x1b[?25l")
         } else {
             buf.extend_from_slice(b"\x1b[?25h")
@@ -362,5 +362,217 @@ pub struct VisualBell;
 impl BufWrite for VisualBell {
     fn write_buf(&self, buf: &mut Vec<u8>) {
         buf.extend_from_slice(b"\x1bg");
+    }
+}
+
+#[must_use = "this struct does nothing unless you call write_buf"]
+pub struct ChangeTitle<'a> {
+    icon_name: &'a str,
+    title: &'a str,
+    prev_icon_name: &'a str,
+    prev_title: &'a str,
+}
+
+impl<'a> ChangeTitle<'a> {
+    pub fn new(
+        icon_name: &'a str,
+        title: &'a str,
+        prev_icon_name: &'a str,
+        prev_title: &'a str,
+    ) -> Self {
+        Self {
+            icon_name,
+            title,
+            prev_icon_name,
+            prev_title,
+        }
+    }
+}
+
+impl<'a> BufWrite for ChangeTitle<'a> {
+    fn write_buf(&self, buf: &mut Vec<u8>) {
+        if self.icon_name == self.title
+            && (self.icon_name != self.prev_icon_name
+                || self.title != self.prev_title)
+        {
+            buf.extend_from_slice(b"\x1b]0;");
+            buf.extend_from_slice(self.icon_name.as_bytes());
+            buf.push(b'\x07');
+        } else {
+            if self.icon_name != self.prev_icon_name {
+                buf.extend_from_slice(b"\x1b]1;");
+                buf.extend_from_slice(self.icon_name.as_bytes());
+                buf.push(b'\x07');
+            }
+            if self.title != self.prev_title {
+                buf.extend_from_slice(b"\x1b]2;");
+                buf.extend_from_slice(self.title.as_bytes());
+                buf.push(b'\x07');
+            }
+        }
+    }
+}
+
+#[derive(Default, Debug)]
+#[must_use = "this struct does nothing unless you call write_buf"]
+pub struct ApplicationKeypad {
+    state: bool,
+}
+
+impl ApplicationKeypad {
+    pub fn new(state: bool) -> Self {
+        Self { state }
+    }
+}
+
+impl BufWrite for ApplicationKeypad {
+    fn write_buf(&self, buf: &mut Vec<u8>) {
+        if self.state {
+            buf.extend_from_slice(b"\x1b=")
+        } else {
+            buf.extend_from_slice(b"\x1b>")
+        }
+    }
+}
+
+#[derive(Default, Debug)]
+#[must_use = "this struct does nothing unless you call write_buf"]
+pub struct ApplicationCursor {
+    state: bool,
+}
+
+impl ApplicationCursor {
+    pub fn new(state: bool) -> Self {
+        Self { state }
+    }
+}
+
+impl BufWrite for ApplicationCursor {
+    fn write_buf(&self, buf: &mut Vec<u8>) {
+        if self.state {
+            buf.extend_from_slice(b"\x1b[?1h")
+        } else {
+            buf.extend_from_slice(b"\x1b[?1l")
+        }
+    }
+}
+
+#[derive(Default, Debug)]
+#[must_use = "this struct does nothing unless you call write_buf"]
+pub struct BracketedPaste {
+    state: bool,
+}
+
+impl BracketedPaste {
+    pub fn new(state: bool) -> Self {
+        Self { state }
+    }
+}
+
+impl BufWrite for BracketedPaste {
+    fn write_buf(&self, buf: &mut Vec<u8>) {
+        if self.state {
+            buf.extend_from_slice(b"\x1b[?2004h")
+        } else {
+            buf.extend_from_slice(b"\x1b[?2004l")
+        }
+    }
+}
+
+#[derive(Default, Debug)]
+#[must_use = "this struct does nothing unless you call write_buf"]
+pub struct MouseProtocolMode {
+    mode: crate::screen::MouseProtocolMode,
+    prev: crate::screen::MouseProtocolMode,
+}
+
+impl MouseProtocolMode {
+    pub fn new(
+        mode: crate::screen::MouseProtocolMode,
+        prev: crate::screen::MouseProtocolMode,
+    ) -> Self {
+        Self { mode, prev }
+    }
+}
+
+impl BufWrite for MouseProtocolMode {
+    fn write_buf(&self, buf: &mut Vec<u8>) {
+        if self.mode == self.prev {
+            return;
+        }
+
+        match self.mode {
+            crate::screen::MouseProtocolMode::None => match self.prev {
+                crate::screen::MouseProtocolMode::None => {}
+                crate::screen::MouseProtocolMode::Press => {
+                    buf.extend_from_slice(b"\x1b[?9l");
+                }
+                crate::screen::MouseProtocolMode::PressRelease => {
+                    buf.extend_from_slice(b"\x1b[?1000l");
+                }
+                crate::screen::MouseProtocolMode::ButtonMotion => {
+                    buf.extend_from_slice(b"\x1b[?1002l");
+                }
+                crate::screen::MouseProtocolMode::AnyMotion => {
+                    buf.extend_from_slice(b"\x1b[?1003l");
+                }
+            },
+            crate::screen::MouseProtocolMode::Press => {
+                buf.extend_from_slice(b"\x1b[?9h");
+            }
+            crate::screen::MouseProtocolMode::PressRelease => {
+                buf.extend_from_slice(b"\x1b[?1000h");
+            }
+            crate::screen::MouseProtocolMode::ButtonMotion => {
+                buf.extend_from_slice(b"\x1b[?1002h");
+            }
+            crate::screen::MouseProtocolMode::AnyMotion => {
+                buf.extend_from_slice(b"\x1b[?1003h");
+            }
+        }
+    }
+}
+
+#[derive(Default, Debug)]
+#[must_use = "this struct does nothing unless you call write_buf"]
+pub struct MouseProtocolEncoding {
+    encoding: crate::screen::MouseProtocolEncoding,
+    prev: crate::screen::MouseProtocolEncoding,
+}
+
+impl MouseProtocolEncoding {
+    pub fn new(
+        encoding: crate::screen::MouseProtocolEncoding,
+        prev: crate::screen::MouseProtocolEncoding,
+    ) -> Self {
+        Self { encoding, prev }
+    }
+}
+
+impl BufWrite for MouseProtocolEncoding {
+    fn write_buf(&self, buf: &mut Vec<u8>) {
+        if self.encoding == self.prev {
+            return;
+        }
+
+        match self.encoding {
+            crate::screen::MouseProtocolEncoding::Default => {
+                match self.prev {
+                    crate::screen::MouseProtocolEncoding::Default => {}
+                    crate::screen::MouseProtocolEncoding::Utf8 => {
+                        buf.extend_from_slice(b"\x1b[?1005l");
+                    }
+                    crate::screen::MouseProtocolEncoding::Sgr => {
+                        buf.extend_from_slice(b"\x1b[?1006l");
+                    }
+                }
+            }
+            crate::screen::MouseProtocolEncoding::Utf8 => {
+                buf.extend_from_slice(b"\x1b[?1005h");
+            }
+            crate::screen::MouseProtocolEncoding::Sgr => {
+                buf.extend_from_slice(b"\x1b[?1006h");
+            }
+        }
     }
 }

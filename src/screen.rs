@@ -169,14 +169,11 @@ impl Screen {
         })
     }
 
-    /// Returns the formatted contents of the terminal.
+    /// Returns the formatted visible contents of the terminal.
     ///
     /// Formatting information will be included inline as terminal escape
     /// codes. The result will be suitable for feeding directly to a raw
-    /// terminal parser, and will result in the same visual output. Internal
-    /// terminal modes (such as application keypad mode or alternate screen
-    /// mode) will not be included here, but modes that affect the visible
-    /// output (such as hidden cursor mode) will.
+    /// terminal parser, and will result in the same visual output.
     pub fn contents_formatted(&self) -> Vec<u8> {
         let mut contents = vec![];
         self.write_contents_formatted(&mut contents);
@@ -189,16 +186,16 @@ impl Screen {
         self.attrs.write_escape_code_diff(contents, &prev_attrs);
     }
 
-    /// Returns the formatted contents of the terminal by row, restricted to
-    /// the given subset of columns.
+    /// Returns the formatted visible contents of the terminal by row,
+    /// restricted to the given subset of columns.
     ///
     /// Formatting information will be included inline as terminal escape
     /// codes. The result will be suitable for feeding directly to a raw
-    /// terminal parser, and will result in the same visual output. Internal
-    /// terminal modes (such as application keypad mode or alternate screen
-    /// mode) will not be included here.
+    /// terminal parser, and will result in the same visual output.
     ///
-    /// CRLF at the end of lines will not be included.
+    /// You are responsible for positioning the cursor before printing each
+    /// row, and final cursor position after displaying each row is
+    /// unspecified.
     pub fn rows_formatted(
         &self,
         start: u16,
@@ -220,8 +217,9 @@ impl Screen {
         })
     }
 
-    /// Returns a terminal byte stream sufficient to turn the screen described
-    /// by `prev` into the screen described by `self`.
+    /// Returns a terminal byte stream sufficient to turn the visible contents
+    /// of the screen described by `prev` into the visible contents of the
+    /// screen described by `self`.
     ///
     /// The result of rendering `prev.contents_formatted()` followed by
     /// `self.contents_diff(prev)` should be equivalent to the result of
@@ -246,22 +244,16 @@ impl Screen {
             prev.attrs,
         );
         self.attrs.write_escape_code_diff(contents, &prev_attrs);
-        if self.audible_bell_count != prev.audible_bell_count {
-            crate::term::AudibleBell::default().write_buf(contents);
-        }
-        if self.visual_bell_count != prev.visual_bell_count {
-            crate::term::VisualBell::default().write_buf(contents);
-        }
     }
 
     /// Returns a sequence of terminal byte streams sufficient to turn the
-    /// subset of each row from `prev` (as described by `start` and `width`)
-    /// into the corresponding row subset in `self`.
+    /// visible contents of the subset of each row from `prev` (as described
+    /// by `start` and `width`) into the visible contents of the corresponding
+    /// row subset in `self`.
     ///
-    /// You must handle the initial row positioning yourself - each row diff
-    /// expects to start out positioned at the start of that row. Internal
-    /// terminal modes (such as application keypad mode or alternate screen
-    /// mode) will not be included here.
+    /// You are responsible for positioning the cursor before printing each
+    /// row, and final cursor position after displaying each row is
+    /// unspecified.
     pub fn rows_diff<'a>(
         &'a self,
         prev: &'a Self,
@@ -287,6 +279,117 @@ impl Screen {
                 );
                 contents
             })
+    }
+
+    pub fn input_mode_formatted(&self) -> Vec<u8> {
+        let mut contents = vec![];
+        self.write_input_mode_formatted(&mut contents);
+        contents
+    }
+
+    fn write_input_mode_formatted(&self, contents: &mut Vec<u8>) {
+        crate::term::ApplicationKeypad::new(
+            self.mode(Mode::ApplicationKeypad),
+        )
+        .write_buf(contents);
+        crate::term::ApplicationCursor::new(
+            self.mode(Mode::ApplicationCursor),
+        )
+        .write_buf(contents);
+        crate::term::BracketedPaste::new(self.mode(Mode::BracketedPaste))
+            .write_buf(contents);
+        crate::term::MouseProtocolMode::new(
+            self.mouse_protocol_mode,
+            MouseProtocolMode::None,
+        )
+        .write_buf(contents);
+        crate::term::MouseProtocolEncoding::new(
+            self.mouse_protocol_encoding,
+            MouseProtocolEncoding::Default,
+        )
+        .write_buf(contents);
+    }
+
+    pub fn input_mode_diff(&self, prev: &Self) -> Vec<u8> {
+        let mut contents = vec![];
+        self.write_input_mode_diff(&mut contents, prev);
+        contents
+    }
+
+    fn write_input_mode_diff(&self, contents: &mut Vec<u8>, prev: &Self) {
+        if self.mode(Mode::ApplicationKeypad)
+            != prev.mode(Mode::ApplicationKeypad)
+        {
+            crate::term::ApplicationKeypad::new(
+                self.mode(Mode::ApplicationKeypad),
+            )
+            .write_buf(contents);
+        }
+        if self.mode(Mode::ApplicationCursor)
+            != prev.mode(Mode::ApplicationCursor)
+        {
+            crate::term::ApplicationCursor::new(
+                self.mode(Mode::ApplicationCursor),
+            )
+            .write_buf(contents);
+        }
+        if self.mode(Mode::BracketedPaste) != prev.mode(Mode::BracketedPaste)
+        {
+            crate::term::BracketedPaste::new(self.mode(Mode::BracketedPaste))
+                .write_buf(contents);
+        }
+        crate::term::MouseProtocolMode::new(
+            self.mouse_protocol_mode,
+            prev.mouse_protocol_mode,
+        )
+        .write_buf(contents);
+        crate::term::MouseProtocolEncoding::new(
+            self.mouse_protocol_encoding,
+            prev.mouse_protocol_encoding,
+        )
+        .write_buf(contents);
+    }
+
+    pub fn title_formatted(&self) -> Vec<u8> {
+        let mut contents = vec![];
+        self.write_title_formatted(&mut contents);
+        contents
+    }
+
+    fn write_title_formatted(&self, contents: &mut Vec<u8>) {
+        crate::term::ChangeTitle::new(&self.icon_name, &self.title, "", "")
+            .write_buf(contents);
+    }
+
+    pub fn title_diff(&self, prev: &Self) -> Vec<u8> {
+        let mut contents = vec![];
+        self.write_title_diff(&mut contents, prev);
+        contents
+    }
+
+    fn write_title_diff(&self, contents: &mut Vec<u8>, prev: &Self) {
+        crate::term::ChangeTitle::new(
+            &self.icon_name,
+            &self.title,
+            &prev.icon_name,
+            &prev.title,
+        )
+        .write_buf(contents);
+    }
+
+    pub fn bells_diff(&self, prev: &Self) -> Vec<u8> {
+        let mut contents = vec![];
+        self.write_bells_diff(&mut contents, prev);
+        contents
+    }
+
+    fn write_bells_diff(&self, contents: &mut Vec<u8>, prev: &Self) {
+        if self.audible_bell_count != prev.audible_bell_count {
+            crate::term::AudibleBell::default().write_buf(contents);
+        }
+        if self.visual_bell_count != prev.visual_bell_count {
+            crate::term::VisualBell::default().write_buf(contents);
+        }
     }
 
     /// Returns the `Cell` object at the given location in the terminal, if it
