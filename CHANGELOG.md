@@ -8,9 +8,19 @@
 * `Default` impl for `Parser` which creates an 80x24 terminal with no
   scrollback.
 
+### Removed
+
+* `Parser::screen_mut` (and the `pub` `&mut self` methods on `Screen`). The few
+  things you can do to change the screen state directly are now exposed as
+  methods on `Parser` itself.
+
 ### Changed
 
 * `Cell::contents` now returns a `String` instead of a `&str`.
+* `Screen::check_audible_bell` and `Screen::check_visual_bell` have been
+  replaced with `Screen::audible_bell_count` and `Screen::visual_bell_count`.
+  You should keep track of the "since the last method call" state yourself
+  instead of having the screen track it for you.
 
 ### Fixed
 

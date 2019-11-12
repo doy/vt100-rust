@@ -2,7 +2,7 @@
 
 #[test]
 fn init() {
-    let mut parser = vt100::Parser::default();
+    let parser = vt100::Parser::default();
     assert_eq!(parser.screen().size(), (24, 80));
     assert_eq!(parser.screen().cursor_position(), (0, 0));
 
@@ -24,8 +24,8 @@ fn init() {
     assert_eq!(parser.screen().title(), "");
     assert_eq!(parser.screen().icon_name(), "");
 
-    assert!(!parser.screen_mut().check_visual_bell());
-    assert!(!parser.screen_mut().check_audible_bell());
+    assert_eq!(parser.screen().audible_bell_count(), 0);
+    assert_eq!(parser.screen().visual_bell_count(), 0);
     assert!(!parser.screen().application_keypad());
     assert!(!parser.screen().application_cursor());
     assert!(!parser.screen().hide_cursor());

@@ -26,16 +26,30 @@ impl Parser {
         }
     }
 
+    /// Resizes the terminal.
+    pub fn set_size(&mut self, rows: u16, cols: u16) {
+        self.screen.set_size(rows, cols);
+    }
+
+    /// Scrolls to the given position in the scrollback.
+    ///
+    /// This position indicates the offset from the top of the screen, and
+    /// should be `0` to put the normal screen in view.
+    ///
+    /// This affects the return values of methods called on `parser.screen()`:
+    /// for instance, `parser.screen().cell(0, 0)` will return the top left
+    /// corner of the screen after taking the scrollback offset into account.
+    /// It does not affect `parser.process()` at all.
+    ///
+    /// The value given will be clamped to the actual size of the scrollback.
+    pub fn set_scrollback(&mut self, rows: usize) {
+        self.screen.set_scrollback(rows);
+    }
+
     /// Returns a reference to a `Screen` object containing the terminal
     /// state.
     pub fn screen(&self) -> &crate::screen::Screen {
         &self.screen
-    }
-
-    /// Returns a mutable reference to a `Screen` object containing the
-    /// terminal state.
-    pub fn screen_mut(&mut self) -> &mut crate::screen::Screen {
-        &mut self.screen
     }
 }
 

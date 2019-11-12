@@ -20,18 +20,18 @@ fn set_size() {
     assert_eq!(parser.screen().size(), (24, 80));
     assert_eq!(parser.screen().cursor_position(), (0, 0));
 
-    parser.screen_mut().set_size(34, 8);
+    parser.set_size(34, 8);
     assert_eq!(parser.screen().size(), (34, 8));
     assert_eq!(parser.screen().cursor_position(), (0, 0));
 
     parser.process(b"\x1b[30;5H");
     assert_eq!(parser.screen().cursor_position(), (29, 4));
 
-    parser.screen_mut().set_size(24, 80);
+    parser.set_size(24, 80);
     assert_eq!(parser.screen().size(), (24, 80));
     assert_eq!(parser.screen().cursor_position(), (23, 4));
 
-    parser.screen_mut().set_size(34, 8);
+    parser.set_size(34, 8);
     assert_eq!(parser.screen().size(), (34, 8));
     assert_eq!(parser.screen().cursor_position(), (23, 4));
 
@@ -39,7 +39,7 @@ fn set_size() {
     assert_eq!(parser.screen().size(), (34, 8));
     assert_eq!(parser.screen().cursor_position(), (0, 0));
 
-    parser.screen_mut().set_size(24, 80);
+    parser.set_size(24, 80);
     assert_eq!(parser.screen().size(), (24, 80));
     assert_eq!(parser.screen().cursor_position(), (0, 0));
 
@@ -47,14 +47,14 @@ fn set_size() {
     assert_eq!(parser.screen().size(), (24, 80));
     assert_eq!(parser.screen().cursor_position(), (23, 4));
 
-    parser.screen_mut().set_size(34, 8);
+    parser.set_size(34, 8);
     parser.process(b"\x1bc01234567890123456789");
     assert_eq!(parser.screen().contents(), "01234567890123456789");
 
-    parser.screen_mut().set_size(24, 80);
+    parser.set_size(24, 80);
     assert_eq!(parser.screen().contents(), "01234567\n89012345\n6789");
 
-    parser.screen_mut().set_size(34, 8);
+    parser.set_size(34, 8);
     assert_eq!(parser.screen().contents(), "01234567\n89012345\n6789");
 }
 

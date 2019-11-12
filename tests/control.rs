@@ -3,12 +3,17 @@
 #[test]
 fn bel() {
     let mut parser = vt100::Parser::default();
-
-    assert!(!parser.screen_mut().check_audible_bell());
+    assert_eq!(parser.screen().audible_bell_count(), 0);
 
     parser.process(b"\x07");
-    assert!(parser.screen_mut().check_audible_bell());
-    assert!(!parser.screen_mut().check_audible_bell());
+    assert_eq!(parser.screen().audible_bell_count(), 1);
+    assert_eq!(parser.screen().audible_bell_count(), 1);
+
+    parser.process(b"\x07");
+    assert_eq!(parser.screen().audible_bell_count(), 2);
+
+    parser.process(b"\x07\x07\x07");
+    assert_eq!(parser.screen().audible_bell_count(), 5);
 }
 
 #[test]

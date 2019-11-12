@@ -5,12 +5,6 @@ use unicode_width::UnicodeWidthChar as _;
 const DEFAULT_MULTI_PARAMS: &[i64] = &[0];
 
 #[derive(enumset::EnumSetType, Debug)]
-enum Output {
-    AudibleBell,
-    VisualBell,
-}
-
-#[derive(enumset::EnumSetType, Debug)]
 enum Mode {
     ApplicationKeypad,
     ApplicationCursor,
@@ -84,10 +78,12 @@ pub struct Screen {
     title: String,
     icon_name: String,
 
-    outputs: enumset::EnumSet<Output>,
     modes: enumset::EnumSet<Mode>,
     mouse_protocol_mode: MouseProtocolMode,
     mouse_protocol_encoding: MouseProtocolEncoding,
+
+    audible_bell_count: usize,
+    visual_bell_count: usize,
 }
 
 impl Screen {
@@ -105,15 +101,16 @@ impl Screen {
             title: String::default(),
             icon_name: String::default(),
 
-            outputs: enumset::EnumSet::default(),
             modes: enumset::EnumSet::default(),
             mouse_protocol_mode: MouseProtocolMode::default(),
             mouse_protocol_encoding: MouseProtocolEncoding::default(),
+
+            audible_bell_count: 0,
+            visual_bell_count: 0,
         }
     }
 
-    /// Resizes the terminal.
-    pub fn set_size(&mut self, rows: u16, cols: u16) {
+    pub(crate) fn set_size(&mut self, rows: u16, cols: u16) {
         self.grid.set_size(crate::grid::Size { rows, cols });
         self.alternate_grid
             .set_size(crate::grid::Size { rows, cols });
@@ -135,18 +132,7 @@ impl Screen {
         self.grid().scrollback()
     }
 
-    /// Scrolls to the given position in the scrollback.
-    ///
-    /// This position indicates the offset from the top of the screen, and
-    /// should be `0` to put the normal screen in view.
-    ///
-    /// This affects the return values of methods called on `parser.screen()`:
-    /// for instance, `parser.screen().cell(0, 0)` will return the top left
-    /// corner of the screen after taking the scrollback offset into account.
-    /// It does not affect `parser.process()` at all.
-    ///
-    /// The value given will be clamped to the actual size of the scrollback.
-    pub fn set_scrollback(&mut self, rows: usize) {
+    pub(crate) fn set_scrollback(&mut self, rows: usize) {
         self.grid_mut().set_scrollback(rows);
     }
 
@@ -321,16 +307,20 @@ impl Screen {
         &self.icon_name
     }
 
-    /// Returns whether an audible bell has occurred since the last time this
-    /// method was called.
-    pub fn check_audible_bell(&mut self) -> bool {
-        self.check_output(Output::AudibleBell)
+    /// Returns the total number of audible bells seen so far.
+    ///
+    /// Typically you would store this number after each call to `process`,
+    /// and trigger an audible bell whenever it changes.
+    pub fn audible_bell_count(&self) -> usize {
+        self.audible_bell_count
     }
 
-    /// Returns whether an visual bell has occurred since the last time this
-    /// method was called.
-    pub fn check_visual_bell(&mut self) -> bool {
-        self.check_output(Output::VisualBell)
+    /// Returns the total number of visual bells seen so far.
+    ///
+    /// Typically you would store this number after each call to `process`,
+    /// and trigger an visual bell whenever it changes.
+    pub fn visual_bell_count(&self) -> usize {
+        self.visual_bell_count
     }
 
     /// Returns whether the terminal should be in application keypad mode.
@@ -411,20 +401,6 @@ impl Screen {
     fn restore_cursor(&mut self) {
         self.grid_mut().restore_cursor();
         self.attrs = self.saved_attrs;
-    }
-
-    fn set_output(&mut self, output: Output) {
-        self.outputs.insert(output);
-    }
-
-    fn clear_output(&mut self, output: Output) {
-        self.outputs.remove(output);
-    }
-
-    fn check_output(&mut self, output: Output) -> bool {
-        let ret = self.outputs.contains(output);
-        self.clear_output(output);
-        ret
     }
 
     fn set_mode(&mut self, mode: Mode) {
@@ -523,7 +499,7 @@ impl Screen {
     // control codes
 
     fn bel(&mut self) {
-        self.set_output(Output::AudibleBell);
+        self.audible_bell_count += 1;
     }
 
     fn bs(&mut self) {
@@ -579,20 +555,22 @@ impl Screen {
 
     // ESC c
     fn ris(&mut self) {
-        let outputs = self.outputs;
         let title = self.title.clone();
         let icon_name = self.icon_name.clone();
+        let audible_bell_count = self.audible_bell_count;
+        let visual_bell_count = self.visual_bell_count;
 
         *self = Self::new(self.grid.size(), self.grid.scrollback_len());
 
-        self.outputs = outputs;
         self.title = title;
         self.icon_name = icon_name;
+        self.audible_bell_count = audible_bell_count;
+        self.visual_bell_count = visual_bell_count;
     }
 
     // ESC g
     fn vb(&mut self) {
-        self.set_output(Output::VisualBell);
+        self.visual_bell_count += 1;
     }
 
     // csi codes

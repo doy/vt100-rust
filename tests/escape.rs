@@ -40,8 +40,8 @@ fn ris() {
     assert_eq!(parser.screen().title(), "");
     assert_eq!(parser.screen().icon_name(), "");
 
-    assert!(!parser.screen_mut().check_visual_bell());
-    assert!(!parser.screen_mut().check_audible_bell());
+    assert_eq!(parser.screen().audible_bell_count(), 0);
+    assert_eq!(parser.screen().visual_bell_count(), 0);
     assert!(!parser.screen().application_keypad());
     assert!(!parser.screen().application_cursor());
     assert!(!parser.screen().hide_cursor());
@@ -72,8 +72,8 @@ fn ris() {
     assert_eq!(parser.screen().title(), "window title");
     assert_eq!(parser.screen().icon_name(), "window icon name");
 
-    assert!(parser.screen_mut().check_visual_bell());
-    assert!(parser.screen_mut().check_audible_bell());
+    assert_eq!(parser.screen().audible_bell_count(), 1);
+    assert_eq!(parser.screen().visual_bell_count(), 1);
     assert!(parser.screen().application_keypad());
     assert!(parser.screen().application_cursor());
     assert!(parser.screen().hide_cursor());
@@ -87,7 +87,7 @@ fn ris() {
         vt100::MouseProtocolEncoding::Sgr
     );
 
-    parser.process(b"\x07\x1bg\x1bc");
+    parser.process(b"\x1bc");
     assert_eq!(parser.screen().cursor_position(), (0, 0));
 
     let cell = parser.screen().cell(0, 0).unwrap();
@@ -104,8 +104,8 @@ fn ris() {
     assert_eq!(parser.screen().icon_name(), "window icon name");
 
     // bell states don't change with reset
-    assert!(parser.screen_mut().check_visual_bell());
-    assert!(parser.screen_mut().check_audible_bell());
+    assert_eq!(parser.screen().audible_bell_count(), 1);
+    assert_eq!(parser.screen().visual_bell_count(), 1);
 
     assert!(!parser.screen().application_keypad());
     assert!(!parser.screen().application_cursor());
@@ -124,10 +124,14 @@ fn ris() {
 #[test]
 fn vb() {
     let mut parser = vt100::Parser::default();
-    assert!(!parser.screen_mut().check_visual_bell());
+    assert_eq!(parser.screen().visual_bell_count(), 0);
     parser.process(b"\x1bg");
-    assert!(parser.screen_mut().check_visual_bell());
-    assert!(!parser.screen_mut().check_visual_bell());
+    assert_eq!(parser.screen().visual_bell_count(), 1);
+    assert_eq!(parser.screen().visual_bell_count(), 1);
+    parser.process(b"\x1bg");
+    assert_eq!(parser.screen().visual_bell_count(), 2);
+    parser.process(b"\x1bg\x1bg\x1bg");
+    assert_eq!(parser.screen().visual_bell_count(), 5);
 }
 
 #[test]
