@@ -28,6 +28,8 @@
 * Clearing a cell now sets all of that cell's attributes to the current
   attribute set, since different terminals render different things for an empty
   cell based on the attributes.
+* `Screen::contents_diff` now includes audible and visual bells when
+  appropriate.
 
 ## [0.4.0] - 2019-11-08
 

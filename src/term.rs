@@ -344,3 +344,23 @@ impl BufWrite for MoveFromTo {
         }
     }
 }
+
+#[derive(Default, Debug)]
+#[must_use = "this struct does nothing unless you call write_buf"]
+pub struct AudibleBell;
+
+impl BufWrite for AudibleBell {
+    fn write_buf(&self, buf: &mut Vec<u8>) {
+        buf.push(b'\x07');
+    }
+}
+
+#[derive(Default, Debug)]
+#[must_use = "this struct does nothing unless you call write_buf"]
+pub struct VisualBell;
+
+impl BufWrite for VisualBell {
+    fn write_buf(&self, buf: &mut Vec<u8>) {
+        buf.extend_from_slice(b"\x1bg");
+    }
+}

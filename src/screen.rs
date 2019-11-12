@@ -246,6 +246,12 @@ impl Screen {
             prev.attrs,
         );
         self.attrs.write_escape_code_diff(contents, &prev_attrs);
+        if self.audible_bell_count != prev.audible_bell_count {
+            crate::term::AudibleBell::default().write_buf(contents);
+        }
+        if self.visual_bell_count != prev.visual_bell_count {
+            crate::term::VisualBell::default().write_buf(contents);
+        }
     }
 
     /// Returns a sequence of terminal byte streams sufficient to turn the
@@ -307,18 +313,26 @@ impl Screen {
         &self.icon_name
     }
 
-    /// Returns the total number of audible bells seen so far.
+    /// Returns a value which changes every time an audible bell is received.
     ///
     /// Typically you would store this number after each call to `process`,
     /// and trigger an audible bell whenever it changes.
+    ///
+    /// You shouldn't rely on the exact value returned here, since the exact
+    /// value will not be maintained by `contents_formatted` or
+    /// `contents_diff`.
     pub fn audible_bell_count(&self) -> usize {
         self.audible_bell_count
     }
 
-    /// Returns the total number of visual bells seen so far.
+    /// Returns a value which changes every time an visual bell is received.
     ///
     /// Typically you would store this number after each call to `process`,
     /// and trigger an visual bell whenever it changes.
+    ///
+    /// You shouldn't rely on the exact value returned here, since the exact
+    /// value will not be maintained by `contents_formatted` or
+    /// `contents_diff`.
     pub fn visual_bell_count(&self) -> usize {
         self.visual_bell_count
     }
