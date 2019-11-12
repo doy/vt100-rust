@@ -414,7 +414,7 @@ fn rows() {
 }
 
 #[test]
-fn diff() {
+fn diff_basic() {
     let mut parser = vt100::Parser::default();
     let screen1 = parser.screen().clone();
     parser.process(b"\x1b[5C\x1b[32m bar");
