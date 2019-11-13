@@ -756,7 +756,9 @@ impl Screen {
             0 => self.grid_mut().erase_all_forward(attrs),
             1 => self.grid_mut().erase_all_backward(attrs),
             2 => self.grid_mut().erase_all(attrs),
-            _ => {}
+            n => {
+                log::debug!("unhandled ED mode: {}", n);
+            }
         }
     }
 
@@ -772,7 +774,9 @@ impl Screen {
             0 => self.grid_mut().erase_row_forward(attrs),
             1 => self.grid_mut().erase_row_backward(attrs),
             2 => self.grid_mut().erase_row(attrs),
-            _ => {}
+            n => {
+                log::debug!("unhandled EL mode: {}", n);
+            }
         }
     }
 
@@ -818,8 +822,11 @@ impl Screen {
     }
 
     // CSI h
-    fn sm(&mut self, _params: &[i64]) {
+    fn sm(&mut self, params: &[i64]) {
         // nothing, i think?
+        if log::log_enabled!(log::Level::Debug) {
+            log::debug!("unhandled SM mode: {}", param_str(params))
+        }
     }
 
     // CSI ? h
@@ -842,14 +849,19 @@ impl Screen {
                     self.enter_alternate_grid();
                 }
                 2004 => self.set_mode(Mode::BracketedPaste),
-                _ => {}
+                n => {
+                    log::debug!("unhandled DECSET mode: {}", n);
+                }
             }
         }
     }
 
     // CSI l
-    fn rm(&mut self, _params: &[i64]) {
+    fn rm(&mut self, params: &[i64]) {
         // nothing, i think?
+        if log::log_enabled!(log::Level::Debug) {
+            log::debug!("unhandled RM mode: {}", param_str(params))
+        }
     }
 
     // CSI ? l
@@ -879,7 +891,9 @@ impl Screen {
                     self.decrc();
                 }
                 2004 => self.clear_mode(Mode::BracketedPaste),
-                _ => {}
+                n => {
+                    log::debug!("unhandled DECRST mode: {}", n);
+                }
             }
         }
     }
@@ -927,7 +941,10 @@ impl Screen {
                         self.attrs.fgcolor =
                             crate::attrs::Color::Idx(next_param!());
                     }
-                    _ => {}
+                    n => {
+                        log::debug!("unhandled SGR mode: 38 {}", n);
+                        return;
+                    }
                 },
                 39 => {
                     self.attrs.fgcolor = crate::attrs::Color::Default;
@@ -947,7 +964,10 @@ impl Screen {
                         self.attrs.bgcolor =
                             crate::attrs::Color::Idx(next_param!());
                     }
-                    _ => {}
+                    n => {
+                        log::debug!("unhandled SGR mode: 48 {}", n);
+                        return;
+                    }
                 },
                 49 => {
                     self.attrs.bgcolor = crate::attrs::Color::Default;
@@ -958,7 +978,9 @@ impl Screen {
                 n if n >= 100 && n <= 107 => {
                     self.attrs.bgcolor = crate::attrs::Color::Idx(n - 92);
                 }
-                _ => {}
+                n => {
+                    log::debug!("unhandled SGR mode: {}", n);
+                }
             }
         }
     }

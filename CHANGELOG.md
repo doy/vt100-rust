@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Added
+
+* Add more debug logging for unhandled escape sequences.
+
 ### Changed
 
 * Unhandled escape sequence warnings are now at the `debug` log level.
