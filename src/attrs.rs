@@ -1,4 +1,4 @@
-use crate::term::BufWrite as _;
+use crate::term::WriteTo as _;
 
 /// Represents a foreground or background color for cells.
 #[derive(Eq, PartialEq, Debug, Copy, Clone)]
@@ -83,14 +83,14 @@ impl Attrs {
         }
     }
 
-    pub fn write_escape_code_diff(
+    pub fn write_escape_code_diff<W: std::io::Write>(
         &self,
-        contents: &mut Vec<u8>,
+        w: &mut W,
         other: &Self,
-    ) {
+    ) -> std::io::Result<()> {
         if self != other && self == &Self::default() {
-            crate::term::ClearAttrs::default().write_buf(contents);
-            return;
+            crate::term::ClearAttrs::default().write_to(w)?;
+            return Ok(());
         }
 
         let attrs = crate::term::Attrs::default();
@@ -126,6 +126,6 @@ impl Attrs {
             attrs.inverse(self.inverse())
         };
 
-        attrs.write_buf(contents);
+        attrs.write_to(w)
     }
 }

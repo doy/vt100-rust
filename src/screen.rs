@@ -1,4 +1,4 @@
-use crate::term::BufWrite as _;
+use crate::term::WriteTo as _;
 use std::convert::TryInto as _;
 use unicode_width::UnicodeWidthChar as _;
 
@@ -141,13 +141,16 @@ impl Screen {
     /// This will not include any formatting information, and will be in plain
     /// text format.
     pub fn contents(&self) -> String {
-        let mut contents = String::new();
-        self.write_contents(&mut contents);
-        contents
+        let mut contents = vec![];
+        self.write_contents(&mut contents).unwrap();
+        String::from_utf8(contents).unwrap()
     }
 
-    fn write_contents(&self, contents: &mut String) {
-        self.grid().write_contents(contents);
+    pub fn write_contents<W: std::io::Write>(
+        &self,
+        w: &mut W,
+    ) -> std::io::Result<()> {
+        self.grid().write_contents(w)
     }
 
     /// Returns the text contents of the terminal by row, restricted to the
@@ -163,9 +166,9 @@ impl Screen {
         width: u16,
     ) -> impl Iterator<Item = String> + '_ {
         self.grid().visible_rows().map(move |row| {
-            let mut contents = String::new();
-            row.write_contents(&mut contents, start, width);
-            contents
+            let mut contents = vec![];
+            row.write_contents(&mut contents, start, width).unwrap();
+            String::from_utf8(contents).unwrap()
         })
     }
 
@@ -176,14 +179,18 @@ impl Screen {
     /// terminal parser, and will result in the same visual output.
     pub fn contents_formatted(&self) -> Vec<u8> {
         let mut contents = vec![];
-        self.write_contents_formatted(&mut contents);
+        self.write_contents_formatted(&mut contents).unwrap();
         contents
     }
 
-    fn write_contents_formatted(&self, contents: &mut Vec<u8>) {
-        crate::term::HideCursor::new(self.hide_cursor()).write_buf(contents);
-        let prev_attrs = self.grid().write_contents_formatted(contents);
-        self.attrs.write_escape_code_diff(contents, &prev_attrs);
+    pub fn write_contents_formatted<W: std::io::Write>(
+        &self,
+        w: &mut W,
+    ) -> std::io::Result<()> {
+        crate::term::HideCursor::new(self.hide_cursor()).write_to(w)?;
+        let prev_attrs = self.grid().write_contents_formatted(w)?;
+        self.attrs.write_escape_code_diff(w, &prev_attrs)?;
+        Ok(())
     }
 
     /// Returns the formatted visible contents of the terminal by row,
@@ -212,7 +219,8 @@ impl Screen {
                 false,
                 crate::grid::Pos { row: i, col: start },
                 crate::attrs::Attrs::default(),
-            );
+            )
+            .unwrap();
             contents
         })
     }
@@ -229,21 +237,23 @@ impl Screen {
     /// flickering than redrawing the entire screen contents.
     pub fn contents_diff(&self, prev: &Self) -> Vec<u8> {
         let mut contents = vec![];
-        self.write_contents_diff(&mut contents, prev);
+        self.write_contents_diff(&mut contents, prev).unwrap();
         contents
     }
 
-    fn write_contents_diff(&self, contents: &mut Vec<u8>, prev: &Self) {
+    pub fn write_contents_diff<W: std::io::Write>(
+        &self,
+        w: &mut W,
+        prev: &Self,
+    ) -> std::io::Result<()> {
         if self.hide_cursor() != prev.hide_cursor() {
-            crate::term::HideCursor::new(self.hide_cursor())
-                .write_buf(contents);
+            crate::term::HideCursor::new(self.hide_cursor()).write_to(w)?;
         }
-        let prev_attrs = self.grid().write_contents_diff(
-            contents,
-            prev.grid(),
-            prev.attrs,
-        );
-        self.attrs.write_escape_code_diff(contents, &prev_attrs);
+        let prev_attrs =
+            self.grid()
+                .write_contents_diff(w, prev.grid(), prev.attrs)?;
+        self.attrs.write_escape_code_diff(w, &prev_attrs)?;
+        Ok(())
     }
 
     /// Returns a sequence of terminal byte streams sufficient to turn the
@@ -276,54 +286,63 @@ impl Screen {
                     false,
                     crate::grid::Pos { row: i, col: start },
                     crate::attrs::Attrs::default(),
-                );
+                )
+                .unwrap();
                 contents
             })
     }
 
     pub fn input_mode_formatted(&self) -> Vec<u8> {
         let mut contents = vec![];
-        self.write_input_mode_formatted(&mut contents);
+        self.write_input_mode_formatted(&mut contents).unwrap();
         contents
     }
 
-    fn write_input_mode_formatted(&self, contents: &mut Vec<u8>) {
+    pub fn write_input_mode_formatted<W: std::io::Write>(
+        &self,
+        w: &mut W,
+    ) -> std::io::Result<()> {
         crate::term::ApplicationKeypad::new(
             self.mode(Mode::ApplicationKeypad),
         )
-        .write_buf(contents);
+        .write_to(w)?;
         crate::term::ApplicationCursor::new(
             self.mode(Mode::ApplicationCursor),
         )
-        .write_buf(contents);
+        .write_to(w)?;
         crate::term::BracketedPaste::new(self.mode(Mode::BracketedPaste))
-            .write_buf(contents);
+            .write_to(w)?;
         crate::term::MouseProtocolMode::new(
             self.mouse_protocol_mode,
             MouseProtocolMode::None,
         )
-        .write_buf(contents);
+        .write_to(w)?;
         crate::term::MouseProtocolEncoding::new(
             self.mouse_protocol_encoding,
             MouseProtocolEncoding::Default,
         )
-        .write_buf(contents);
+        .write_to(w)?;
+        Ok(())
     }
 
     pub fn input_mode_diff(&self, prev: &Self) -> Vec<u8> {
         let mut contents = vec![];
-        self.write_input_mode_diff(&mut contents, prev);
+        self.write_input_mode_diff(&mut contents, prev).unwrap();
         contents
     }
 
-    fn write_input_mode_diff(&self, contents: &mut Vec<u8>, prev: &Self) {
+    pub fn write_input_mode_diff<W: std::io::Write>(
+        &self,
+        w: &mut W,
+        prev: &Self,
+    ) -> std::io::Result<()> {
         if self.mode(Mode::ApplicationKeypad)
             != prev.mode(Mode::ApplicationKeypad)
         {
             crate::term::ApplicationKeypad::new(
                 self.mode(Mode::ApplicationKeypad),
             )
-            .write_buf(contents);
+            .write_to(w)?;
         }
         if self.mode(Mode::ApplicationCursor)
             != prev.mode(Mode::ApplicationCursor)
@@ -331,65 +350,78 @@ impl Screen {
             crate::term::ApplicationCursor::new(
                 self.mode(Mode::ApplicationCursor),
             )
-            .write_buf(contents);
+            .write_to(w)?;
         }
         if self.mode(Mode::BracketedPaste) != prev.mode(Mode::BracketedPaste)
         {
             crate::term::BracketedPaste::new(self.mode(Mode::BracketedPaste))
-                .write_buf(contents);
+                .write_to(w)?;
         }
         crate::term::MouseProtocolMode::new(
             self.mouse_protocol_mode,
             prev.mouse_protocol_mode,
         )
-        .write_buf(contents);
+        .write_to(w)?;
         crate::term::MouseProtocolEncoding::new(
             self.mouse_protocol_encoding,
             prev.mouse_protocol_encoding,
         )
-        .write_buf(contents);
+        .write_to(w)?;
+        Ok(())
     }
 
     pub fn title_formatted(&self) -> Vec<u8> {
         let mut contents = vec![];
-        self.write_title_formatted(&mut contents);
+        self.write_title_formatted(&mut contents).unwrap();
         contents
     }
 
-    fn write_title_formatted(&self, contents: &mut Vec<u8>) {
+    pub fn write_title_formatted<W: std::io::Write>(
+        &self,
+        w: &mut W,
+    ) -> std::io::Result<()> {
         crate::term::ChangeTitle::new(&self.icon_name, &self.title, "", "")
-            .write_buf(contents);
+            .write_to(w)
     }
 
     pub fn title_diff(&self, prev: &Self) -> Vec<u8> {
         let mut contents = vec![];
-        self.write_title_diff(&mut contents, prev);
+        self.write_title_diff(&mut contents, prev).unwrap();
         contents
     }
 
-    fn write_title_diff(&self, contents: &mut Vec<u8>, prev: &Self) {
+    pub fn write_title_diff<W: std::io::Write>(
+        &self,
+        w: &mut W,
+        prev: &Self,
+    ) -> std::io::Result<()> {
         crate::term::ChangeTitle::new(
             &self.icon_name,
             &self.title,
             &prev.icon_name,
             &prev.title,
         )
-        .write_buf(contents);
+        .write_to(w)
     }
 
     pub fn bells_diff(&self, prev: &Self) -> Vec<u8> {
         let mut contents = vec![];
-        self.write_bells_diff(&mut contents, prev);
+        self.write_bells_diff(&mut contents, prev).unwrap();
         contents
     }
 
-    fn write_bells_diff(&self, contents: &mut Vec<u8>, prev: &Self) {
+    pub fn write_bells_diff<W: std::io::Write>(
+        &self,
+        w: &mut W,
+        prev: &Self,
+    ) -> std::io::Result<()> {
         if self.audible_bell_count != prev.audible_bell_count {
-            crate::term::AudibleBell::default().write_buf(contents);
+            crate::term::AudibleBell::default().write_to(w)?;
         }
         if self.visual_bell_count != prev.visual_bell_count {
-            crate::term::VisualBell::default().write_buf(contents);
+            crate::term::VisualBell::default().write_to(w)?;
         }
+        Ok(())
     }
 
     /// Returns the `Cell` object at the given location in the terminal, if it

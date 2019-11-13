@@ -1,4 +1,4 @@
-use crate::term::BufWrite as _;
+use crate::term::WriteTo as _;
 use std::convert::TryInto as _;
 
 #[derive(Clone, Debug)]
@@ -173,25 +173,31 @@ impl Grid {
         self.scrollback_offset = rows.min(self.scrollback.len());
     }
 
-    pub fn write_contents(&self, contents: &mut String) {
+    pub fn write_contents<W: std::io::Write>(
+        &self,
+        w: &mut W,
+    ) -> std::io::Result<()> {
         for row in self.visible_rows() {
-            row.write_contents(contents, 0, self.size.cols);
+            row.write_contents(w, 0, self.size.cols)?;
             if !row.wrapped() {
-                contents.push_str("\n");
+                w.write_all(b"\n")?;
             }
         }
 
-        while contents.ends_with('\n') {
-            contents.truncate(contents.len() - 1);
-        }
+        // XXX
+        // while contents.ends_with('\n') {
+        //     contents.truncate(contents.len() - 1);
+        // }
+
+        Ok(())
     }
 
-    pub fn write_contents_formatted(
+    pub fn write_contents_formatted<W: std::io::Write>(
         &self,
-        contents: &mut Vec<u8>,
-    ) -> crate::attrs::Attrs {
-        crate::term::ClearAttrs::default().write_buf(contents);
-        crate::term::ClearScreen::default().write_buf(contents);
+        w: &mut W,
+    ) -> std::io::Result<crate::attrs::Attrs> {
+        crate::term::ClearAttrs::default().write_to(w)?;
+        crate::term::ClearScreen::default().write_to(w)?;
 
         let mut prev_attrs = crate::attrs::Attrs::default();
         let mut prev_pos = Pos::default();
@@ -199,30 +205,30 @@ impl Grid {
         for (i, row) in self.visible_rows().enumerate() {
             let i = i.try_into().unwrap();
             let (new_pos, new_attrs) = row.write_contents_formatted(
-                contents,
+                w,
                 0,
                 self.size.cols,
                 i,
                 wrapping,
                 prev_pos,
                 prev_attrs,
-            );
+            )?;
             prev_pos = new_pos;
             prev_attrs = new_attrs;
             wrapping = row.wrapped();
         }
 
-        crate::term::MoveFromTo::new(prev_pos, self.pos).write_buf(contents);
+        crate::term::MoveFromTo::new(prev_pos, self.pos).write_to(w)?;
 
-        prev_attrs
+        Ok(prev_attrs)
     }
 
-    pub fn write_contents_diff(
+    pub fn write_contents_diff<W: std::io::Write>(
         &self,
-        contents: &mut Vec<u8>,
+        w: &mut W,
         prev: &Self,
         mut prev_attrs: crate::attrs::Attrs,
-    ) -> crate::attrs::Attrs {
+    ) -> std::io::Result<crate::attrs::Attrs> {
         let mut prev_pos = prev.pos;
         let mut wrapping = false;
         for (i, (row, prev_row)) in
@@ -230,7 +236,7 @@ impl Grid {
         {
             let i = i.try_into().unwrap();
             let (new_pos, new_attrs) = row.write_contents_diff(
-                contents,
+                w,
                 prev_row,
                 0,
                 self.size.cols,
@@ -238,15 +244,15 @@ impl Grid {
                 wrapping,
                 prev_pos,
                 prev_attrs,
-            );
+            )?;
             prev_pos = new_pos;
             prev_attrs = new_attrs;
             wrapping = row.wrapped();
         }
 
-        crate::term::MoveFromTo::new(prev_pos, self.pos).write_buf(contents);
+        crate::term::MoveFromTo::new(prev_pos, self.pos).write_to(w)?;
 
-        prev_attrs
+        Ok(prev_attrs)
     }
 
     pub fn erase_all(&mut self, attrs: crate::attrs::Attrs) {

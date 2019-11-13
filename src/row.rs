@@ -1,4 +1,4 @@
-use crate::term::BufWrite as _;
+use crate::term::WriteTo as _;
 use std::convert::TryInto as _;
 
 #[derive(Clone, Debug)]
@@ -68,12 +68,12 @@ impl Row {
         self.wrapped
     }
 
-    pub fn write_contents(
+    pub fn write_contents<W: std::io::Write>(
         &self,
-        contents: &mut String,
+        w: &mut W,
         start: u16,
         width: u16,
-    ) {
+    ) -> std::io::Result<()> {
         let mut prev_was_wide = false;
 
         let mut prev_col = start;
@@ -92,26 +92,28 @@ impl Row {
             let col: u16 = col.try_into().unwrap();
             if cell.has_contents() {
                 for _ in 0..(col - prev_col) {
-                    contents.push(' ');
+                    w.write_all(b" ")?;
                 }
                 prev_col += col - prev_col;
 
-                contents.push_str(&cell.contents());
+                w.write_all(cell.contents().as_bytes())?;
                 prev_col += if cell.is_wide() { 2 } else { 1 };
             }
         }
+
+        Ok(())
     }
 
-    pub fn write_contents_formatted(
+    pub fn write_contents_formatted<W: std::io::Write>(
         &self,
-        contents: &mut Vec<u8>,
+        w: &mut W,
         start: u16,
         width: u16,
         row: u16,
         wrapping: bool,
         mut prev_pos: crate::grid::Pos,
         mut prev_attrs: crate::attrs::Attrs,
-    ) -> (crate::grid::Pos, crate::attrs::Attrs) {
+    ) -> std::io::Result<(crate::grid::Pos, crate::attrs::Attrs)> {
         let mut prev_was_wide = false;
         let default_cell = crate::cell::Cell::default();
 
@@ -137,14 +139,14 @@ impl Row {
                 if cell.has_contents() || cell.attrs() != attrs {
                     let new_pos = crate::grid::Pos { row, col: prev_col };
                     crate::term::MoveFromTo::new(prev_pos, new_pos)
-                        .write_buf(contents);
+                        .write_to(w)?;
                     prev_pos = new_pos;
                     if &prev_attrs != attrs {
-                        attrs.write_escape_code_diff(contents, &prev_attrs);
+                        attrs.write_escape_code_diff(w, &prev_attrs)?;
                         prev_attrs = *attrs;
                     }
                     crate::term::EraseChar::new(pos.col - prev_col)
-                        .write_buf(contents);
+                        .write_to(w)?;
                     erase = None;
                 }
             }
@@ -159,17 +161,17 @@ impl Row {
                             || pos.col != 0
                         {
                             crate::term::MoveFromTo::new(prev_pos, pos)
-                                .write_buf(contents);
+                                .write_to(w)?;
                         }
                         prev_pos = pos;
                     }
 
                     if &prev_attrs != attrs {
-                        attrs.write_escape_code_diff(contents, &prev_attrs);
+                        attrs.write_escape_code_diff(w, &prev_attrs)?;
                         prev_attrs = *attrs;
                     }
 
-                    contents.extend(cell.contents().as_bytes());
+                    w.write_all(cell.contents().as_bytes())?;
                     prev_pos.col += if cell.is_wide() { 2 } else { 1 };
                 } else if erase.is_none() {
                     erase = Some((pos.col, attrs));
@@ -178,25 +180,24 @@ impl Row {
         }
         if let Some((prev_col, attrs)) = erase {
             let new_pos = crate::grid::Pos { row, col: prev_col };
-            crate::term::MoveFromTo::new(prev_pos, new_pos)
-                .write_buf(contents);
+            crate::term::MoveFromTo::new(prev_pos, new_pos).write_to(w)?;
             prev_pos = new_pos;
             if &prev_attrs != attrs {
-                attrs.write_escape_code_diff(contents, &prev_attrs);
+                attrs.write_escape_code_diff(w, &prev_attrs)?;
                 prev_attrs = *attrs;
             }
-            crate::term::ClearRowForward::default().write_buf(contents);
+            crate::term::ClearRowForward::default().write_to(w)?;
         }
 
-        (prev_pos, prev_attrs)
+        Ok((prev_pos, prev_attrs))
     }
 
     // while it's true that most of the logic in this is identical to
     // write_contents_formatted, i can't figure out how to break out the
     // common parts without making things noticeably slower.
-    pub fn write_contents_diff(
+    pub fn write_contents_diff<W: std::io::Write>(
         &self,
-        contents: &mut Vec<u8>,
+        w: &mut W,
         prev: &Self,
         start: u16,
         width: u16,
@@ -204,7 +205,7 @@ impl Row {
         wrapping: bool,
         mut prev_pos: crate::grid::Pos,
         mut prev_attrs: crate::attrs::Attrs,
-    ) -> (crate::grid::Pos, crate::attrs::Attrs) {
+    ) -> std::io::Result<(crate::grid::Pos, crate::attrs::Attrs)> {
         let mut prev_was_wide = false;
 
         let mut erase: Option<(u16, &crate::attrs::Attrs)> = None;
@@ -230,14 +231,14 @@ impl Row {
                 if cell.has_contents() || cell.attrs() != attrs {
                     let new_pos = crate::grid::Pos { row, col: prev_col };
                     crate::term::MoveFromTo::new(prev_pos, new_pos)
-                        .write_buf(contents);
+                        .write_to(w)?;
                     prev_pos = new_pos;
                     if &prev_attrs != attrs {
-                        attrs.write_escape_code_diff(contents, &prev_attrs);
+                        attrs.write_escape_code_diff(w, &prev_attrs)?;
                         prev_attrs = *attrs;
                     }
                     crate::term::EraseChar::new(pos.col - prev_col)
-                        .write_buf(contents);
+                        .write_to(w)?;
                     erase = None;
                 }
             }
@@ -252,17 +253,17 @@ impl Row {
                             || pos.col != 0
                         {
                             crate::term::MoveFromTo::new(prev_pos, pos)
-                                .write_buf(contents);
+                                .write_to(w)?;
                         }
                         prev_pos = pos;
                     }
 
                     if &prev_attrs != attrs {
-                        attrs.write_escape_code_diff(contents, &prev_attrs);
+                        attrs.write_escape_code_diff(w, &prev_attrs)?;
                         prev_attrs = *attrs;
                     }
 
-                    contents.extend(cell.contents().as_bytes());
+                    w.write_all(cell.contents().as_bytes())?;
                     prev_pos.col += if cell.is_wide() { 2 } else { 1 };
                 } else if erase.is_none() {
                     erase = Some((pos.col, attrs));
@@ -271,16 +272,15 @@ impl Row {
         }
         if let Some((prev_col, attrs)) = erase {
             let new_pos = crate::grid::Pos { row, col: prev_col };
-            crate::term::MoveFromTo::new(prev_pos, new_pos)
-                .write_buf(contents);
+            crate::term::MoveFromTo::new(prev_pos, new_pos).write_to(w)?;
             prev_pos = new_pos;
             if &prev_attrs != attrs {
-                attrs.write_escape_code_diff(contents, &prev_attrs);
+                attrs.write_escape_code_diff(w, &prev_attrs)?;
                 prev_attrs = *attrs;
             }
-            crate::term::ClearRowForward::default().write_buf(contents);
+            crate::term::ClearRowForward::default().write_to(w)?;
         }
 
-        (prev_pos, prev_attrs)
+        Ok((prev_pos, prev_attrs))
     }
 }

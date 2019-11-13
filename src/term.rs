@@ -1,16 +1,16 @@
 // TODO: read all of this from terminfo
 
-pub trait BufWrite {
-    fn write_buf(&self, buf: &mut Vec<u8>);
+pub trait WriteTo<W: std::io::Write> {
+    fn write_to(&self, w: &mut W) -> std::io::Result<()>;
 }
 
 #[derive(Default, Debug)]
-#[must_use = "this struct does nothing unless you call write_buf"]
+#[must_use = "this struct does nothing unless you call write_to"]
 pub struct ClearScreen;
 
-impl BufWrite for ClearScreen {
-    fn write_buf(&self, buf: &mut Vec<u8>) {
-        buf.extend_from_slice(b"\x1b[H\x1b[J");
+impl<W: std::io::Write> WriteTo<W> for ClearScreen {
+    fn write_to(&self, w: &mut W) -> std::io::Result<()> {
+        w.write_all(b"\x1b[H\x1b[J")
     }
 }
 
@@ -18,9 +18,9 @@ impl BufWrite for ClearScreen {
 #[must_use = "this struct does nothing unless you call write_buf"]
 pub struct ClearRowForward;
 
-impl BufWrite for ClearRowForward {
-    fn write_buf(&self, buf: &mut Vec<u8>) {
-        buf.extend_from_slice(b"\x1b[K");
+impl<W: std::io::Write> WriteTo<W> for ClearRowForward {
+    fn write_to(&self, w: &mut W) -> std::io::Result<()> {
+        w.write_all(b"\x1b[K")
     }
 }
 
@@ -28,9 +28,9 @@ impl BufWrite for ClearRowForward {
 #[must_use = "this struct does nothing unless you call write_buf"]
 pub struct CRLF;
 
-impl BufWrite for CRLF {
-    fn write_buf(&self, buf: &mut Vec<u8>) {
-        buf.extend_from_slice(b"\r\n");
+impl<W: std::io::Write> WriteTo<W> for CRLF {
+    fn write_to(&self, w: &mut W) -> std::io::Result<()> {
+        w.write_all(b"\r\n")
     }
 }
 
@@ -50,17 +50,18 @@ impl MoveTo {
     }
 }
 
-impl BufWrite for MoveTo {
-    fn write_buf(&self, buf: &mut Vec<u8>) {
+impl<W: std::io::Write> WriteTo<W> for MoveTo {
+    fn write_to(&self, w: &mut W) -> std::io::Result<()> {
         if self.row == 0 && self.col == 0 {
-            buf.extend_from_slice(b"\x1b[H");
+            w.write_all(b"\x1b[H")?;
         } else {
-            buf.extend_from_slice(b"\x1b[");
-            itoa::write(&mut *buf, self.row + 1).unwrap();
-            buf.push(b';');
-            itoa::write(&mut *buf, self.col + 1).unwrap();
-            buf.push(b'H');
+            w.write_all(b"\x1b[")?;
+            itoa::write(&mut *w, self.row + 1)?;
+            w.write_all(b";")?;
+            itoa::write(&mut *w, self.col + 1)?;
+            w.write_all(b"H")?;
         }
+        Ok(())
     }
 }
 
@@ -68,9 +69,9 @@ impl BufWrite for MoveTo {
 #[must_use = "this struct does nothing unless you call write_buf"]
 pub struct ClearAttrs;
 
-impl BufWrite for ClearAttrs {
-    fn write_buf(&self, buf: &mut Vec<u8>) {
-        buf.extend_from_slice(b"\x1b[m")
+impl<W: std::io::Write> WriteTo<W> for ClearAttrs {
+    fn write_to(&self, w: &mut W) -> std::io::Result<()> {
+        w.write_all(b"\x1b[m")
     }
 }
 
@@ -117,9 +118,9 @@ impl Attrs {
     }
 }
 
-impl BufWrite for Attrs {
+impl<W: std::io::Write> WriteTo<W> for Attrs {
     #[allow(unused_assignments)]
-    fn write_buf(&self, buf: &mut Vec<u8>) {
+    fn write_to(&self, w: &mut W) -> std::io::Result<()> {
         if self.fgcolor.is_none()
             && self.bgcolor.is_none()
             && self.bold.is_none()
@@ -127,10 +128,10 @@ impl BufWrite for Attrs {
             && self.underline.is_none()
             && self.inverse.is_none()
         {
-            return;
+            return Ok(());
         }
 
-        buf.extend_from_slice(b"\x1b[");
+        w.write_all(b"\x1b[")?;
         let mut first = true;
 
         macro_rules! write_param {
@@ -138,9 +139,9 @@ impl BufWrite for Attrs {
                 if first {
                     first = false;
                 } else {
-                    buf.push(b';');
+                    w.write_all(b";")?;
                 }
-                itoa::write(&mut *buf, $i).unwrap();
+                itoa::write(&mut *w, $i).unwrap();
             };
         }
 
@@ -228,7 +229,7 @@ impl BufWrite for Attrs {
             }
         }
 
-        buf.push(b'm');
+        w.write_all(b"m")
     }
 }
 
@@ -250,17 +251,18 @@ impl Default for MoveRight {
     }
 }
 
-impl BufWrite for MoveRight {
-    fn write_buf(&self, buf: &mut Vec<u8>) {
+impl<W: std::io::Write> WriteTo<W> for MoveRight {
+    fn write_to(&self, w: &mut W) -> std::io::Result<()> {
         match self.count {
             0 => {}
-            1 => buf.extend_from_slice(b"\x1b[C"),
+            1 => w.write_all(b"\x1b[C")?,
             n => {
-                buf.extend_from_slice(b"\x1b[");
-                itoa::write(&mut *buf, n).unwrap();
-                buf.push(b'C');
+                w.write_all(b"\x1b[")?;
+                itoa::write(&mut *w, n)?;
+                w.write_all(b"C")?;
             }
         }
+        Ok(())
     }
 }
 
@@ -282,17 +284,18 @@ impl Default for EraseChar {
     }
 }
 
-impl BufWrite for EraseChar {
-    fn write_buf(&self, buf: &mut Vec<u8>) {
+impl<W: std::io::Write> WriteTo<W> for EraseChar {
+    fn write_to(&self, w: &mut W) -> std::io::Result<()> {
         match self.count {
             0 => {}
-            1 => buf.extend_from_slice(b"\x1b[X"),
+            1 => w.write_all(b"\x1b[X")?,
             n => {
-                buf.extend_from_slice(b"\x1b[");
-                itoa::write(&mut *buf, n).unwrap();
-                buf.push(b'X');
+                w.write_all(b"\x1b[")?;
+                itoa::write(&mut *w, n)?;
+                w.write_all(b"X")?;
             }
         }
+        Ok(())
     }
 }
 
@@ -308,12 +311,12 @@ impl HideCursor {
     }
 }
 
-impl BufWrite for HideCursor {
-    fn write_buf(&self, buf: &mut Vec<u8>) {
+impl<W: std::io::Write> WriteTo<W> for HideCursor {
+    fn write_to(&self, w: &mut W) -> std::io::Result<()> {
         if self.state {
-            buf.extend_from_slice(b"\x1b[?25l")
+            w.write_all(b"\x1b[?25l")
         } else {
-            buf.extend_from_slice(b"\x1b[?25h")
+            w.write_all(b"\x1b[?25h")
         }
     }
 }
@@ -331,16 +334,18 @@ impl MoveFromTo {
     }
 }
 
-impl BufWrite for MoveFromTo {
-    fn write_buf(&self, buf: &mut Vec<u8>) {
-        if self.to.row == self.from.row + 1 && self.to.col == 0 {
-            crate::term::CRLF::default().write_buf(buf);
-        } else if self.from.row == self.to.row && self.from.col < self.to.col
+impl<W: std::io::Write> WriteTo<W> for MoveFromTo {
+    fn write_to(&self, w: &mut W) -> std::io::Result<()> {
+        if self.to == self.from {
+            Ok(())
+        } else if self.to.row == self.from.row + 1 && self.to.col == 0 {
+            crate::term::CRLF::default().write_to(w)
+        } else if self.to.row == self.from.row && self.to.col > self.from.col
         {
             crate::term::MoveRight::new(self.to.col - self.from.col)
-                .write_buf(buf);
-        } else if self.to != self.from {
-            crate::term::MoveTo::new(self.to).write_buf(buf);
+                .write_to(w)
+        } else {
+            crate::term::MoveTo::new(self.to).write_to(w)
         }
     }
 }
@@ -349,9 +354,9 @@ impl BufWrite for MoveFromTo {
 #[must_use = "this struct does nothing unless you call write_buf"]
 pub struct AudibleBell;
 
-impl BufWrite for AudibleBell {
-    fn write_buf(&self, buf: &mut Vec<u8>) {
-        buf.push(b'\x07');
+impl<W: std::io::Write> WriteTo<W> for AudibleBell {
+    fn write_to(&self, w: &mut W) -> std::io::Result<()> {
+        w.write_all(b"\x07")
     }
 }
 
@@ -359,9 +364,9 @@ impl BufWrite for AudibleBell {
 #[must_use = "this struct does nothing unless you call write_buf"]
 pub struct VisualBell;
 
-impl BufWrite for VisualBell {
-    fn write_buf(&self, buf: &mut Vec<u8>) {
-        buf.extend_from_slice(b"\x1bg");
+impl<W: std::io::Write> WriteTo<W> for VisualBell {
+    fn write_to(&self, w: &mut W) -> std::io::Result<()> {
+        w.write_all(b"\x1bg")
     }
 }
 
@@ -389,27 +394,28 @@ impl<'a> ChangeTitle<'a> {
     }
 }
 
-impl<'a> BufWrite for ChangeTitle<'a> {
-    fn write_buf(&self, buf: &mut Vec<u8>) {
+impl<'a, W: std::io::Write> WriteTo<W> for ChangeTitle<'a> {
+    fn write_to(&self, w: &mut W) -> std::io::Result<()> {
         if self.icon_name == self.title
             && (self.icon_name != self.prev_icon_name
                 || self.title != self.prev_title)
         {
-            buf.extend_from_slice(b"\x1b]0;");
-            buf.extend_from_slice(self.icon_name.as_bytes());
-            buf.push(b'\x07');
+            w.write_all(b"\x1b]0;")?;
+            w.write_all(self.icon_name.as_bytes())?;
+            w.write_all(b"\x07")?;
         } else {
             if self.icon_name != self.prev_icon_name {
-                buf.extend_from_slice(b"\x1b]1;");
-                buf.extend_from_slice(self.icon_name.as_bytes());
-                buf.push(b'\x07');
+                w.write_all(b"\x1b]1;")?;
+                w.write_all(self.icon_name.as_bytes())?;
+                w.write_all(b"\x07")?;
             }
             if self.title != self.prev_title {
-                buf.extend_from_slice(b"\x1b]2;");
-                buf.extend_from_slice(self.title.as_bytes());
-                buf.push(b'\x07');
+                w.write_all(b"\x1b]2;")?;
+                w.write_all(self.icon_name.as_bytes())?;
+                w.write_all(b"\x07")?;
             }
         }
+        Ok(())
     }
 }
 
@@ -425,12 +431,12 @@ impl ApplicationKeypad {
     }
 }
 
-impl BufWrite for ApplicationKeypad {
-    fn write_buf(&self, buf: &mut Vec<u8>) {
+impl<W: std::io::Write> WriteTo<W> for ApplicationKeypad {
+    fn write_to(&self, w: &mut W) -> std::io::Result<()> {
         if self.state {
-            buf.extend_from_slice(b"\x1b=")
+            w.write_all(b"\x1b=")
         } else {
-            buf.extend_from_slice(b"\x1b>")
+            w.write_all(b"\x1b>")
         }
     }
 }
@@ -447,12 +453,12 @@ impl ApplicationCursor {
     }
 }
 
-impl BufWrite for ApplicationCursor {
-    fn write_buf(&self, buf: &mut Vec<u8>) {
+impl<W: std::io::Write> WriteTo<W> for ApplicationCursor {
+    fn write_to(&self, w: &mut W) -> std::io::Result<()> {
         if self.state {
-            buf.extend_from_slice(b"\x1b[?1h")
+            w.write_all(b"\x1b[?1h")
         } else {
-            buf.extend_from_slice(b"\x1b[?1l")
+            w.write_all(b"\x1b[?1l")
         }
     }
 }
@@ -469,12 +475,12 @@ impl BracketedPaste {
     }
 }
 
-impl BufWrite for BracketedPaste {
-    fn write_buf(&self, buf: &mut Vec<u8>) {
+impl<W: std::io::Write> WriteTo<W> for BracketedPaste {
+    fn write_to(&self, w: &mut W) -> std::io::Result<()> {
         if self.state {
-            buf.extend_from_slice(b"\x1b[?2004h")
+            w.write_all(b"\x1b[?2004h")
         } else {
-            buf.extend_from_slice(b"\x1b[?2004l")
+            w.write_all(b"\x1b[?2004l")
         }
     }
 }
@@ -495,39 +501,39 @@ impl MouseProtocolMode {
     }
 }
 
-impl BufWrite for MouseProtocolMode {
-    fn write_buf(&self, buf: &mut Vec<u8>) {
+impl<W: std::io::Write> WriteTo<W> for MouseProtocolMode {
+    fn write_to(&self, w: &mut W) -> std::io::Result<()> {
         if self.mode == self.prev {
-            return;
+            return Ok(());
         }
 
         match self.mode {
             crate::screen::MouseProtocolMode::None => match self.prev {
-                crate::screen::MouseProtocolMode::None => {}
+                crate::screen::MouseProtocolMode::None => Ok(()),
                 crate::screen::MouseProtocolMode::Press => {
-                    buf.extend_from_slice(b"\x1b[?9l");
+                    w.write_all(b"\x1b[?9l")
                 }
                 crate::screen::MouseProtocolMode::PressRelease => {
-                    buf.extend_from_slice(b"\x1b[?1000l");
+                    w.write_all(b"\x1b[?1000l")
                 }
                 crate::screen::MouseProtocolMode::ButtonMotion => {
-                    buf.extend_from_slice(b"\x1b[?1002l");
+                    w.write_all(b"\x1b[?1002l")
                 }
                 crate::screen::MouseProtocolMode::AnyMotion => {
-                    buf.extend_from_slice(b"\x1b[?1003l");
+                    w.write_all(b"\x1b[?1003l")
                 }
             },
             crate::screen::MouseProtocolMode::Press => {
-                buf.extend_from_slice(b"\x1b[?9h");
+                w.write_all(b"\x1b[?9h")
             }
             crate::screen::MouseProtocolMode::PressRelease => {
-                buf.extend_from_slice(b"\x1b[?1000h");
+                w.write_all(b"\x1b[?1000h")
             }
             crate::screen::MouseProtocolMode::ButtonMotion => {
-                buf.extend_from_slice(b"\x1b[?1002h");
+                w.write_all(b"\x1b[?1002h")
             }
             crate::screen::MouseProtocolMode::AnyMotion => {
-                buf.extend_from_slice(b"\x1b[?1003h");
+                w.write_all(b"\x1b[?1003h")
             }
         }
     }
@@ -549,29 +555,29 @@ impl MouseProtocolEncoding {
     }
 }
 
-impl BufWrite for MouseProtocolEncoding {
-    fn write_buf(&self, buf: &mut Vec<u8>) {
+impl<W: std::io::Write> WriteTo<W> for MouseProtocolEncoding {
+    fn write_to(&self, w: &mut W) -> std::io::Result<()> {
         if self.encoding == self.prev {
-            return;
+            return Ok(());
         }
 
         match self.encoding {
             crate::screen::MouseProtocolEncoding::Default => {
                 match self.prev {
-                    crate::screen::MouseProtocolEncoding::Default => {}
+                    crate::screen::MouseProtocolEncoding::Default => Ok(()),
                     crate::screen::MouseProtocolEncoding::Utf8 => {
-                        buf.extend_from_slice(b"\x1b[?1005l");
+                        w.write_all(b"\x1b[?1005l")
                     }
                     crate::screen::MouseProtocolEncoding::Sgr => {
-                        buf.extend_from_slice(b"\x1b[?1006l");
+                        w.write_all(b"\x1b[?1006l")
                     }
                 }
             }
             crate::screen::MouseProtocolEncoding::Utf8 => {
-                buf.extend_from_slice(b"\x1b[?1005h");
+                w.write_all(b"\x1b[?1005h")
             }
             crate::screen::MouseProtocolEncoding::Sgr => {
-                buf.extend_from_slice(b"\x1b[?1006h");
+                w.write_all(b"\x1b[?1006h")
             }
         }
     }

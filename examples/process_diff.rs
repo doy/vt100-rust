@@ -1,4 +1,4 @@
-use std::io::{Read as _, Write as _};
+use std::io::Read as _;
 
 fn read_frames() -> impl Iterator<Item = Vec<u8>> {
     (1..=7625).map(|i| {
@@ -14,13 +14,13 @@ fn read_frames() -> impl Iterator<Item = Vec<u8>> {
 fn draw_frames(frames: &[Vec<u8>]) {
     let mut stdout = std::io::stdout();
     let mut parser = vt100::Parser::default();
-    let mut screen = parser.screen().clone();
     for frame in frames {
+        let screen = parser.screen().clone();
         parser.process(&frame);
-        let new_screen = parser.screen().clone();
-        let diff = new_screen.contents_diff(&screen);
-        stdout.write_all(&diff).unwrap();
-        screen = new_screen;
+        parser
+            .screen()
+            .write_contents_diff(&mut stdout, &screen)
+            .unwrap();
     }
 }
 
