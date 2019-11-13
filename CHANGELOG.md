@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+* Fix zero-width characters when the cursor is at the end of a row.
+
 ## [0.6.1] - 2019-11-13
 
 ### Added

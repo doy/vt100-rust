@@ -592,7 +592,6 @@ impl Screen {
         let attrs = self.attrs;
 
         self.grid_mut().col_wrap(width);
-        let cell = self.current_cell_mut();
 
         if width == 0 {
             if pos.col > 0 {
@@ -621,6 +620,7 @@ impl Screen {
                 }
             }
         } else {
+            let cell = self.current_cell_mut();
             cell.set(c, attrs);
             self.grid_mut().col_inc(1);
             if width > 1 {
