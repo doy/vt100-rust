@@ -194,7 +194,7 @@ impl Screen {
     /// terminal parser, and will result in the same visual output.
     ///
     /// You are responsible for positioning the cursor before printing each
-    /// row, and final cursor position after displaying each row is
+    /// row, and the final cursor position after displaying each row is
     /// unspecified.
     pub fn rows_formatted(
         &self,
@@ -252,7 +252,7 @@ impl Screen {
     /// row subset in `self`.
     ///
     /// You are responsible for positioning the cursor before printing each
-    /// row, and final cursor position after displaying each row is
+    /// row, and the final cursor position after displaying each row is
     /// unspecified.
     pub fn rows_diff<'a>(
         &'a self,
@@ -281,6 +281,14 @@ impl Screen {
             })
     }
 
+    /// Returns terminal escape sequences sufficient to set the current
+    /// terminal's input modes.
+    ///
+    /// Supported modes are:
+    /// * application keypad
+    /// * application cursor
+    /// * bracketed paste
+    /// * xterm mouse support
     pub fn input_mode_formatted(&self) -> Vec<u8> {
         let mut contents = vec![];
         self.write_input_mode_formatted(&mut contents);
@@ -310,6 +318,9 @@ impl Screen {
         .write_buf(contents);
     }
 
+    /// Returns terminal escape sequences sufficient to change the previous
+    /// terminal's input modes to the input modes enabled in the current
+    /// terminal.
     pub fn input_mode_diff(&self, prev: &Self) -> Vec<u8> {
         let mut contents = vec![];
         self.write_input_mode_diff(&mut contents, prev);
@@ -350,6 +361,8 @@ impl Screen {
         .write_buf(contents);
     }
 
+    /// Returns terminal escape sequences sufficient to set the current
+    /// terminal's window title.
     pub fn title_formatted(&self) -> Vec<u8> {
         let mut contents = vec![];
         self.write_title_formatted(&mut contents);
@@ -361,6 +374,9 @@ impl Screen {
             .write_buf(contents);
     }
 
+    /// Returns terminal escape sequences sufficient to change the previous
+    /// terminal's window title to the window title set in the current
+    /// terminal.
     pub fn title_diff(&self, prev: &Self) -> Vec<u8> {
         let mut contents = vec![];
         self.write_title_diff(&mut contents, prev);
@@ -377,6 +393,9 @@ impl Screen {
         .write_buf(contents);
     }
 
+    /// Returns terminal escape sequences sufficient to cause audible and
+    /// visual bells to occur if they have been received since the terminal
+    /// described by `prev`.
     pub fn bells_diff(&self, prev: &Self) -> Vec<u8> {
         let mut contents = vec![];
         self.write_bells_diff(&mut contents, prev);
