@@ -1003,7 +1003,7 @@ impl vte::Perform for Screen {
             12 => self.ff(),
             13 => self.cr(),
             _ => {
-                log::warn!("unhandled control character: {}", b);
+                log::debug!("unhandled control character: {}", b);
             }
         }
     }
@@ -1025,11 +1025,11 @@ impl vte::Perform for Screen {
                 b'c' => self.ris(),
                 b'g' => self.vb(),
                 _ => {
-                    log::warn!("unhandled escape code: ESC {}", b);
+                    log::debug!("unhandled escape code: ESC {}", b);
                 }
             },
             Some(i) => {
-                log::warn!("unhandled escape code: ESC {} {}", i, b);
+                log::debug!("unhandled escape code: ESC {} {}", i, b);
             }
         }
     }
@@ -1067,8 +1067,8 @@ impl vte::Perform for Screen {
                     self.grid().size(),
                 )),
                 _ => {
-                    if log::log_enabled!(log::Level::Warn) {
-                        log::warn!(
+                    if log::log_enabled!(log::Level::Debug) {
+                        log::debug!(
                             "unhandled csi sequence: CSI {} {}",
                             param_str(params),
                             c
@@ -1082,8 +1082,8 @@ impl vte::Perform for Screen {
                 'h' => self.decset(canonicalize_params_multi(params)),
                 'l' => self.decrst(canonicalize_params_multi(params)),
                 _ => {
-                    if log::log_enabled!(log::Level::Warn) {
-                        log::warn!(
+                    if log::log_enabled!(log::Level::Debug) {
+                        log::debug!(
                             "unhandled csi sequence: CSI ? {} {}",
                             param_str(params),
                             c
@@ -1092,8 +1092,8 @@ impl vte::Perform for Screen {
                 }
             },
             Some(i) => {
-                if log::log_enabled!(log::Level::Warn) {
-                    log::warn!(
+                if log::log_enabled!(log::Level::Debug) {
+                    log::debug!(
                         "unhandled csi sequence: CSI {} {} {}",
                         i,
                         param_str(params),
@@ -1110,8 +1110,8 @@ impl vte::Perform for Screen {
             (Some(&b"1"), Some(s)) => self.osc1(s),
             (Some(&b"2"), Some(s)) => self.osc2(s),
             _ => {
-                if log::log_enabled!(log::Level::Warn) {
-                    log::warn!(
+                if log::log_enabled!(log::Level::Debug) {
+                    log::debug!(
                         "unhandled osc sequence: OSC {}",
                         osc_param_str(params),
                     )
@@ -1121,15 +1121,15 @@ impl vte::Perform for Screen {
     }
 
     fn hook(&mut self, params: &[i64], intermediates: &[u8], _ignore: bool) {
-        if log::log_enabled!(log::Level::Warn) {
+        if log::log_enabled!(log::Level::Debug) {
             // TODO: include the final byte here (it seems to be a bug that
             // the vte parser doesn't currently pass it to this method)
             match intermediates.get(0) {
-                None => log::warn!(
+                None => log::debug!(
                     "unhandled dcs sequence: DCS {}",
                     param_str(params),
                 ),
-                Some(i) => log::warn!(
+                Some(i) => log::debug!(
                     "unhandled dcs sequence: DCS {} {}",
                     i,
                     param_str(params),

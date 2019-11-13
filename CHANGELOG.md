@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+
+* Unhandled escape sequence warnings are now at the `debug` log level.
+
 ## [0.6.0] - 2019-11-13
 
 ### Added
