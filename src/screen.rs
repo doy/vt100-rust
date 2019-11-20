@@ -591,7 +591,16 @@ impl Screen {
         let width = c.width().unwrap_or(0).try_into().unwrap();
         let attrs = self.attrs;
 
-        self.grid_mut().col_wrap(width);
+        // zero width characters still cause the cursor to wrap - this doesn't
+        // affect which cell they go into (the "previous cell" for both (row,
+        // max_col + 1) and (row + 1, 0) is (row, max_col)), but does affect
+        // further movement afterwards - writing an `a` at (row, max_col)
+        // followed by a crlf puts the cursor at (row + 1, 0), but writing a
+        // `à` (specifically `a` followed by a combining grave accent - the
+        // normalized U+00E0 "latin small letter a with grave" behaves the
+        // same as `a`) at (row, max_col) followed by a crlf puts the cursor
+        // at (row + 2, 0)
+        self.grid_mut().col_wrap(if width == 0 { 1 } else { width });
 
         if width == 0 {
             if pos.col > 0 {

@@ -160,7 +160,7 @@ fn combining() {
     assert_eq!(parser.screen().contents(), "a".repeat(80));
 
     parser.process("\u{0301}".as_bytes());
-    assert_eq!(parser.screen().cursor_position(), (0, 80));
+    assert_eq!(parser.screen().cursor_position(), (1, 0));
     assert_eq!(parser.screen().contents(), format!("{}á", "a".repeat(79)));
 }
 
