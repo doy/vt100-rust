@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+* Fix output of `contents_formatted` and `contents_diff` when the cursor
+  position ends at one past the end of a row.
+* If the cursor position is one past the end of a row, any char, even a
+  combining char, needs to cause the cursor position to wrap.
+
 ## [0.6.2] - 2019-11-13
 
 ### Fixed
