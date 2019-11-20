@@ -221,3 +221,18 @@ fn wrap() {
     assert_eq!(parser.screen().cell(1, 2).unwrap().contents(), "a");
     assert_eq!(parser.screen().cell(1, 3).unwrap().contents(), "");
 }
+
+#[test]
+fn wrap_weird() {
+    let mut parser = vt100::Parser::default();
+
+    let screen = parser.screen().clone();
+    parser.process(b"foo\r\nfoo\r\nfoo\r\nfoo\r\nfoo\r\nfoo\r\nfoo\r\nfoo\r\nfoo\r\nfoo\r\nfoo\r\nfoo\r\nfoo\r\nfoo\r\nfoo\r\nfoo\r\nfoo\r\nfoo\r\nfoo\r\nfoo\r\nfoo\r\nfoo\r\nfoo\r\nfoo");
+    assert_eq!(parser.screen().contents_formatted(), &b"\x1b[?25h\x1b[m\x1b[H\x1b[Jfoo\r\nfoo\r\nfoo\r\nfoo\r\nfoo\r\nfoo\r\nfoo\r\nfoo\r\nfoo\r\nfoo\r\nfoo\r\nfoo\r\nfoo\r\nfoo\r\nfoo\r\nfoo\r\nfoo\r\nfoo\r\nfoo\r\nfoo\r\nfoo\r\nfoo\r\nfoo\r\nfoo"[..]);
+    assert_eq!(parser.screen().contents_diff(&screen), &b"foo\r\nfoo\r\nfoo\r\nfoo\r\nfoo\r\nfoo\r\nfoo\r\nfoo\r\nfoo\r\nfoo\r\nfoo\r\nfoo\r\nfoo\r\nfoo\r\nfoo\r\nfoo\r\nfoo\r\nfoo\r\nfoo\r\nfoo\r\nfoo\r\nfoo\r\nfoo\r\nfoo"[..]);
+
+    let screen = parser.screen().clone();
+    parser.process(b"\x1b[3;80H ");
+    assert_eq!(parser.screen().contents_formatted(), &b"\x1b[?25h\x1b[m\x1b[H\x1b[Jfoo\r\nfoo\r\nfoo\x1b[76C \r\nfoo\r\nfoo\r\nfoo\r\nfoo\r\nfoo\r\nfoo\r\nfoo\r\nfoo\r\nfoo\r\nfoo\r\nfoo\r\nfoo\r\nfoo\r\nfoo\r\nfoo\r\nfoo\r\nfoo\r\nfoo\r\nfoo\r\nfoo\r\nfoo\x1b[3;80H "[..]);
+    assert_eq!(parser.screen().contents_diff(&screen), &b"\x1b[3;80H "[..]);
+}

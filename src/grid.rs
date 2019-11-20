@@ -212,7 +212,29 @@ impl Grid {
             wrapping = row.wrapped();
         }
 
-        crate::term::MoveFromTo::new(prev_pos, self.pos).write_buf(contents);
+        // writing a character to the last column of a row doesn't wrap the
+        // cursor immediately - it waits until the next character is actually
+        // drawn. it is only possible for the cursor to have this kind of
+        // position after drawing a character though, so if we end in this
+        // position, we need to redraw the character at the end of the row.
+        if prev_pos != self.pos && self.pos.col >= self.size.cols {
+            let mut pos = Pos {
+                row: self.pos.row,
+                col: self.size.cols - 2,
+            };
+            if !self.visible_cell(pos).unwrap().is_wide() {
+                pos = Pos {
+                    row: self.pos.row,
+                    col: self.size.cols - 1,
+                };
+            }
+            crate::term::MoveFromTo::new(prev_pos, pos).write_buf(contents);
+            let cell = self.visible_cell(pos).unwrap();
+            contents.extend(cell.contents().as_bytes());
+        } else {
+            crate::term::MoveFromTo::new(prev_pos, self.pos)
+                .write_buf(contents);
+        }
 
         prev_attrs
     }
@@ -244,7 +266,29 @@ impl Grid {
             wrapping = row.wrapped();
         }
 
-        crate::term::MoveFromTo::new(prev_pos, self.pos).write_buf(contents);
+        // writing a character to the last column of a row doesn't wrap the
+        // cursor immediately - it waits until the next character is actually
+        // drawn. it is only possible for the cursor to have this kind of
+        // position after drawing a character though, so if we end in this
+        // position, we need to redraw the character at the end of the row.
+        if prev_pos != self.pos && self.pos.col >= self.size.cols {
+            let mut pos = Pos {
+                row: self.pos.row,
+                col: self.size.cols - 2,
+            };
+            if !self.visible_cell(pos).unwrap().is_wide() {
+                pos = Pos {
+                    row: self.pos.row,
+                    col: self.size.cols - 1,
+                };
+            }
+            crate::term::MoveFromTo::new(prev_pos, pos).write_buf(contents);
+            let cell = self.visible_cell(pos).unwrap();
+            contents.extend(cell.contents().as_bytes());
+        } else {
+            crate::term::MoveFromTo::new(prev_pos, self.pos)
+                .write_buf(contents);
+        }
 
         prev_attrs
     }
