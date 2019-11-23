@@ -1,4 +1,3 @@
-use unicode_normalization::UnicodeNormalization as _;
 use unicode_width::UnicodeWidthChar as _;
 
 const CODEPOINTS_IN_CELL: usize = 6;
@@ -48,6 +47,18 @@ impl Cell {
 
         self.contents[self.len()] = c;
         self.len += 1;
+
+        self.normalize();
+    }
+
+    #[cfg(not(feature = "unicode-normalization"))]
+    #[inline]
+    fn normalize(&mut self) {}
+
+    #[cfg(feature = "unicode-normalization")]
+    #[inline]
+    fn normalize(&mut self) {
+        use unicode_normalization::UnicodeNormalization as _;
 
         // some fonts have combined characters but can't render combining
         // characters correctly, so try to prefer precombined characters when

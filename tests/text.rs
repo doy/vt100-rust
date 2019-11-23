@@ -130,6 +130,7 @@ fn wide() {
     );
 }
 
+#[cfg(feature = "unicode-normalization")]
 #[test]
 fn combining() {
     let mut parser = vt100::Parser::default();

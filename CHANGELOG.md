@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+* New (default-on) cargo feature `unicode-normalization` which can be disabled
+  to disable normalizing cell contents to NFC - it's a pretty small edge case,
+  and the data tables required to support it are quite large, which affects
+  size-sensitive targets like wasm
+
 ## [0.6.3] - 2019-11-20
 
 ### Fixed
