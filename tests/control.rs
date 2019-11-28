@@ -97,6 +97,21 @@ fn lf_with(b: u8) {
     assert_eq!(parser.screen().cell(1, 5).unwrap().contents(), "r");
     assert_eq!(parser.screen().cell(1, 6).unwrap().contents(), "");
     assert_eq!(parser.screen().contents(), "foo\n   bar");
+
+    parser.process(b"\x1b[H\x1b[J\x1b[4;80H");
+    assert_eq!(parser.screen().cursor_position(), (3, 79));
+    parser.process(b"a");
+    assert_eq!(parser.screen().cursor_position(), (3, 80));
+
+    // note: this is a behavior that terminals disagree on - xterm and urxvt
+    // would leave the cursor at (4, 79) here, but alacritty, tmux, and screen
+    // put it at (4, 80). in general, i'm aiming for roughly tmux/screen
+    // compat where possible, so that's what i'm going with here.
+    parser.process(&[b]);
+    assert_eq!(parser.screen().cursor_position(), (4, 80));
+
+    parser.process(b"b");
+    assert_eq!(parser.screen().cursor_position(), (5, 1));
 }
 
 #[test]

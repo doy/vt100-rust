@@ -221,6 +221,17 @@ fn wrap() {
     assert_eq!(parser.screen().cell(1, 1).unwrap().contents(), "");
     assert_eq!(parser.screen().cell(1, 2).unwrap().contents(), "a");
     assert_eq!(parser.screen().cell(1, 3).unwrap().contents(), "");
+
+    parser.process(b"\x1b[H\x1b[J");
+    assert_eq!(parser.screen().contents(), "");
+    parser.process(b"                                                                                ");
+    assert_eq!(parser.screen().contents(), "                                                                                ");
+    parser.process(b"\n");
+    assert_eq!(parser.screen().contents(), "                                                                                ");
+    parser.process(b"\n");
+    assert_eq!(parser.screen().contents(), "                                                                                ");
+    parser.process(b" ");
+    assert_eq!(parser.screen().contents(), "                                                                                \n\n\n ");
 }
 
 #[test]

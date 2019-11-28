@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+* Fix a couple more end-of-line/wrapping bugs.
+
 ## [0.7.0] - 2019-11-23
 
 ### Added

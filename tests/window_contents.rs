@@ -80,33 +80,72 @@ fn empty_cells() {
 #[test]
 fn cursor_positioning() {
     let mut parser = vt100::Parser::default();
-    let screen1 = parser.screen().clone();
 
+    let screen = parser.screen().clone();
     parser.process(b":\x1b[K");
-    let screen2 = parser.screen().clone();
     assert_eq!(parser.screen().cursor_position(), (0, 1));
     assert_eq!(
         parser.screen().contents_formatted(),
         b"\x1b[?25h\x1b[m\x1b[H\x1b[J:"
     );
-    assert_eq!(parser.screen().contents_diff(&screen1), b":");
+    assert_eq!(parser.screen().contents_diff(&screen), b":");
 
+    let screen = parser.screen().clone();
     parser.process(b"a");
-    let screen3 = parser.screen().clone();
     assert_eq!(parser.screen().cursor_position(), (0, 2));
     assert_eq!(
         parser.screen().contents_formatted(),
         b"\x1b[?25h\x1b[m\x1b[H\x1b[J:a"
     );
-    assert_eq!(parser.screen().contents_diff(&screen2), b"a");
+    assert_eq!(parser.screen().contents_diff(&screen), b"a");
 
+    let screen = parser.screen().clone();
     parser.process(b"\x1b[1;2H\x1b[K");
     assert_eq!(parser.screen().cursor_position(), (0, 1));
     assert_eq!(
         parser.screen().contents_formatted(),
         b"\x1b[?25h\x1b[m\x1b[H\x1b[J:"
     );
-    assert_eq!(parser.screen().contents_diff(&screen3), b"\x1b[1;2H\x1b[K");
+    assert_eq!(parser.screen().contents_diff(&screen), b"\x1b[1;2H\x1b[K");
+
+    let screen = parser.screen().clone();
+    parser.process(b"\x1b[H\x1b[J\x1b[4;80H");
+    assert_eq!(parser.screen().cursor_position(), (3, 79));
+    assert_eq!(
+        parser.screen().contents_formatted(),
+        b"\x1b[?25h\x1b[m\x1b[H\x1b[J\x1b[4;80H"
+    );
+    assert_eq!(
+        parser.screen().contents_diff(&screen),
+        b"\x1b[H\x1b[K\x1b[4;80H"
+    );
+
+    let screen = parser.screen().clone();
+    parser.process(b"a");
+    assert_eq!(parser.screen().cursor_position(), (3, 80));
+    assert_eq!(
+        parser.screen().contents_formatted(),
+        b"\x1b[?25h\x1b[m\x1b[H\x1b[J\x1b[4;80Ha"
+    );
+    assert_eq!(parser.screen().contents_diff(&screen), b"a");
+
+    let screen = parser.screen().clone();
+    parser.process(b"\n");
+    assert_eq!(parser.screen().cursor_position(), (4, 80));
+    assert_eq!(
+        parser.screen().contents_formatted(),
+        b"\x1b[?25h\x1b[m\x1b[H\x1b[J\x1b[4;80Ha\n"
+    );
+    assert_eq!(parser.screen().contents_diff(&screen), b"\n");
+
+    let screen = parser.screen().clone();
+    parser.process(b"b");
+    assert_eq!(parser.screen().cursor_position(), (5, 1));
+    assert_eq!(
+        parser.screen().contents_formatted(),
+        b"\x1b[?25h\x1b[m\x1b[H\x1b[J\x1b[4;80Ha\x1b[6;1Hb"
+    );
+    assert_eq!(parser.screen().contents_diff(&screen), b"\r\nb");
 }
 
 #[test]

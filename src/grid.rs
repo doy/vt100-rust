@@ -228,9 +228,55 @@ impl Grid {
                     col: self.size.cols - 1,
                 };
             }
-            crate::term::MoveFromTo::new(prev_pos, pos).write_buf(contents);
             let cell = self.visible_cell(pos).unwrap();
-            contents.extend(cell.contents().as_bytes());
+            if cell.has_contents() {
+                crate::term::MoveFromTo::new(prev_pos, pos)
+                    .write_buf(contents);
+                contents.extend(cell.contents().as_bytes());
+            } else {
+                // if the cell doesn't have contents, we can't have gotten
+                // here by drawing a character in the last column. this means
+                // that as far as i'm aware, we have to have reached here from
+                // a newline when we were already after the end of an earlier
+                // row. in the case where we are already after the end of an
+                // earlier row, we can just write a few newlines, otherwise we
+                // also need to do the same as above to get ourselves to after
+                // the end of a row.
+                let orig_row = pos.row;
+                let mut found = false;
+                for i in (0..orig_row).rev() {
+                    pos.row = i;
+                    let cell = self.visible_cell(pos).unwrap();
+                    if cell.has_contents() {
+                        if prev_pos.row != i || prev_pos.col < self.size.cols
+                        {
+                            crate::term::MoveFromTo::new(prev_pos, pos)
+                                .write_buf(contents);
+                            contents.extend(cell.contents().as_bytes());
+                        }
+                        contents.extend(
+                            "\n".repeat((orig_row - i) as usize).as_bytes(),
+                        );
+                        found = true;
+                        break;
+                    }
+                }
+
+                // this can happen if you get the cursor off the end of a row,
+                // and then do something to clear the current row without
+                // moving the cursor (IL, ED, EL, etc). i can't see any way
+                // for this to happen without the entire current row being
+                // cleared (not just the last cell), so this seems
+                // prooooobably fine?
+                if !found {
+                    pos.row = orig_row;
+                    crate::term::MoveFromTo::new(prev_pos, pos)
+                        .write_buf(contents);
+                    contents.push(b' ');
+                    crate::term::ClearRowBackward::default()
+                        .write_buf(contents);
+                }
+            }
         } else {
             crate::term::MoveFromTo::new(prev_pos, self.pos)
                 .write_buf(contents);
@@ -282,9 +328,55 @@ impl Grid {
                     col: self.size.cols - 1,
                 };
             }
-            crate::term::MoveFromTo::new(prev_pos, pos).write_buf(contents);
             let cell = self.visible_cell(pos).unwrap();
-            contents.extend(cell.contents().as_bytes());
+            if cell.has_contents() {
+                crate::term::MoveFromTo::new(prev_pos, pos)
+                    .write_buf(contents);
+                contents.extend(cell.contents().as_bytes());
+            } else {
+                // if the cell doesn't have contents, we can't have gotten
+                // here by drawing a character in the last column. this means
+                // that as far as i'm aware, we have to have reached here from
+                // a newline when we were already after the end of an earlier
+                // row. in the case where we are already after the end of an
+                // earlier row, we can just write a few newlines, otherwise we
+                // also need to do the same as above to get ourselves to after
+                // the end of a row.
+                let orig_row = pos.row;
+                let mut found = false;
+                for i in (0..orig_row).rev() {
+                    pos.row = i;
+                    let cell = self.visible_cell(pos).unwrap();
+                    if cell.has_contents() {
+                        if prev_pos.row != i || prev_pos.col < self.size.cols
+                        {
+                            crate::term::MoveFromTo::new(prev_pos, pos)
+                                .write_buf(contents);
+                            contents.extend(cell.contents().as_bytes());
+                        }
+                        contents.extend(
+                            "\n".repeat((orig_row - i) as usize).as_bytes(),
+                        );
+                        found = true;
+                        break;
+                    }
+                }
+
+                // this can happen if you get the cursor off the end of a row,
+                // and then do something to clear the current row without
+                // moving the cursor (IL, ED, EL, etc). i can't see any way
+                // for this to happen without the entire current row being
+                // cleared (not just the last cell), so this seems
+                // prooooobably fine?
+                if !found {
+                    pos.row = orig_row;
+                    crate::term::MoveFromTo::new(prev_pos, pos)
+                        .write_buf(contents);
+                    contents.push(b' ');
+                    crate::term::ClearRowBackward::default()
+                        .write_buf(contents);
+                }
+            }
         } else {
             crate::term::MoveFromTo::new(prev_pos, self.pos)
                 .write_buf(contents);
@@ -495,9 +587,9 @@ impl Grid {
         self.col_clamp();
     }
 
-    pub fn col_wrap(&mut self, width: u16) {
+    pub fn col_wrap(&mut self, width: u16, wrap: bool) {
         if self.pos.col > self.size.cols - width {
-            self.current_row_mut().wrap(true);
+            self.current_row_mut().wrap(wrap);
             self.pos.col = 0;
             self.row_inc_scroll(1);
         }
