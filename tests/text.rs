@@ -226,6 +226,10 @@ fn wrap() {
     assert_eq!(parser.screen().cell(1, 2).unwrap().contents(), "a");
     assert_eq!(parser.screen().cell(1, 3).unwrap().contents(), "");
 
+    let mut new_parser = vt100::Parser::default();
+    new_parser.process(&parser.screen().contents_formatted());
+    assert_eq!(new_parser.screen().contents(), parser.screen().contents());
+
     parser.process(b"\x1b[H\x1b[J");
     assert_eq!(parser.screen().contents(), "");
     parser.process(b"                                                                                ");

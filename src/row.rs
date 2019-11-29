@@ -167,7 +167,9 @@ impl Row {
                     if pos != prev_pos {
                         if !wrapping
                             || prev_pos.row + 1 != pos.row
-                            || prev_pos.col != self.cols()
+                            || prev_pos.col
+                                < self.cols()
+                                    - if cell.is_wide() { 1 } else { 0 }
                             || pos.col != 0
                         {
                             crate::term::MoveFromTo::new(prev_pos, pos)
@@ -260,7 +262,9 @@ impl Row {
                     if pos != prev_pos {
                         if !wrapping
                             || prev_pos.row + 1 != pos.row
-                            || prev_pos.col != self.cols()
+                            || prev_pos.col
+                                < self.cols()
+                                    - if cell.is_wide() { 1 } else { 0 }
                             || pos.col != 0
                         {
                             crate::term::MoveFromTo::new(prev_pos, pos)
