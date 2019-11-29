@@ -44,6 +44,10 @@ impl Cell {
         if self.len() >= CODEPOINTS_IN_CELL {
             return;
         }
+        if self.len() == 0 {
+            self.contents[self.len()] = ' ';
+            self.len += 1;
+        }
 
         self.contents[self.len()] = c;
         self.len += 1;

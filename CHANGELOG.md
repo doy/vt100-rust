@@ -6,6 +6,9 @@
 
 * Fix a couple more end-of-line/wrapping bugs.
 * Fix applying combining characters to wide characters.
+* Ensure cells can't have contents with width zero (to avoid ambiguity). If an
+  empty cell gets a combining character applied to it, default that cell to a
+  (normal-width) space first.
 
 ## [0.7.0] - 2019-11-23
 

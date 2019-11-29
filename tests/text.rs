@@ -167,6 +167,12 @@ fn combining() {
     parser.process("\x1b[H\x1b[Jａ\u{0301}".as_bytes());
     assert_eq!(parser.screen().cell(0, 0).unwrap().contents(), "ａ\u{0301}");
     assert_eq!(parser.screen().cell(0, 1).unwrap().contents(), "");
+
+    parser.process("\x1b[H\x1b[J\x1b[2C\u{0301}".as_bytes());
+    assert_eq!(parser.screen().cell(0, 0).unwrap().contents(), "");
+    assert_eq!(parser.screen().cell(0, 1).unwrap().contents(), " \u{0301}");
+    assert_eq!(parser.screen().cell(0, 2).unwrap().contents(), "");
+    assert_eq!(parser.screen().cell(0, 3).unwrap().contents(), "");
 }
 
 #[test]
