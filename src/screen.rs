@@ -584,6 +584,7 @@ impl Screen {
 }
 
 impl Screen {
+    #[allow(clippy::too_many_lines)]
     fn text(&mut self, c: char) {
         let pos = self.grid().pos();
         let size = self.grid().size();
@@ -667,12 +668,20 @@ impl Screen {
 
         if width == 0 {
             if pos.col > 0 {
-                let prev_cell = self
+                let mut prev_cell = self
                     .drawing_cell_mut(crate::grid::Pos {
                         row: pos.row,
                         col: pos.col - 1,
                     })
                     .unwrap();
+                if prev_cell.is_wide_continuation() {
+                    prev_cell = self
+                        .drawing_cell_mut(crate::grid::Pos {
+                            row: pos.row,
+                            col: pos.col - 2,
+                        })
+                        .unwrap();
+                }
                 prev_cell.append(c);
             } else if pos.row > 0 {
                 let prev_row = self
@@ -682,12 +691,20 @@ impl Screen {
                     })
                     .unwrap();
                 if prev_row.wrapped() {
-                    let prev_cell = self
+                    let mut prev_cell = self
                         .drawing_cell_mut(crate::grid::Pos {
                             row: pos.row - 1,
-                            col: self.grid().size().cols - 1,
+                            col: size.cols - 1,
                         })
                         .unwrap();
+                    if prev_cell.is_wide_continuation() {
+                        prev_cell = self
+                            .drawing_cell_mut(crate::grid::Pos {
+                                row: pos.row - 1,
+                                col: size.cols - 2,
+                            })
+                            .unwrap();
+                    }
                     prev_cell.append(c);
                 }
             }

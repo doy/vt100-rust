@@ -5,6 +5,7 @@
 ### Fixed
 
 * Fix a couple more end-of-line/wrapping bugs.
+* Fix applying combining characters to wide characters.
 
 ## [0.7.0] - 2019-11-23
 
