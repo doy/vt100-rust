@@ -149,11 +149,20 @@ impl Grid {
         self.visible_row(pos).and_then(|r| r.get(pos.col))
     }
 
+    pub fn drawing_cell(&self, pos: Pos) -> Option<&crate::cell::Cell> {
+        self.drawing_row(pos).and_then(|r| r.get(pos.col))
+    }
+
     pub fn drawing_cell_mut(
         &mut self,
         pos: Pos,
     ) -> Option<&mut crate::cell::Cell> {
         self.drawing_row_mut(pos).and_then(|r| r.get_mut(pos.col))
+    }
+
+    pub fn current_cell(&self) -> &crate::cell::Cell {
+        self.drawing_cell(self.pos)
+            .expect("cursor not pointing to a cell")
     }
 
     pub fn current_cell_mut(&mut self) -> &mut crate::cell::Cell {
@@ -414,28 +423,38 @@ impl Grid {
     }
 
     pub fn erase_row_forward(&mut self, attrs: crate::attrs::Attrs) {
+        let size = self.size;
         let pos = self.pos;
         let row = self.current_row_mut();
         row.wrap(false);
-        for cell in row.cells_mut().skip(pos.col as usize) {
-            cell.clear(attrs);
+        for col in pos.col..size.cols {
+            row.erase(col as usize, attrs);
         }
     }
 
     pub fn erase_row_backward(&mut self, attrs: crate::attrs::Attrs) {
+        let size = self.size;
         let pos = self.pos;
         let row = self.current_row_mut();
-        for cell in row.cells_mut().take(pos.col as usize + 1) {
-            cell.clear(attrs);
+        for col in 0..=pos.col.min(size.cols - 1) {
+            row.erase(col as usize, attrs);
         }
     }
 
     pub fn insert_cells(&mut self, count: u16) {
         let size = self.size;
         let pos = self.pos;
+        let wide =
+            pos.col < size.cols && self.current_cell().is_wide_continuation();
         let row = self.current_row_mut();
         for _ in 0..count {
+            if wide {
+                row.get_mut(pos.col).unwrap().set_wide_continuation(false);
+            }
             row.insert(pos.col as usize, crate::cell::Cell::default());
+            if wide {
+                row.get_mut(pos.col).unwrap().set_wide_continuation(true);
+            }
         }
         row.truncate(size.cols as usize);
     }
@@ -451,12 +470,12 @@ impl Grid {
     }
 
     pub fn erase_cells(&mut self, count: u16, attrs: crate::attrs::Attrs) {
+        let size = self.size;
         let pos = self.pos;
         let row = self.current_row_mut();
-        for cell in
-            row.cells_mut().skip(pos.col as usize).take(count as usize)
-        {
-            cell.clear(attrs);
+        row.clear_wide(pos.col);
+        for col in pos.col..((pos.col + count).min(size.cols)) {
+            row.erase(col as usize, attrs);
         }
     }
 

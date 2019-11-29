@@ -112,11 +112,23 @@ impl Cell {
         self.len & 0x80 == 0x80
     }
 
+    pub fn is_wide_continuation(&self) -> bool {
+        self.len & 0x40 == 0x40
+    }
+
     fn set_wide(&mut self, wide: bool) {
         if wide {
             self.len |= 0x80;
         } else {
             self.len &= 0x7f;
+        }
+    }
+
+    pub(crate) fn set_wide_continuation(&mut self, wide: bool) {
+        if wide {
+            self.len |= 0x40;
+        } else {
+            self.len &= 0xbf;
         }
     }
 

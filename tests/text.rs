@@ -232,6 +232,20 @@ fn wrap() {
     assert_eq!(parser.screen().contents(), "                                                                                ");
     parser.process(b" ");
     assert_eq!(parser.screen().contents(), "                                                                                \n\n\n ");
+
+    parser.process(b"\x1b[H\x1b[J");
+    assert_eq!(parser.screen().contents(), "");
+    let screen = parser.screen().clone();
+    parser.process("ネa\x1b[L\x1b[1;79Hbcd".as_bytes());
+    assert_eq!(parser.screen().contents(), "                                                                              bcd a");
+    assert_eq!(
+        parser.screen().contents_formatted(),
+        "\x1b[?25h\x1b[m\x1b[H\x1b[J\x1b[78Cbcd\x1b[Ca\x1b[2;2H".as_bytes()
+    );
+    assert_eq!(
+        parser.screen().contents_diff(&screen),
+        "\x1b[78Cbcd\x1b[Ca\x1b[2;2H".as_bytes()
+    );
 }
 
 #[test]

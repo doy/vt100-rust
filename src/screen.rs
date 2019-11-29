@@ -509,11 +509,22 @@ impl Screen {
         self.grid().drawing_row(pos)
     }
 
+    fn drawing_cell(
+        &self,
+        pos: crate::grid::Pos,
+    ) -> Option<&crate::cell::Cell> {
+        self.grid().drawing_cell(pos)
+    }
+
     fn drawing_cell_mut(
         &mut self,
         pos: crate::grid::Pos,
     ) -> Option<&mut crate::cell::Cell> {
         self.grid_mut().drawing_cell_mut(pos)
+    }
+
+    fn current_cell(&self) -> &crate::cell::Cell {
+        self.grid().current_cell()
     }
 
     fn current_cell_mut(&mut self) -> &mut crate::cell::Cell {
@@ -575,58 +586,84 @@ impl Screen {
 impl Screen {
     fn text(&mut self, c: char) {
         let pos = self.grid().pos();
-        if pos.col > 0 {
-            let attrs = self.attrs;
+        let size = self.grid().size();
+        let attrs = self.attrs;
+        let drawing_pos = if pos.col < size.cols {
+            pos
+        } else {
+            crate::grid::Pos {
+                row: pos.row + 1,
+                col: 0,
+            }
+        };
+
+        if self
+            .drawing_cell(drawing_pos)
+            .unwrap()
+            .is_wide_continuation()
+        {
             let prev_cell = self
                 .drawing_cell_mut(crate::grid::Pos {
-                    row: pos.row,
-                    col: pos.col - 1,
+                    row: drawing_pos.row,
+                    col: drawing_pos.col - 1,
                 })
                 .unwrap();
-            if prev_cell.is_wide() {
-                prev_cell.clear(attrs);
-            }
+            prev_cell.clear(attrs);
         }
 
-        let mut wrap = true;
-        // it doesn't make any sense to wrap if the last column in a row
-        // didn't already have contents
-        if pos.col > 1 {
-            let mut prev_cell = self
+        if self.drawing_cell(drawing_pos).unwrap().is_wide() {
+            let next_cell = self
                 .drawing_cell_mut(crate::grid::Pos {
-                    row: pos.row,
-                    col: pos.col - 2,
+                    row: drawing_pos.row,
+                    col: drawing_pos.col + 1,
                 })
                 .unwrap();
-            if !prev_cell.is_wide() {
-                prev_cell = self
-                    .drawing_cell_mut(crate::grid::Pos {
-                        row: pos.row,
-                        col: pos.col - 1,
-                    })
-                    .unwrap();
-            }
-            if !prev_cell.has_contents() {
-                wrap = false;
-            }
+            next_cell.clear(attrs);
         }
 
         let width = c.width().unwrap_or(0).try_into().unwrap();
-        let attrs = self.attrs;
 
-        self.grid_mut().col_wrap(
-            // zero width characters still cause the cursor to wrap - this
-            // doesn't affect which cell they go into (the "previous cell" for
-            // both (row, max_col + 1) and (row + 1, 0) is (row, max_col)),
-            // but does affect further movement afterwards - writing an `a` at
-            // (row, max_col) followed by a crlf puts the cursor at (row + 1,
-            // 0), but writing a `à` (specifically `a` followed by a combining
-            // grave accent - the normalized U+00E0 "latin small letter a with
-            // grave" behaves the same as `a`) at (row, max_col) followed by a
-            // crlf puts the cursor at (row + 2, 0)
-            if width == 0 { 1 } else { width },
-            wrap,
-        );
+        // zero width characters still cause the cursor to wrap - this doesn't
+        // affect which cell they go into (the "previous cell" for both (row,
+        // max_col + 1) and (row + 1, 0) is (row, max_col)), but does affect
+        // further movement afterwards - writing an `a` at (row, max_col)
+        // followed by a crlf puts the cursor at (row + 1,
+        // 0), but writing a `à` (specifically `a` followed by a combining
+        // grave accent - the normalized U+00E0 "latin small letter a with
+        // grave" behaves the same as `a`) at (row, max_col) followed by a
+        // crlf puts the cursor at (row + 2, 0)
+        let wrap_width = if width == 0 { 1 } else { width };
+
+        // it doesn't make any sense to wrap if the last column in a row
+        // didn't already have contents (but if a wide character wraps because
+        // there was only one column left in the previous row, that should
+        // still count)
+        let mut wrap = false;
+        if pos.col > size.cols - wrap_width {
+            let last_cell = self
+                .drawing_cell(crate::grid::Pos {
+                    row: pos.row,
+                    col: size.cols - 1,
+                })
+                .unwrap();
+            if last_cell.has_contents() || last_cell.is_wide_continuation() {
+                wrap = true;
+            }
+            if wrap_width > 1 {
+                let last_last_cell = self
+                    .drawing_cell(crate::grid::Pos {
+                        row: pos.row,
+                        col: size.cols - 2,
+                    })
+                    .unwrap();
+                if last_last_cell.has_contents()
+                    || last_last_cell.is_wide_continuation()
+                {
+                    wrap = true;
+                }
+            }
+        }
+        self.grid_mut().col_wrap(wrap_width, wrap);
 
         if width == 0 {
             if pos.col > 0 {
@@ -659,9 +696,19 @@ impl Screen {
             cell.set(c, attrs);
             self.grid_mut().col_inc(1);
             if width > 1 {
-                let attrs = self.attrs;
+                let pos = self.grid().pos();
+                if self.current_cell().is_wide() {
+                    let next_next_cell = self
+                        .drawing_cell_mut(crate::grid::Pos {
+                            row: pos.row,
+                            col: pos.col + 1,
+                        })
+                        .unwrap();
+                    next_next_cell.clear(attrs);
+                }
                 let next_cell = self.current_cell_mut();
                 next_cell.clear(attrs);
+                next_cell.set_wide_continuation(true);
                 self.grid_mut().col_inc(1);
             }
         }

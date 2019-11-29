@@ -30,12 +30,6 @@ impl Row {
         self.cells.iter()
     }
 
-    pub fn cells_mut(
-        &mut self,
-    ) -> impl Iterator<Item = &mut crate::cell::Cell> {
-        self.cells.iter_mut()
-    }
-
     pub fn get(&self, col: u16) -> Option<&crate::cell::Cell> {
         self.cells.get(col as usize)
     }
@@ -49,7 +43,13 @@ impl Row {
     }
 
     pub fn remove(&mut self, i: usize) {
+        self.clear_wide(i.try_into().unwrap());
         self.cells.remove(i);
+    }
+
+    pub fn erase(&mut self, i: usize, attrs: crate::attrs::Attrs) {
+        self.clear_wide(i.try_into().unwrap());
+        self.cells.get_mut(i).unwrap().clear(attrs);
     }
 
     pub fn truncate(&mut self, len: usize) {
@@ -66,6 +66,18 @@ impl Row {
 
     pub fn wrapped(&self) -> bool {
         self.wrapped
+    }
+
+    pub fn clear_wide(&mut self, col: u16) {
+        let cell = self.get(col).unwrap();
+        let other = if cell.is_wide() {
+            self.get_mut(col + 1).unwrap()
+        } else if cell.is_wide_continuation() {
+            self.get_mut(col - 1).unwrap()
+        } else {
+            return;
+        };
+        other.clear(*other.attrs());
     }
 
     pub fn write_contents(
