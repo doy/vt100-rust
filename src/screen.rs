@@ -636,9 +636,13 @@ impl Screen {
         let wrap_width = if width == 0 { 1 } else { width };
 
         // it doesn't make any sense to wrap if the last column in a row
-        // didn't already have contents (but if a wide character wraps because
-        // there was only one column left in the previous row, that should
-        // still count)
+        // didn't already have contents. don't try to handle the case where a
+        // character wraps because there was only one column left in the
+        // previous row - literally everything handles this case differently,
+        // and this is tmux behavior (and also the simplest). i'm open to
+        // reconsidering this behavior, but only with a really good reason
+        // (xterm handles this by introducing the concept of triple width
+        // cells, which i really don't want to do).
         let mut wrap = false;
         if pos.col > size.cols - wrap_width {
             let last_cell = self
@@ -649,19 +653,6 @@ impl Screen {
                 .unwrap();
             if last_cell.has_contents() || last_cell.is_wide_continuation() {
                 wrap = true;
-            }
-            if wrap_width > 1 {
-                let last_last_cell = self
-                    .drawing_cell(crate::grid::Pos {
-                        row: pos.row,
-                        col: size.cols - 2,
-                    })
-                    .unwrap();
-                if last_last_cell.has_contents()
-                    || last_last_cell.is_wide_continuation()
-                {
-                    wrap = true;
-                }
             }
         }
         self.grid_mut().col_wrap(wrap_width, wrap);

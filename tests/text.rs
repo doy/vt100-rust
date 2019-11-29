@@ -219,10 +219,10 @@ fn wrap() {
     assert_eq!(parser.screen().contents(), "0123456789012345678901234567890123456789012345678901234567890123456789012345678");
     assert_eq!(parser.screen().cursor_position(), (0, 79));
     parser.process("ネ".as_bytes());
-    assert_eq!(parser.screen().contents(), "0123456789012345678901234567890123456789012345678901234567890123456789012345678ネ");
+    assert_eq!(parser.screen().contents(), "0123456789012345678901234567890123456789012345678901234567890123456789012345678\nネ");
     assert_eq!(parser.screen().cursor_position(), (1, 2));
     parser.process(b"a");
-    assert_eq!(parser.screen().contents(), "0123456789012345678901234567890123456789012345678901234567890123456789012345678ネa");
+    assert_eq!(parser.screen().contents(), "0123456789012345678901234567890123456789012345678901234567890123456789012345678\nネa");
     assert_eq!(parser.screen().cursor_position(), (1, 3));
     assert_eq!(parser.screen().cell(0, 77).unwrap().contents(), "7");
     assert_eq!(parser.screen().cell(0, 78).unwrap().contents(), "8");
