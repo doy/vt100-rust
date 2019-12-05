@@ -1,5 +1,3 @@
-#![allow(clippy::cognitive_complexity)]
-
 #[test]
 fn object_creation() {
     let parser = vt100::Parser::default();

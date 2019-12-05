@@ -1,5 +1,3 @@
-#![allow(clippy::cognitive_complexity)]
-
 #[test]
 fn init() {
     let parser = vt100::Parser::default();
