@@ -10,3 +10,8 @@
 a
 \x1b[L
 bc
+\x1bc\x1b[1;80H
+a
+b
+\x1b[L
+cd

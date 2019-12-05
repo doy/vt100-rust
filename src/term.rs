@@ -46,6 +46,16 @@ impl BufWrite for CRLF {
 
 #[derive(Default, Debug)]
 #[must_use = "this struct does nothing unless you call write_buf"]
+pub struct Backspace;
+
+impl BufWrite for Backspace {
+    fn write_buf(&self, buf: &mut Vec<u8>) {
+        buf.extend_from_slice(b"\x08");
+    }
+}
+
+#[derive(Default, Debug)]
+#[must_use = "this struct does nothing unless you call write_buf"]
 pub struct MoveTo {
     row: u16,
     col: u16,

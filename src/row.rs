@@ -127,6 +127,14 @@ impl Row {
         let mut prev_was_wide = false;
         let default_cell = crate::cell::Cell::default();
 
+        let first_cell = self.get(start).unwrap();
+        if wrapping && first_cell == &default_cell {
+            contents.push(b' ');
+            crate::term::Backspace::default().write_buf(contents);
+            crate::term::EraseChar::new(1).write_buf(contents);
+            prev_pos = crate::grid::Pos { row, col: 0 };
+        }
+
         let mut erase: Option<(u16, &crate::attrs::Attrs)> = None;
         for (col, cell) in self
             .cells()
@@ -220,6 +228,32 @@ impl Row {
         mut prev_attrs: crate::attrs::Attrs,
     ) -> (crate::grid::Pos, crate::attrs::Attrs) {
         let mut prev_was_wide = false;
+
+        let first_cell = self.get(start).unwrap();
+        let prev_first_cell = prev.get(start).unwrap();
+        if wrapping
+            && first_cell == prev_first_cell
+            && prev_pos.row + 1 == row
+            && prev_pos.col
+                >= self.cols() - if prev_first_cell.is_wide() { 1 } else { 0 }
+        {
+            let mut cell_contents = prev_first_cell.contents();
+            let need_erase = if cell_contents == "" {
+                cell_contents = " ".to_string();
+                true
+            } else {
+                false
+            };
+            contents.extend(cell_contents.as_bytes());
+            crate::term::Backspace::default().write_buf(contents);
+            if prev_first_cell.is_wide() {
+                crate::term::Backspace::default().write_buf(contents);
+            }
+            if need_erase {
+                crate::term::EraseChar::new(1).write_buf(contents);
+            }
+            prev_pos = crate::grid::Pos { row, col: 0 };
+        }
 
         let mut erase: Option<(u16, &crate::attrs::Attrs)> = None;
         for (col, (cell, prev_cell)) in self
