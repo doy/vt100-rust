@@ -1,4 +1,4 @@
-#![allow(clippy::cognitive_complexity)]
+mod helpers;
 
 #[test]
 fn bel() {
@@ -39,106 +39,30 @@ fn bel() {
 
 #[test]
 fn bs() {
-    let mut parser = vt100::Parser::default();
-
-    parser.process(b"foo\x08\x08aa");
-    assert_eq!(parser.screen().cell(0, 0).unwrap().contents(), "f");
-    assert_eq!(parser.screen().cell(0, 1).unwrap().contents(), "a");
-    assert_eq!(parser.screen().cell(0, 2).unwrap().contents(), "a");
-    assert_eq!(parser.screen().cell(0, 3).unwrap().contents(), "");
-    assert_eq!(parser.screen().cell(1, 0).unwrap().contents(), "");
-    assert_eq!(parser.screen().contents(), "faa");
-
-    parser.process(b"\r\nquux\x08\x08\x08\x08\x08\x08bar");
-    assert_eq!(parser.screen().cell(1, 0).unwrap().contents(), "b");
-    assert_eq!(parser.screen().cell(1, 1).unwrap().contents(), "a");
-    assert_eq!(parser.screen().cell(1, 2).unwrap().contents(), "r");
-    assert_eq!(parser.screen().cell(1, 3).unwrap().contents(), "x");
-    assert_eq!(parser.screen().cell(1, 4).unwrap().contents(), "");
-    assert_eq!(parser.screen().cell(2, 0).unwrap().contents(), "");
-    assert_eq!(parser.screen().contents(), "faa\nbarx");
+    helpers::fixture("bs");
 }
 
 #[test]
 fn tab() {
-    let mut parser = vt100::Parser::default();
-
-    parser.process(b"foo\tbar");
-    assert_eq!(parser.screen().cell(0, 0).unwrap().contents(), "f");
-    assert_eq!(parser.screen().cell(0, 1).unwrap().contents(), "o");
-    assert_eq!(parser.screen().cell(0, 2).unwrap().contents(), "o");
-    assert_eq!(parser.screen().cell(0, 3).unwrap().contents(), "");
-    assert_eq!(parser.screen().cell(0, 4).unwrap().contents(), "");
-    assert_eq!(parser.screen().cell(0, 5).unwrap().contents(), "");
-    assert_eq!(parser.screen().cell(0, 6).unwrap().contents(), "");
-    assert_eq!(parser.screen().cell(0, 7).unwrap().contents(), "");
-    assert_eq!(parser.screen().cell(0, 8).unwrap().contents(), "b");
-    assert_eq!(parser.screen().cell(0, 9).unwrap().contents(), "a");
-    assert_eq!(parser.screen().cell(0, 10).unwrap().contents(), "r");
-    assert_eq!(parser.screen().cell(0, 11).unwrap().contents(), "");
-    assert_eq!(parser.screen().contents(), "foo     bar");
-}
-
-fn lf_with(b: u8) {
-    let mut parser = vt100::Parser::default();
-
-    parser.process(b"foo");
-    parser.process(&[b]);
-    parser.process(b"bar");
-    assert_eq!(parser.screen().cell(0, 0).unwrap().contents(), "f");
-    assert_eq!(parser.screen().cell(0, 1).unwrap().contents(), "o");
-    assert_eq!(parser.screen().cell(0, 2).unwrap().contents(), "o");
-    assert_eq!(parser.screen().cell(0, 3).unwrap().contents(), "");
-    assert_eq!(parser.screen().cell(1, 0).unwrap().contents(), "");
-    assert_eq!(parser.screen().cell(1, 1).unwrap().contents(), "");
-    assert_eq!(parser.screen().cell(1, 2).unwrap().contents(), "");
-    assert_eq!(parser.screen().cell(1, 3).unwrap().contents(), "b");
-    assert_eq!(parser.screen().cell(1, 4).unwrap().contents(), "a");
-    assert_eq!(parser.screen().cell(1, 5).unwrap().contents(), "r");
-    assert_eq!(parser.screen().cell(1, 6).unwrap().contents(), "");
-    assert_eq!(parser.screen().contents(), "foo\n   bar");
-
-    parser.process(b"\x1b[H\x1b[J\x1b[4;80H");
-    assert_eq!(parser.screen().cursor_position(), (3, 79));
-    parser.process(b"a");
-    assert_eq!(parser.screen().cursor_position(), (3, 80));
-
-    // note: this is a behavior that terminals disagree on - xterm and urxvt
-    // would leave the cursor at (4, 79) here, but alacritty, tmux, and screen
-    // put it at (4, 80). in general, i'm aiming for roughly tmux/screen
-    // compat where possible, so that's what i'm going with here.
-    parser.process(&[b]);
-    assert_eq!(parser.screen().cursor_position(), (4, 80));
-
-    parser.process(b"b");
-    assert_eq!(parser.screen().cursor_position(), (5, 1));
+    helpers::fixture("tab");
 }
 
 #[test]
 fn lf() {
-    lf_with(b'\x0a');
+    helpers::fixture("lf");
 }
 
 #[test]
 fn vt() {
-    lf_with(b'\x0b');
+    helpers::fixture("vt");
 }
 
 #[test]
 fn ff() {
-    lf_with(b'\x0c');
+    helpers::fixture("ff");
 }
 
 #[test]
 fn cr() {
-    let mut parser = vt100::Parser::default();
-
-    parser.process(b"fooo\rbar");
-    assert_eq!(parser.screen().cell(0, 0).unwrap().contents(), "b");
-    assert_eq!(parser.screen().cell(0, 1).unwrap().contents(), "a");
-    assert_eq!(parser.screen().cell(0, 2).unwrap().contents(), "r");
-    assert_eq!(parser.screen().cell(0, 3).unwrap().contents(), "o");
-    assert_eq!(parser.screen().cell(0, 4).unwrap().contents(), "");
-    assert_eq!(parser.screen().cell(1, 0).unwrap().contents(), "");
-    assert_eq!(parser.screen().contents(), "baro");
+    helpers::fixture("cr");
 }

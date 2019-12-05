@@ -1,0 +1,12 @@
+\x1b[10;10Hfoobar\x1b[3D
+\x1b[L
+\x1b[3L
+\x1b[500L
+\x1b[10;10Hfoobar\x1b[3D\x1b[6A
+\x1b[M
+\x1b[3M
+\x1b[500M
+\x1bc\x1b[1;80H
+a
+\x1b[L
+bc
