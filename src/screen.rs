@@ -589,38 +589,6 @@ impl Screen {
         let pos = self.grid().pos();
         let size = self.grid().size();
         let attrs = self.attrs;
-        let drawing_pos = if pos.col < size.cols {
-            pos
-        } else {
-            crate::grid::Pos {
-                row: pos.row + 1,
-                col: 0,
-            }
-        };
-
-        if self
-            .drawing_cell(drawing_pos)
-            .unwrap()
-            .is_wide_continuation()
-        {
-            let prev_cell = self
-                .drawing_cell_mut(crate::grid::Pos {
-                    row: drawing_pos.row,
-                    col: drawing_pos.col - 1,
-                })
-                .unwrap();
-            prev_cell.clear(attrs);
-        }
-
-        if self.drawing_cell(drawing_pos).unwrap().is_wide() {
-            let next_cell = self
-                .drawing_cell_mut(crate::grid::Pos {
-                    row: drawing_pos.row,
-                    col: drawing_pos.col + 1,
-                })
-                .unwrap();
-            next_cell.clear(attrs);
-        }
 
         let width = c.width().unwrap_or(0).try_into().unwrap();
 
@@ -700,6 +668,39 @@ impl Screen {
                 }
             }
         } else {
+            let drawing_pos = if pos.col < size.cols {
+                pos
+            } else {
+                crate::grid::Pos {
+                    row: pos.row + 1,
+                    col: 0,
+                }
+            };
+
+            if self
+                .drawing_cell(drawing_pos)
+                .unwrap()
+                .is_wide_continuation()
+            {
+                let prev_cell = self
+                    .drawing_cell_mut(crate::grid::Pos {
+                        row: drawing_pos.row,
+                        col: drawing_pos.col - 1,
+                    })
+                    .unwrap();
+                prev_cell.clear(attrs);
+            }
+
+            if self.drawing_cell(drawing_pos).unwrap().is_wide() {
+                let next_cell = self
+                    .drawing_cell_mut(crate::grid::Pos {
+                        row: drawing_pos.row,
+                        col: drawing_pos.col + 1,
+                    })
+                    .unwrap();
+                next_cell.clear(attrs);
+            }
+
             let cell = self.current_cell_mut();
             cell.set(c, attrs);
             self.grid_mut().col_inc(1);
