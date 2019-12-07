@@ -26,16 +26,6 @@ impl BufWrite for ClearRowForward {
 
 #[derive(Default, Debug)]
 #[must_use = "this struct does nothing unless you call write_buf"]
-pub struct ClearRowBackward;
-
-impl BufWrite for ClearRowBackward {
-    fn write_buf(&self, buf: &mut Vec<u8>) {
-        buf.extend_from_slice(b"\x1b[1K");
-    }
-}
-
-#[derive(Default, Debug)]
-#[must_use = "this struct does nothing unless you call write_buf"]
 pub struct CRLF;
 
 impl BufWrite for CRLF {
@@ -51,6 +41,26 @@ pub struct Backspace;
 impl BufWrite for Backspace {
     fn write_buf(&self, buf: &mut Vec<u8>) {
         buf.extend_from_slice(b"\x08");
+    }
+}
+
+#[derive(Default, Debug)]
+#[must_use = "this struct does nothing unless you call write_buf"]
+pub struct SaveCursor;
+
+impl BufWrite for SaveCursor {
+    fn write_buf(&self, buf: &mut Vec<u8>) {
+        buf.extend_from_slice(b"\x1b7");
+    }
+}
+
+#[derive(Default, Debug)]
+#[must_use = "this struct does nothing unless you call write_buf"]
+pub struct RestoreCursor;
+
+impl BufWrite for RestoreCursor {
+    fn write_buf(&self, buf: &mut Vec<u8>) {
+        buf.extend_from_slice(b"\x1b8");
     }
 }
 

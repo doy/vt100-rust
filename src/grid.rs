@@ -274,18 +274,20 @@ impl Grid {
                 }
 
                 // this can happen if you get the cursor off the end of a row,
-                // and then do something to clear the current row without
-                // moving the cursor (IL, ED, EL, etc). i can't see any way
-                // for this to happen without the entire current row being
-                // cleared (not just the last cell), so this seems
-                // prooooobably fine?
+                // and then do something to clear the end of the current row
+                // without moving the cursor (IL, DL, ED, EL, etc). we know
+                // there can't be something in the last column because we
+                // would have caught that above, so it should be safe to
+                // overwrite it.
                 if !found {
                     pos.row = orig_row;
                     crate::term::MoveFromTo::new(prev_pos, pos)
                         .write_buf(contents);
                     contents.push(b' ');
-                    crate::term::ClearRowBackward::default()
-                        .write_buf(contents);
+                    crate::term::SaveCursor::default().write_buf(contents);
+                    crate::term::Backspace::default().write_buf(contents);
+                    crate::term::EraseChar::new(1).write_buf(contents);
+                    crate::term::RestoreCursor::default().write_buf(contents);
                 }
             }
         } else {
@@ -374,18 +376,20 @@ impl Grid {
                 }
 
                 // this can happen if you get the cursor off the end of a row,
-                // and then do something to clear the current row without
-                // moving the cursor (IL, ED, EL, etc). i can't see any way
-                // for this to happen without the entire current row being
-                // cleared (not just the last cell), so this seems
-                // prooooobably fine?
+                // and then do something to clear the end of the current row
+                // without moving the cursor (IL, DL, ED, EL, etc). we know
+                // there can't be something in the last column because we
+                // would have caught that above, so it should be safe to
+                // overwrite it.
                 if !found {
                     pos.row = orig_row;
                     crate::term::MoveFromTo::new(prev_pos, pos)
                         .write_buf(contents);
                     contents.push(b' ');
-                    crate::term::ClearRowBackward::default()
-                        .write_buf(contents);
+                    crate::term::SaveCursor::default().write_buf(contents);
+                    crate::term::Backspace::default().write_buf(contents);
+                    crate::term::EraseChar::new(1).write_buf(contents);
+                    crate::term::RestoreCursor::default().write_buf(contents);
                 }
             }
         } else {
