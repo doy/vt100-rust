@@ -9,3 +9,4 @@ obar
 \x1b[10;11H\x1b[4X
 \x1b[10;11H\x1b[400X
 \x1b[1;80H \x1b[@
+\x1b[1;80H \x1b[X
