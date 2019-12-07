@@ -231,13 +231,10 @@ impl Grid {
         if prev_pos != self.pos && self.pos.col >= self.size.cols {
             let mut pos = Pos {
                 row: self.pos.row,
-                col: self.size.cols - 2,
+                col: self.size.cols - 1,
             };
-            if !self.visible_cell(pos).unwrap().is_wide() {
-                pos = Pos {
-                    row: self.pos.row,
-                    col: self.size.cols - 1,
-                };
+            if self.visible_cell(pos).unwrap().is_wide_continuation() {
+                pos.col = self.size.cols - 2;
             }
             let cell = self.visible_cell(pos).unwrap();
             if cell.has_contents() {
@@ -257,6 +254,11 @@ impl Grid {
                 let mut found = false;
                 for i in (0..orig_row).rev() {
                     pos.row = i;
+                    pos.col = self.size.cols - 1;
+                    if self.visible_cell(pos).unwrap().is_wide_continuation()
+                    {
+                        pos.col = self.size.cols - 2;
+                    }
                     let cell = self.visible_cell(pos).unwrap();
                     if cell.has_contents() {
                         if prev_pos.row != i || prev_pos.col < self.size.cols
@@ -333,13 +335,10 @@ impl Grid {
         if prev_pos != self.pos && self.pos.col >= self.size.cols {
             let mut pos = Pos {
                 row: self.pos.row,
-                col: self.size.cols - 2,
+                col: self.size.cols - 1,
             };
-            if !self.visible_cell(pos).unwrap().is_wide() {
-                pos = Pos {
-                    row: self.pos.row,
-                    col: self.size.cols - 1,
-                };
+            if self.visible_cell(pos).unwrap().is_wide_continuation() {
+                pos.col = self.size.cols - 2;
             }
             let cell = self.visible_cell(pos).unwrap();
             if cell.has_contents() {
@@ -359,6 +358,11 @@ impl Grid {
                 let mut found = false;
                 for i in (0..orig_row).rev() {
                     pos.row = i;
+                    pos.col = self.size.cols - 1;
+                    if self.visible_cell(pos).unwrap().is_wide_continuation()
+                    {
+                        pos.col = self.size.cols - 2;
+                    }
                     let cell = self.visible_cell(pos).unwrap();
                     if cell.has_contents() {
                         if prev_pos.row != i || prev_pos.col < self.size.cols
