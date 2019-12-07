@@ -2,9 +2,16 @@
 
 ## Unreleased
 
+### Removed
+
+* Removed the unicode-normalization feature altogether - it turns out that it
+  still has a couple edge cases where it causes incorrect behavior, and fixing
+  those would be a lot more effort.
+
 ### Fixed
 
-* Fix a couple more end-of-line/wrapping bugs.
+* Fix a couple more end-of-line/wrapping bugs, especially around cursor
+  positioning.
 * Fix applying combining characters to wide characters.
 * Ensure cells can't have contents with width zero (to avoid ambiguity). If an
   empty cell gets a combining character applied to it, default that cell to a
