@@ -191,8 +191,30 @@ impl Row {
                         prev_attrs = *attrs;
                     }
 
-                    contents.extend(cell.contents().as_bytes());
                     prev_pos.col += if cell.is_wide() { 2 } else { 1 };
+                    if prev_pos.col >= self.cols()
+                        && !self.wrapped
+                        && cell.is_wide()
+                        && cell.contents().chars().count() > 1
+                    {
+                        // alternately, we could backspace enough to overwrite
+                        // the second to last character, then ICH and rewrite
+                        // the second to last character and then reposition,
+                        // but that's a lot more complicated and not sure if
+                        // it's worth it for this much of an edge case
+                        let cell_contents = cell.contents();
+                        let mut chars = cell_contents.chars();
+                        let base = chars.next().unwrap();
+                        let mut bytes = [0; 4];
+                        contents.extend(base.encode_utf8(&mut bytes).bytes());
+                        crate::term::Backspace::default().write_buf(contents);
+                        for c in chars {
+                            contents
+                                .extend(c.encode_utf8(&mut bytes).bytes());
+                        }
+                    } else {
+                        contents.extend(cell.contents().as_bytes());
+                    }
                 } else if erase.is_none() {
                     erase = Some((pos.col, attrs));
                 }
@@ -216,6 +238,7 @@ impl Row {
     // while it's true that most of the logic in this is identical to
     // write_contents_formatted, i can't figure out how to break out the
     // common parts without making things noticeably slower.
+    #[allow(clippy::too_many_lines)]
     pub fn write_contents_diff(
         &self,
         contents: &mut Vec<u8>,
@@ -312,8 +335,31 @@ impl Row {
                         prev_attrs = *attrs;
                     }
 
-                    contents.extend(cell.contents().as_bytes());
                     prev_pos.col += if cell.is_wide() { 2 } else { 1 };
+                    if prev_pos.col >= self.cols()
+                        && !self.wrapped
+                        && cell.is_wide()
+                        && cell.contents().chars().count() > 1
+                    {
+                        // alternately, we could backspace enough to overwrite
+                        // the second to last character, then ICH and rewrite
+                        // the second to last character and then reposition,
+                        // but that's a lot more complicated and not sure if
+                        // it's worth it for this much of an edge case
+                        let cell_contents = cell.contents();
+                        let mut chars = cell_contents.chars();
+                        let base = chars.next().unwrap();
+                        let mut bytes = [0; 4];
+                        contents.extend(base.encode_utf8(&mut bytes).bytes());
+                        crate::term::Backspace::default().write_buf(contents);
+                        prev_pos.col -= 1;
+                        for c in chars {
+                            contents
+                                .extend(c.encode_utf8(&mut bytes).bytes());
+                        }
+                    } else {
+                        contents.extend(cell.contents().as_bytes());
+                    }
                 } else if erase.is_none() {
                     erase = Some((pos.col, attrs));
                 }
