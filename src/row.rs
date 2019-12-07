@@ -85,6 +85,7 @@ impl Row {
         contents: &mut String,
         start: u16,
         width: u16,
+        wrapping: bool,
     ) {
         let mut prev_was_wide = false;
 
@@ -111,6 +112,9 @@ impl Row {
                 contents.push_str(&cell.contents());
                 prev_col += if cell.is_wide() { 2 } else { 1 };
             }
+        }
+        if prev_col == start && wrapping {
+            contents.push('\n');
         }
     }
 

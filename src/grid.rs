@@ -183,11 +183,13 @@ impl Grid {
     }
 
     pub fn write_contents(&self, contents: &mut String) {
+        let mut wrapping = false;
         for row in self.visible_rows() {
-            row.write_contents(contents, 0, self.size.cols);
+            row.write_contents(contents, 0, self.size.cols, wrapping);
             if !row.wrapped() {
                 contents.push_str("\n");
             }
+            wrapping = row.wrapped();
         }
 
         while contents.ends_with('\n') {

@@ -164,7 +164,7 @@ impl Screen {
     ) -> impl Iterator<Item = String> + '_ {
         self.grid().visible_rows().map(move |row| {
             let mut contents = String::new();
-            row.write_contents(&mut contents, start, width);
+            row.write_contents(&mut contents, start, width, false);
             contents
         })
     }
