@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## [0.8.0] - 2019-12-07
 
 ### Removed
 
