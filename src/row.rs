@@ -40,24 +40,31 @@ impl Row {
 
     pub fn insert(&mut self, i: usize, cell: crate::cell::Cell) {
         self.cells.insert(i, cell);
+        self.wrapped = false;
     }
 
     pub fn remove(&mut self, i: usize) {
         self.clear_wide(i.try_into().unwrap());
         self.cells.remove(i);
+        self.wrapped = false;
     }
 
     pub fn erase(&mut self, i: usize, attrs: crate::attrs::Attrs) {
         self.clear_wide(i.try_into().unwrap());
         self.cells.get_mut(i).unwrap().clear(attrs);
+        if i == self.cols() as usize - 1 {
+            self.wrapped = false;
+        }
     }
 
     pub fn truncate(&mut self, len: usize) {
         self.cells.truncate(len);
+        self.wrapped = false;
     }
 
     pub fn resize(&mut self, len: usize, cell: crate::cell::Cell) {
         self.cells.resize(len, cell);
+        self.wrapped = false;
     }
 
     pub fn wrap(&mut self, wrap: bool) {
@@ -379,6 +386,31 @@ impl Row {
                 prev_attrs = *attrs;
             }
             crate::term::ClearRowForward::default().write_buf(contents);
+        }
+
+        if prev.wrapped && !self.wrapped {
+            let end_pos = if self
+                .get(self.cols() - 1)
+                .unwrap()
+                .is_wide_continuation()
+            {
+                crate::grid::Pos {
+                    row,
+                    col: self.cols() - 2,
+                }
+            } else {
+                crate::grid::Pos {
+                    row,
+                    col: self.cols() - 1,
+                }
+            };
+            crate::term::MoveFromTo::new(prev_pos, end_pos)
+                .write_buf(contents);
+            prev_pos = end_pos;
+            crate::term::EraseChar::new(1).write_buf(contents);
+            let end_cell = self.get(end_pos.col).unwrap();
+            contents.extend(end_cell.contents().as_bytes());
+            prev_pos.col += if end_cell.is_wide() { 2 } else { 1 };
         }
 
         (prev_pos, prev_attrs)

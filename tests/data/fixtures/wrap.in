@@ -21,3 +21,8 @@ a
  
 \x1b[H\x1b[J
 ネa\x1b[L\x1b[1;79Hbcd
+\x1bc\x1b[1;79Habcd
+\x1b[1;80H\x1b[X
+\x1bc\x1b[1;79Habcd
+\x1b[H\x1b[@
+\x1bc\x1b[1;80Haa\x1b[T\x1b[@

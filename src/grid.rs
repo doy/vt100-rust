@@ -428,7 +428,6 @@ impl Grid {
         let size = self.size;
         let pos = self.pos;
         let row = self.current_row_mut();
-        row.wrap(false);
         for col in pos.col..size.cols {
             row.erase(col as usize, attrs);
         }
