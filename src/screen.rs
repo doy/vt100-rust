@@ -624,6 +624,7 @@ impl Screen {
             }
         }
         self.grid_mut().col_wrap(wrap_width, wrap);
+        let pos = self.grid().pos();
 
         if width == 0 {
             if pos.col > 0 {
