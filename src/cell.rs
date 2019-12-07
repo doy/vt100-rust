@@ -64,7 +64,11 @@ impl Cell {
     /// used, but will contain at most one character with a non-zero character
     /// width.
     pub fn contents(&self) -> String {
-        self.contents.iter().take(self.len()).collect::<String>()
+        let mut s = String::with_capacity(CODEPOINTS_IN_CELL * 4);
+        for c in self.contents.iter().take(self.len()) {
+            s.push(*c);
+        }
+        s
     }
 
     /// Returns whether the cell contains any text data.
