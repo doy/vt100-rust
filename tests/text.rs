@@ -20,7 +20,6 @@ fn wide() {
     helpers::fixture("wide");
 }
 
-#[cfg(feature = "unicode-normalization")]
 #[test]
 fn combining() {
     helpers::fixture("combining");

@@ -51,45 +51,6 @@ impl Cell {
 
         self.contents[self.len()] = c;
         self.len += 1;
-
-        self.normalize();
-    }
-
-    #[cfg(not(feature = "unicode-normalization"))]
-    #[inline]
-    fn normalize(&mut self) {}
-
-    #[cfg(feature = "unicode-normalization")]
-    #[inline]
-    fn normalize(&mut self) {
-        use unicode_normalization::UnicodeNormalization as _;
-
-        // some fonts have combined characters but can't render combining
-        // characters correctly, so try to prefer precombined characters when
-        // possible
-        if unicode_normalization::is_nfc_quick(
-            self.contents.iter().copied().take(CODEPOINTS_IN_CELL),
-        ) == unicode_normalization::IsNormalized::Yes
-        {
-            return;
-        }
-
-        let mut new_contents = ['\x00'; CODEPOINTS_IN_CELL];
-        let mut new_len = 0;
-        for c in self
-            .contents
-            .iter()
-            .copied()
-            .take(self.len())
-            .nfc()
-            .take(CODEPOINTS_IN_CELL)
-        {
-            new_contents[new_len as usize] = c;
-            new_len += 1;
-        }
-        self.contents = new_contents;
-        self.len = new_len;
-        self.set_wide(new_contents[0].width().unwrap_or(0) > 1);
     }
 
     pub(crate) fn clear(&mut self, attrs: crate::attrs::Attrs) {

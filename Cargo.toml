@@ -12,14 +12,10 @@ keywords = ["terminal", "vt100"]
 categories = ["command-line-interface", "encoding"]
 license = "MIT"
 
-[features]
-default = ["unicode-normalization"]
-
 [dependencies]
 itoa = "0.4"
 enumset = "0.4"
 log = "0.4"
-unicode-normalization = { version = "0.1", optional = true }
 unicode-width = "0.1"
 vte = "0.3"
 

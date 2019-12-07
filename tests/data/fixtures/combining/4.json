@@ -1,5 +1,5 @@
 {
-  "contents": "abcdéfg",
+  "contents": "abcdéfg",
   "cells": {
     "0,0": {
       "contents": "a"
@@ -14,7 +14,7 @@
       "contents": "d"
     },
     "0,4": {
-      "contents": "é"
+      "contents": "é"
     },
     "0,5": {
       "contents": "f"
