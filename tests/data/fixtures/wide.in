@@ -22,3 +22,4 @@ aデbネ
 \x1bcデ\x08\x08\x1b[X
 \x1bcaデ\rb\u{301}
 \x1bc\x1b[1;79Hデ\x08ネ
+\x1bc\x1b[1;79Hデ\r\x1b[@
