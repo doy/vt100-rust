@@ -8,6 +8,7 @@ pub struct Parser {
 impl Parser {
     /// Creates a new terminal parser of the given size and with the given
     /// amount of scrollback.
+    #[must_use]
     pub fn new(rows: u16, cols: u16, scrollback_len: usize) -> Self {
         Self {
             parser: vte::Parser::new(),
@@ -48,6 +49,7 @@ impl Parser {
 
     /// Returns a reference to a `Screen` object containing the terminal
     /// state.
+    #[must_use]
     pub fn screen(&self) -> &crate::screen::Screen {
         &self.screen
     }

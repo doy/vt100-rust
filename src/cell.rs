@@ -63,6 +63,7 @@ impl Cell {
     /// Can include multiple unicode characters if combining characters are
     /// used, but will contain at most one character with a non-zero character
     /// width.
+    #[must_use]
     pub fn contents(&self) -> String {
         let mut s = String::with_capacity(CODEPOINTS_IN_CELL * 4);
         for c in self.contents.iter().take(self.len()) {
@@ -72,15 +73,18 @@ impl Cell {
     }
 
     /// Returns whether the cell contains any text data.
+    #[must_use]
     pub fn has_contents(&self) -> bool {
         self.len > 0
     }
 
     /// Returns whether the text data in the cell represents a wide character.
+    #[must_use]
     pub fn is_wide(&self) -> bool {
         self.len & 0x80 == 0x80
     }
 
+    #[must_use]
     pub fn is_wide_continuation(&self) -> bool {
         self.len & 0x40 == 0x40
     }
@@ -106,35 +110,41 @@ impl Cell {
     }
 
     /// Returns the foreground color of the cell.
+    #[must_use]
     pub fn fgcolor(&self) -> crate::attrs::Color {
         self.attrs.fgcolor
     }
 
     /// Returns the background color of the cell.
+    #[must_use]
     pub fn bgcolor(&self) -> crate::attrs::Color {
         self.attrs.bgcolor
     }
 
     /// Returns whether the cell should be rendered with the bold text
     /// attribute.
+    #[must_use]
     pub fn bold(&self) -> bool {
         self.attrs.bold()
     }
 
     /// Returns whether the cell should be rendered with the italic text
     /// attribute.
+    #[must_use]
     pub fn italic(&self) -> bool {
         self.attrs.italic()
     }
 
     /// Returns whether the cell should be rendered with the underlined text
     /// attribute.
+    #[must_use]
     pub fn underline(&self) -> bool {
         self.attrs.underline()
     }
 
     /// Returns whether the cell should be rendered with the inverse text
     /// attribute.
+    #[must_use]
     pub fn inverse(&self) -> bool {
         self.attrs.inverse()
     }

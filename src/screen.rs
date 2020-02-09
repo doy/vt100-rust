@@ -119,6 +119,7 @@ impl Screen {
     /// Returns the current size of the terminal.
     ///
     /// The return value will be (rows, cols).
+    #[must_use]
     pub fn size(&self) -> (u16, u16) {
         let size = self.grid().size();
         (size.rows, size.cols)
@@ -128,6 +129,7 @@ impl Screen {
     ///
     /// This position indicates the offset from the top of the screen, and is
     /// `0` when the normal screen is in view.
+    #[must_use]
     pub fn scrollback(&self) -> usize {
         self.grid().scrollback()
     }
@@ -140,6 +142,7 @@ impl Screen {
     ///
     /// This will not include any formatting information, and will be in plain
     /// text format.
+    #[must_use]
     pub fn contents(&self) -> String {
         let mut contents = String::new();
         self.write_contents(&mut contents);
@@ -174,6 +177,7 @@ impl Screen {
     /// Formatting information will be included inline as terminal escape
     /// codes. The result will be suitable for feeding directly to a raw
     /// terminal parser, and will result in the same visual output.
+    #[must_use]
     pub fn contents_formatted(&self) -> Vec<u8> {
         let mut contents = vec![];
         self.write_contents_formatted(&mut contents);
@@ -227,6 +231,7 @@ impl Screen {
     /// you already have a terminal parser whose state is described by `prev`,
     /// since the diff will likely require less memory and cause less
     /// flickering than redrawing the entire screen contents.
+    #[must_use]
     pub fn contents_diff(&self, prev: &Self) -> Vec<u8> {
         let mut contents = vec![];
         self.write_contents_diff(&mut contents, prev);
@@ -289,6 +294,7 @@ impl Screen {
     /// * application cursor
     /// * bracketed paste
     /// * xterm mouse support
+    #[must_use]
     pub fn input_mode_formatted(&self) -> Vec<u8> {
         let mut contents = vec![];
         self.write_input_mode_formatted(&mut contents);
@@ -321,6 +327,7 @@ impl Screen {
     /// Returns terminal escape sequences sufficient to change the previous
     /// terminal's input modes to the input modes enabled in the current
     /// terminal.
+    #[must_use]
     pub fn input_mode_diff(&self, prev: &Self) -> Vec<u8> {
         let mut contents = vec![];
         self.write_input_mode_diff(&mut contents, prev);
@@ -363,6 +370,7 @@ impl Screen {
 
     /// Returns terminal escape sequences sufficient to set the current
     /// terminal's window title.
+    #[must_use]
     pub fn title_formatted(&self) -> Vec<u8> {
         let mut contents = vec![];
         self.write_title_formatted(&mut contents);
@@ -377,6 +385,7 @@ impl Screen {
     /// Returns terminal escape sequences sufficient to change the previous
     /// terminal's window title to the window title set in the current
     /// terminal.
+    #[must_use]
     pub fn title_diff(&self, prev: &Self) -> Vec<u8> {
         let mut contents = vec![];
         self.write_title_diff(&mut contents, prev);
@@ -396,6 +405,7 @@ impl Screen {
     /// Returns terminal escape sequences sufficient to cause audible and
     /// visual bells to occur if they have been received since the terminal
     /// described by `prev`.
+    #[must_use]
     pub fn bells_diff(&self, prev: &Self) -> Vec<u8> {
         let mut contents = vec![];
         self.write_bells_diff(&mut contents, prev);
@@ -413,6 +423,7 @@ impl Screen {
 
     /// Returns the `Cell` object at the given location in the terminal, if it
     /// exists.
+    #[must_use]
     pub fn cell(&self, row: u16, col: u16) -> Option<&crate::cell::Cell> {
         self.grid().visible_cell(crate::grid::Pos { row, col })
     }
@@ -420,17 +431,20 @@ impl Screen {
     /// Returns the current cursor position of the terminal.
     ///
     /// The return value will be (row, col).
+    #[must_use]
     pub fn cursor_position(&self) -> (u16, u16) {
         let pos = self.grid().pos();
         (pos.row, pos.col)
     }
 
     /// Returns the terminal's window title.
+    #[must_use]
     pub fn title(&self) -> &str {
         &self.title
     }
 
     /// Returns the terminal's icon name.
+    #[must_use]
     pub fn icon_name(&self) -> &str {
         &self.icon_name
     }
@@ -443,6 +457,7 @@ impl Screen {
     /// You shouldn't rely on the exact value returned here, since the exact
     /// value will not be maintained by `contents_formatted` or
     /// `contents_diff`.
+    #[must_use]
     pub fn audible_bell_count(&self) -> usize {
         self.audible_bell_count
     }
@@ -455,36 +470,43 @@ impl Screen {
     /// You shouldn't rely on the exact value returned here, since the exact
     /// value will not be maintained by `contents_formatted` or
     /// `contents_diff`.
+    #[must_use]
     pub fn visual_bell_count(&self) -> usize {
         self.visual_bell_count
     }
 
     /// Returns whether the terminal should be in application keypad mode.
+    #[must_use]
     pub fn application_keypad(&self) -> bool {
         self.mode(Mode::ApplicationKeypad)
     }
 
     /// Returns whether the terminal should be in application cursor mode.
+    #[must_use]
     pub fn application_cursor(&self) -> bool {
         self.mode(Mode::ApplicationCursor)
     }
 
     /// Returns whether the terminal should be in hide cursor mode.
+    #[must_use]
     pub fn hide_cursor(&self) -> bool {
         self.mode(Mode::HideCursor)
     }
 
     /// Returns whether the terminal should be in bracketed paste mode.
+    #[must_use]
     pub fn bracketed_paste(&self) -> bool {
         self.mode(Mode::BracketedPaste)
     }
 
     /// Returns the currently active `MouseProtocolMode`
+    #[must_use]
     pub fn mouse_protocol_mode(&self) -> MouseProtocolMode {
         self.mouse_protocol_mode
     }
 
     /// Returns the currently active `MouseProtocolEncoding`
+    #[must_use]
     pub fn mouse_protocol_encoding(&self) -> MouseProtocolEncoding {
         self.mouse_protocol_encoding
     }
@@ -583,6 +605,8 @@ impl Screen {
     }
 }
 
+// unclear why putting this attribute on the individual methods doesn't work
+#[allow(clippy::unused_self)]
 impl Screen {
     #[allow(clippy::too_many_lines)]
     fn text(&mut self, c: char) {

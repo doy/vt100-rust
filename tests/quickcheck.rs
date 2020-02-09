@@ -64,7 +64,7 @@ fn choose_terminal_input_fragment<G: quickcheck::Gen>(g: &mut G) -> Vec<u8> {
             };
             let mut b = [0; 4];
             let s = c.encode_utf8(&mut b);
-            s.to_string().into_bytes()
+            (*s).to_string().into_bytes()
         }
         Fragment::Control => vec![g.gen_range(7, 14)],
         Fragment::Escape => {
