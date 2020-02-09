@@ -1218,7 +1218,7 @@ impl vte::Perform for Screen {
         }
     }
 
-    fn osc_dispatch(&mut self, params: &[&[u8]]) {
+    fn osc_dispatch(&mut self, params: &[&[u8]], _bel_terminated: bool) {
         match (params.get(0), params.get(1)) {
             (Some(&b"0"), Some(s)) => self.osc0(s),
             (Some(&b"1"), Some(s)) => self.osc1(s),
@@ -1234,19 +1234,25 @@ impl vte::Perform for Screen {
         }
     }
 
-    fn hook(&mut self, params: &[i64], intermediates: &[u8], _ignore: bool) {
+    fn hook(
+        &mut self,
+        params: &[i64],
+        intermediates: &[u8],
+        _ignore: bool,
+        action: char,
+    ) {
         if log::log_enabled!(log::Level::Debug) {
-            // TODO: include the final byte here (it seems to be a bug that
-            // the vte parser doesn't currently pass it to this method)
             match intermediates.get(0) {
                 None => log::debug!(
-                    "unhandled dcs sequence: DCS {}",
+                    "unhandled dcs sequence: DCS {} {}",
                     param_str(params),
+                    action,
                 ),
                 Some(i) => log::debug!(
-                    "unhandled dcs sequence: DCS {} {}",
+                    "unhandled dcs sequence: DCS {} {} {}",
                     i,
                     param_str(params),
+                    action,
                 ),
             }
         }

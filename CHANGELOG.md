@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.8.1] - Unreleased
+
+### Changed
+
+* Bumped `vte` dep to 0.6.
+
 ## [0.8.0] - 2019-12-07
 
 ### Removed

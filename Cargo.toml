@@ -17,7 +17,7 @@ itoa = "0.4"
 enumset = "0.4"
 log = "0.4"
 unicode-width = "0.1"
-vte = "0.3"
+vte = "0.6"
 
 [dev-dependencies]
 quickcheck = "0.9"
