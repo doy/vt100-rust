@@ -453,6 +453,40 @@ fn rows() {
 }
 
 #[test]
+fn contents_between() {
+    let mut parser = vt100::Parser::default();
+    assert_eq!(parser.screen().contents_between(0, 0, 0, 0), "");
+    assert_eq!(parser.screen().contents_between(0, 0, 5, 0), "\n\n\n\n\n");
+    assert_eq!(parser.screen().contents_between(5, 0, 0, 0), "");
+
+    parser.process(
+        b"Lorem ipsum dolor sit amet, consectetur adipiscing elit, \
+        sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.\n\n\
+        Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris \
+        nisi ut aliquip ex ea commodo consequat.\n\n\
+        Duis aute irure dolor in reprehenderit in voluptate velit esse cillum \
+        dolore eu fugiat nulla pariatur.\n\n\
+        Excepteur sint occaecat cupidatat non proident, sunt in culpa qui \
+        officia deserunt mollit anim id est laborum.",
+    );
+    assert_eq!(parser.screen().contents_between(0, 0, 0, 0), "");
+    assert_eq!(
+        parser.screen().contents_between(0, 0, 0, 26),
+        "Lorem ipsum dolor sit amet"
+    );
+    assert_eq!(parser.screen().contents_between(0, 26, 0, 0), "");
+    assert_eq!(
+        parser.screen().contents_between(0, 57, 1, 43),
+        "sed do eiusmod tempor incididunt ut labore et dolore magna aliqua."
+    );
+    assert_eq!(
+        parser.screen().contents_between(0, 57, 2, 0),
+        "sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.\n"
+    );
+    assert_eq!(parser.screen().contents_between(2, 0, 0, 57), "");
+}
+
+#[test]
 fn diff_basic() {
     let mut parser = vt100::Parser::default();
     let screen1 = parser.screen().clone();

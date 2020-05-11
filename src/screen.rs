@@ -172,6 +172,65 @@ impl Screen {
         })
     }
 
+    /// Returns the text contents of the terminal logically between two cells.
+    /// This will include the remainder of the starting row after `start_col`,
+    /// followed by the entire contents of the rows between `start_row` and
+    /// `end_row`, followed by the beginning of the `end_row` up until
+    /// `end_col`. This is useful for things like determining the contents of
+    /// a clipboard selection.
+    #[must_use]
+    pub fn contents_between(
+        &self,
+        start_row: u16,
+        start_col: u16,
+        end_row: u16,
+        end_col: u16,
+    ) -> String {
+        match start_row.cmp(&end_row) {
+            std::cmp::Ordering::Less => {
+                let (_, cols) = self.size();
+                let mut contents = String::new();
+                for (i, row) in self
+                    .grid()
+                    .visible_rows()
+                    .enumerate()
+                    .skip(start_row as usize)
+                    .take(end_row as usize - start_row as usize + 1)
+                {
+                    if i == start_row as usize {
+                        row.write_contents(
+                            &mut contents,
+                            start_col,
+                            cols - start_col,
+                            false,
+                        );
+                        if !row.wrapped() {
+                            contents.push('\n');
+                        }
+                    } else if i == end_row as usize {
+                        row.write_contents(&mut contents, 0, end_col, false);
+                    } else {
+                        row.write_contents(&mut contents, 0, cols, false);
+                        if !row.wrapped() {
+                            contents.push('\n');
+                        }
+                    }
+                }
+                contents
+            }
+            std::cmp::Ordering::Equal => {
+                if start_col < end_col {
+                    self.rows(start_col, end_col - start_col)
+                        .nth(start_row as usize)
+                        .unwrap_or_else(String::new)
+                } else {
+                    String::new()
+                }
+            }
+            std::cmp::Ordering::Greater => String::new(),
+        }
+    }
+
     /// Returns the formatted visible contents of the terminal.
     ///
     /// Formatting information will be included inline as terminal escape
