@@ -606,3 +606,23 @@ impl BufWrite for MouseProtocolEncoding {
         }
     }
 }
+
+#[derive(Default, Debug)]
+#[must_use = "this struct does nothing unless you call write_buf"]
+pub struct DisableAlternateScreen;
+
+impl BufWrite for DisableAlternateScreen {
+    fn write_buf(&self, buf: &mut Vec<u8>) {
+        buf.extend_from_slice(b"\x1b[?1049l");
+    }
+}
+
+#[derive(Default, Debug)]
+#[must_use = "this struct does nothing unless you call write_buf"]
+pub struct EnableAlternateScreen;
+
+impl BufWrite for EnableAlternateScreen {
+    fn write_buf(&self, buf: &mut Vec<u8>) {
+        buf.extend_from_slice(b"\x1b[?1049h");
+    }
+}

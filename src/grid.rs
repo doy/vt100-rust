@@ -1,4 +1,4 @@
-use crate::term::BufWrite as _;
+use crate::{row::Row, term::BufWrite as _};
 use std::convert::TryInto as _;
 
 #[derive(Clone, Debug)]
@@ -14,6 +14,11 @@ pub struct Grid {
     scrollback: std::collections::VecDeque<crate::row::Row>,
     scrollback_len: usize,
     scrollback_offset: usize,
+}
+
+pub enum RowFilter {
+    All,
+    Visible,
 }
 
 impl Grid {
@@ -104,6 +109,10 @@ impl Grid {
     pub fn restore_cursor(&mut self) {
         self.pos = self.saved_pos;
         self.origin_mode = self.saved_origin_mode;
+    }
+
+    pub fn all_rows(&self) -> impl Iterator<Item = &crate::row::Row> {
+        self.scrollback.iter().chain(self.rows.iter())
     }
 
     pub fn visible_rows(&self) -> impl Iterator<Item = &crate::row::Row> {
@@ -199,6 +208,7 @@ impl Grid {
 
     pub fn write_contents_formatted(
         &self,
+        rows: RowFilter,
         contents: &mut Vec<u8>,
     ) -> crate::attrs::Attrs {
         crate::term::ClearAttrs::default().write_buf(contents);
@@ -207,7 +217,8 @@ impl Grid {
         let mut prev_attrs = crate::attrs::Attrs::default();
         let mut prev_pos = Pos::default();
         let mut wrapping = false;
-        for (i, row) in self.visible_rows().enumerate() {
+
+        let mut process_row = |i: usize, row: &Row| {
             let i = i.try_into().unwrap();
             let (new_pos, new_attrs) = row.write_contents_formatted(
                 contents,
@@ -221,6 +232,19 @@ impl Grid {
             prev_pos = new_pos;
             prev_attrs = new_attrs;
             wrapping = row.wrapped();
+        };
+
+        match rows {
+            RowFilter::All => {
+                for (i, row) in self.all_rows().enumerate() {
+                    process_row(i, row);
+                }
+            }
+            RowFilter::Visible => {
+                for (i, row) in self.visible_rows().enumerate() {
+                    process_row(i, row);
+                }
+            }
         }
 
         // writing a character to the last column of a row doesn't wrap the
