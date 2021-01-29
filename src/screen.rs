@@ -1,10 +1,11 @@
 use crate::term::BufWrite as _;
+use enumset::{EnumSet, EnumSetType};
 use std::convert::TryInto as _;
 use unicode_width::UnicodeWidthChar as _;
 
 const DEFAULT_MULTI_PARAMS: &[i64] = &[0];
 
-#[derive(enumset::EnumSetType, Debug)]
+#[derive(EnumSetType, Debug)]
 enum Mode {
     ApplicationKeypad,
     ApplicationCursor,
