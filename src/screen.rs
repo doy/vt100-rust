@@ -2,8 +2,6 @@ use crate::term::BufWrite as _;
 use std::convert::TryInto as _;
 use unicode_width::UnicodeWidthChar as _;
 
-const DEFAULT_MULTI_PARAMS: &[i64] = &[0];
-
 #[derive(enumset::EnumSetType, Debug)]
 enum Mode {
     ApplicationKeypad,
@@ -997,7 +995,7 @@ impl Screen {
     }
 
     // CSI h
-    fn sm(&mut self, params: &[i64]) {
+    fn sm(&mut self, params: &vte::Params) {
         // nothing, i think?
         if log::log_enabled!(log::Level::Debug) {
             log::debug!("unhandled SM mode: {}", param_str(params))
@@ -1005,34 +1003,49 @@ impl Screen {
     }
 
     // CSI ? h
-    fn decset(&mut self, params: &[i64]) {
+    fn decset(&mut self, params: &vte::Params) {
         for param in params {
             match param {
-                1 => self.set_mode(Mode::ApplicationCursor),
-                6 => self.grid_mut().set_origin_mode(true),
-                9 => self.set_mouse_mode(MouseProtocolMode::Press),
-                25 => self.clear_mode(Mode::HideCursor),
-                47 => self.enter_alternate_grid(),
-                1000 => self.set_mouse_mode(MouseProtocolMode::PressRelease),
-                1002 => self.set_mouse_mode(MouseProtocolMode::ButtonMotion),
-                1003 => self.set_mouse_mode(MouseProtocolMode::AnyMotion),
-                1005 => self.set_mouse_encoding(MouseProtocolEncoding::Utf8),
-                1006 => self.set_mouse_encoding(MouseProtocolEncoding::Sgr),
-                1049 => {
+                &[1] => self.set_mode(Mode::ApplicationCursor),
+                &[6] => self.grid_mut().set_origin_mode(true),
+                &[9] => self.set_mouse_mode(MouseProtocolMode::Press),
+                &[25] => self.clear_mode(Mode::HideCursor),
+                &[47] => self.enter_alternate_grid(),
+                &[1000] => {
+                    self.set_mouse_mode(MouseProtocolMode::PressRelease)
+                }
+                &[1002] => {
+                    self.set_mouse_mode(MouseProtocolMode::ButtonMotion)
+                }
+                &[1003] => self.set_mouse_mode(MouseProtocolMode::AnyMotion),
+                &[1005] => {
+                    self.set_mouse_encoding(MouseProtocolEncoding::Utf8)
+                }
+                &[1006] => {
+                    self.set_mouse_encoding(MouseProtocolEncoding::Sgr)
+                }
+                &[1049] => {
                     self.decsc();
                     self.alternate_grid.clear();
                     self.enter_alternate_grid();
                 }
-                2004 => self.set_mode(Mode::BracketedPaste),
-                n => {
-                    log::debug!("unhandled DECSET mode: {}", n);
+                &[2004] => self.set_mode(Mode::BracketedPaste),
+                ns => {
+                    if log::log_enabled!(log::Level::Debug) {
+                        let n = if ns.len() == 1 {
+                            format!("{}", ns[0])
+                        } else {
+                            format!("{:?}", ns)
+                        };
+                        log::debug!("unhandled DECSET mode: {}", n);
+                    }
                 }
             }
         }
     }
 
     // CSI l
-    fn rm(&mut self, params: &[i64]) {
+    fn rm(&mut self, params: &vte::Params) {
         // nothing, i think?
         if log::log_enabled!(log::Level::Debug) {
             log::debug!("unhandled RM mode: {}", param_str(params))
@@ -1040,52 +1053,73 @@ impl Screen {
     }
 
     // CSI ? l
-    fn decrst(&mut self, params: &[i64]) {
+    fn decrst(&mut self, params: &vte::Params) {
         for param in params {
             match param {
-                1 => self.clear_mode(Mode::ApplicationCursor),
-                6 => self.grid_mut().set_origin_mode(false),
-                9 => self.clear_mouse_mode(MouseProtocolMode::Press),
-                25 => self.set_mode(Mode::HideCursor),
-                47 => {
+                &[1] => self.clear_mode(Mode::ApplicationCursor),
+                &[6] => self.grid_mut().set_origin_mode(false),
+                &[9] => self.clear_mouse_mode(MouseProtocolMode::Press),
+                &[25] => self.set_mode(Mode::HideCursor),
+                &[47] => {
                     self.exit_alternate_grid();
                 }
-                1000 => {
+                &[1000] => {
                     self.clear_mouse_mode(MouseProtocolMode::PressRelease)
                 }
-                1002 => {
+                &[1002] => {
                     self.clear_mouse_mode(MouseProtocolMode::ButtonMotion)
                 }
-                1003 => self.clear_mouse_mode(MouseProtocolMode::AnyMotion),
-                1005 => {
+                &[1003] => {
+                    self.clear_mouse_mode(MouseProtocolMode::AnyMotion)
+                }
+                &[1005] => {
                     self.clear_mouse_encoding(MouseProtocolEncoding::Utf8)
                 }
-                1006 => self.clear_mouse_encoding(MouseProtocolEncoding::Sgr),
-                1049 => {
+                &[1006] => {
+                    self.clear_mouse_encoding(MouseProtocolEncoding::Sgr)
+                }
+                &[1049] => {
                     self.exit_alternate_grid();
                     self.decrc();
                 }
-                2004 => self.clear_mode(Mode::BracketedPaste),
-                n => {
-                    log::debug!("unhandled DECRST mode: {}", n);
+                &[2004] => self.clear_mode(Mode::BracketedPaste),
+                ns => {
+                    if log::log_enabled!(log::Level::Debug) {
+                        let n = if ns.len() == 1 {
+                            format!("{}", ns[0])
+                        } else {
+                            format!("{:?}", ns)
+                        };
+                        log::debug!("unhandled DECRST mode: {}", n);
+                    }
                 }
             }
         }
     }
 
     // CSI m
-    fn sgr(&mut self, params: &[i64]) {
-        let mut i = 0;
+    fn sgr(&mut self, params: &vte::Params) {
+        // XXX really i want to just be able to pass in a default Params
+        // instance with a 0 in it, but vte doesn't allow creating new Params
+        // instances
+        if params.is_empty() {
+            self.attrs = crate::attrs::Attrs::default();
+            return;
+        }
+
+        let mut iter = params.iter();
 
         macro_rules! next_param {
             () => {
-                if i >= params.len() {
-                    return;
-                } else if let Some(n) = i64_to_u8(params[i]) {
-                    i += 1;
-                    n
-                } else {
-                    return;
+                match iter.next() {
+                    Some(&[n]) => {
+                        if let Some(n) = u16_to_u8(n) {
+                            n
+                        } else {
+                            return;
+                        }
+                    }
+                    _ => return,
                 }
             };
         }
@@ -1205,13 +1239,7 @@ impl vte::Perform for Screen {
         }
     }
 
-    fn esc_dispatch(
-        &mut self,
-        _params: &[i64],
-        intermediates: &[u8],
-        _ignore: bool,
-        b: u8,
-    ) {
+    fn esc_dispatch(&mut self, intermediates: &[u8], _ignore: bool, b: u8) {
         match intermediates.get(0) {
             None => match b {
                 b'7' => self.decsc(),
@@ -1233,7 +1261,7 @@ impl vte::Perform for Screen {
 
     fn csi_dispatch(
         &mut self,
-        params: &[i64],
+        params: &vte::Params,
         intermediates: &[u8],
         _ignore: bool,
         c: char,
@@ -1256,9 +1284,9 @@ impl vte::Perform for Screen {
                 'T' => self.sd(canonicalize_params_1(params, 1)),
                 'X' => self.ech(canonicalize_params_1(params, 1)),
                 'd' => self.vpa(canonicalize_params_1(params, 1)),
-                'h' => self.sm(canonicalize_params_multi(params)),
-                'l' => self.rm(canonicalize_params_multi(params)),
-                'm' => self.sgr(canonicalize_params_multi(params)),
+                'h' => self.sm(params),
+                'l' => self.rm(params),
+                'm' => self.sgr(params),
                 'r' => self.decstbm(canonicalize_params_decstbm(
                     params,
                     self.grid().size(),
@@ -1276,8 +1304,8 @@ impl vte::Perform for Screen {
             Some(b'?') => match c {
                 'J' => self.decsed(canonicalize_params_1(params, 0)),
                 'K' => self.decsel(canonicalize_params_1(params, 0)),
-                'h' => self.decset(canonicalize_params_multi(params)),
-                'l' => self.decrst(canonicalize_params_multi(params)),
+                'h' => self.decset(params),
+                'l' => self.decrst(params),
                 _ => {
                     if log::log_enabled!(log::Level::Debug) {
                         log::debug!(
@@ -1319,7 +1347,7 @@ impl vte::Perform for Screen {
 
     fn hook(
         &mut self,
-        params: &[i64],
+        params: &vte::Params,
         intermediates: &[u8],
         _ignore: bool,
         action: char,
@@ -1340,88 +1368,64 @@ impl vte::Perform for Screen {
             }
         }
     }
-    fn put(&mut self, _: u8) {}
-    fn unhook(&mut self) {}
 }
 
-fn canonicalize_params_1(params: &[i64], default: u16) -> u16 {
-    let first = params.get(0).copied().unwrap_or(0);
+fn canonicalize_params_1(params: &vte::Params, default: u16) -> u16 {
+    let first = params.iter().next().map_or(0, |x| x[0]);
     if first == 0 {
         default
     } else {
-        i64_to_u16(first)
+        first
     }
 }
 
 fn canonicalize_params_2(
-    params: &[i64],
+    params: &vte::Params,
     default1: u16,
     default2: u16,
 ) -> (u16, u16) {
-    let first = params.get(0).copied().unwrap_or(0);
-    let first = if first == 0 {
-        default1
-    } else {
-        i64_to_u16(first)
-    };
+    let mut iter = params.iter();
+    let first = iter.next().map_or(0, |x| x[0]);
+    let first = if first == 0 { default1 } else { first };
 
-    let second = params.get(1).copied().unwrap_or(0);
-    let second = if second == 0 {
-        default2
-    } else {
-        i64_to_u16(second)
-    };
+    let second = iter.next().map_or(0, |x| x[0]);
+    let second = if second == 0 { default2 } else { second };
 
     (first, second)
 }
 
-fn canonicalize_params_multi(params: &[i64]) -> &[i64] {
-    if params.is_empty() {
-        DEFAULT_MULTI_PARAMS
-    } else {
-        params
-    }
-}
-
 fn canonicalize_params_decstbm(
-    params: &[i64],
+    params: &vte::Params,
     size: crate::grid::Size,
 ) -> (u16, u16) {
-    let top = params.get(0).copied().unwrap_or(0);
-    let top = if top == 0 { 1 } else { i64_to_u16(top) };
+    let mut iter = params.iter();
+    let top = iter.next().map_or(0, |x| x[0]);
+    let top = if top == 0 { 1 } else { top };
 
-    let bottom = params.get(1).copied().unwrap_or(0);
-    let bottom = if bottom == 0 {
-        size.rows
-    } else {
-        i64_to_u16(bottom)
-    };
+    let bottom = iter.next().map_or(0, |x| x[0]);
+    let bottom = if bottom == 0 { size.rows } else { bottom };
 
     (top, bottom)
 }
 
-fn i64_to_u16(i: i64) -> u16 {
-    if i < 0 {
-        0
-    } else if i > i64::from(u16::max_value()) {
-        u16::max_value()
-    } else {
-        i.try_into().unwrap()
-    }
-}
-
-fn i64_to_u8(i: i64) -> Option<u8> {
-    if i < 0 || i > i64::from(u8::max_value()) {
+fn u16_to_u8(i: u16) -> Option<u8> {
+    if i > u16::from(u8::max_value()) {
         None
     } else {
         Some(i.try_into().unwrap())
     }
 }
 
-fn param_str(params: &[i64]) -> String {
+fn param_str(params: &vte::Params) -> String {
     let strs: Vec<_> = params
         .iter()
-        .map(std::string::ToString::to_string)
+        .map(|subparams| {
+            let subparam_strs: Vec<_> = subparams
+                .iter()
+                .map(std::string::ToString::to_string)
+                .collect();
+            subparam_strs.join(" : ")
+        })
         .collect();
     strs.join(" ; ")
 }
