@@ -1135,7 +1135,7 @@ impl Screen {
                 23 => self.attrs.set_italic(false),
                 24 => self.attrs.set_underline(false),
                 27 => self.attrs.set_inverse(false),
-                n if n >= 30 && n <= 37 => {
+                n if (30..=37).contains(&n) => {
                     self.attrs.fgcolor = crate::attrs::Color::Idx(n - 30);
                 }
                 38 => match next_param!() {
@@ -1158,7 +1158,7 @@ impl Screen {
                 39 => {
                     self.attrs.fgcolor = crate::attrs::Color::Default;
                 }
-                n if n >= 40 && n <= 47 => {
+                n if (40..=47).contains(&n) => {
                     self.attrs.bgcolor = crate::attrs::Color::Idx(n - 40);
                 }
                 48 => match next_param!() {
@@ -1181,10 +1181,10 @@ impl Screen {
                 49 => {
                     self.attrs.bgcolor = crate::attrs::Color::Default;
                 }
-                n if n >= 90 && n <= 97 => {
+                n if (90..=97).contains(&n) => {
                     self.attrs.fgcolor = crate::attrs::Color::Idx(n - 82);
                 }
-                n if n >= 100 && n <= 107 => {
+                n if (100..=107).contains(&n) => {
                     self.attrs.bgcolor = crate::attrs::Color::Idx(n - 92);
                 }
                 n => {
