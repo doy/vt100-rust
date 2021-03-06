@@ -1,5 +1,18 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+
+* `Screen::contents_between`, for returning the contents logically between two
+  given cells (for things like clipboard selection)
+* Support SGR subparameters (so `\e[38:2:255:0:0m` behaves the same way as
+  `\e[38;2;255;0;0m`)
+
+### Fixed
+
+* Bump `enumset` to fix a dependency which fails to build
+
 ## [0.8.1] - 2020-02-09
 
 ### Changed
