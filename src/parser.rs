@@ -61,3 +61,14 @@ impl Default for Parser {
         Self::new(24, 80, 0)
     }
 }
+
+impl std::io::Write for Parser {
+    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+        self.process(buf);
+        Ok(buf.len())
+    }
+
+    fn flush(&mut self) -> std::io::Result<()> {
+        Ok(())
+    }
+}

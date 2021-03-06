@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+
+* Implementation of `std::io::Write` for `Parser`
+
 ## [0.9.0] - 2021-03-05
 
 ### Added
