@@ -1112,83 +1112,142 @@ impl Screen {
         macro_rules! next_param {
             () => {
                 match iter.next() {
-                    Some(&[n]) => {
-                        if let Some(n) = u16_to_u8(n) {
-                            n
-                        } else {
-                            return;
-                        }
-                    }
+                    Some(n) => n,
                     _ => return,
+                }
+            };
+        }
+
+        macro_rules! to_u8 {
+            ($n:expr) => {
+                if let Some(n) = u16_to_u8($n) {
+                    n
+                } else {
+                    return;
+                }
+            };
+        }
+
+        macro_rules! next_param_u8 {
+            () => {
+                if let &[n] = next_param!() {
+                    to_u8!(n)
+                } else {
+                    return;
                 }
             };
         }
 
         loop {
             match next_param!() {
-                0 => self.attrs = crate::attrs::Attrs::default(),
-                1 => self.attrs.set_bold(true),
-                3 => self.attrs.set_italic(true),
-                4 => self.attrs.set_underline(true),
-                7 => self.attrs.set_inverse(true),
-                22 => self.attrs.set_bold(false),
-                23 => self.attrs.set_italic(false),
-                24 => self.attrs.set_underline(false),
-                27 => self.attrs.set_inverse(false),
-                n if (30..=37).contains(&n) => {
-                    self.attrs.fgcolor = crate::attrs::Color::Idx(n - 30);
+                &[0] => self.attrs = crate::attrs::Attrs::default(),
+                &[1] => self.attrs.set_bold(true),
+                &[3] => self.attrs.set_italic(true),
+                &[4] => self.attrs.set_underline(true),
+                &[7] => self.attrs.set_inverse(true),
+                &[22] => self.attrs.set_bold(false),
+                &[23] => self.attrs.set_italic(false),
+                &[24] => self.attrs.set_underline(false),
+                &[27] => self.attrs.set_inverse(false),
+                &[n] if (30..=37).contains(&n) => {
+                    self.attrs.fgcolor =
+                        crate::attrs::Color::Idx(to_u8!(n) - 30);
                 }
-                38 => match next_param!() {
-                    2 => {
-                        let r = next_param!();
-                        let g = next_param!();
-                        let b = next_param!();
+                &[38, 2, r, g, b] => {
+                    self.attrs.fgcolor = crate::attrs::Color::Rgb(
+                        to_u8!(r),
+                        to_u8!(g),
+                        to_u8!(b),
+                    );
+                }
+                &[38, 5, i] => {
+                    self.attrs.fgcolor = crate::attrs::Color::Idx(to_u8!(i));
+                }
+                &[38] => match next_param!() {
+                    &[2] => {
+                        let r = next_param_u8!();
+                        let g = next_param_u8!();
+                        let b = next_param_u8!();
                         self.attrs.fgcolor =
                             crate::attrs::Color::Rgb(r, g, b);
                     }
-                    5 => {
+                    &[5] => {
                         self.attrs.fgcolor =
-                            crate::attrs::Color::Idx(next_param!());
+                            crate::attrs::Color::Idx(next_param_u8!());
                     }
-                    n => {
-                        log::debug!("unhandled SGR mode: 38 {}", n);
+                    ns => {
+                        if log::log_enabled!(log::Level::Debug) {
+                            let n = if ns.len() == 1 {
+                                format!("{}", ns[0])
+                            } else {
+                                format!("{:?}", ns)
+                            };
+                            log::debug!("unhandled SGR mode: 38 {}", n);
+                        }
                         return;
                     }
                 },
-                39 => {
+                &[39] => {
                     self.attrs.fgcolor = crate::attrs::Color::Default;
                 }
-                n if (40..=47).contains(&n) => {
-                    self.attrs.bgcolor = crate::attrs::Color::Idx(n - 40);
+                &[n] if (40..=47).contains(&n) => {
+                    self.attrs.bgcolor =
+                        crate::attrs::Color::Idx(to_u8!(n) - 40);
                 }
-                48 => match next_param!() {
-                    2 => {
-                        let r = next_param!();
-                        let g = next_param!();
-                        let b = next_param!();
+                &[48, 2, r, g, b] => {
+                    self.attrs.bgcolor = crate::attrs::Color::Rgb(
+                        to_u8!(r),
+                        to_u8!(g),
+                        to_u8!(b),
+                    );
+                }
+                &[48, 5, i] => {
+                    self.attrs.bgcolor = crate::attrs::Color::Idx(to_u8!(i));
+                }
+                &[48] => match next_param!() {
+                    &[2] => {
+                        let r = next_param_u8!();
+                        let g = next_param_u8!();
+                        let b = next_param_u8!();
                         self.attrs.bgcolor =
                             crate::attrs::Color::Rgb(r, g, b);
                     }
-                    5 => {
+                    &[5] => {
                         self.attrs.bgcolor =
-                            crate::attrs::Color::Idx(next_param!());
+                            crate::attrs::Color::Idx(next_param_u8!());
                     }
-                    n => {
-                        log::debug!("unhandled SGR mode: 48 {}", n);
+                    ns => {
+                        if log::log_enabled!(log::Level::Debug) {
+                            let n = if ns.len() == 1 {
+                                format!("{}", ns[0])
+                            } else {
+                                format!("{:?}", ns)
+                            };
+                            log::debug!("unhandled SGR mode: 48 {}", n);
+                        }
                         return;
                     }
                 },
-                49 => {
+                &[49] => {
                     self.attrs.bgcolor = crate::attrs::Color::Default;
                 }
-                n if (90..=97).contains(&n) => {
-                    self.attrs.fgcolor = crate::attrs::Color::Idx(n - 82);
+                &[n] if (90..=97).contains(&n) => {
+                    self.attrs.fgcolor =
+                        crate::attrs::Color::Idx(to_u8!(n) - 82);
                 }
-                n if (100..=107).contains(&n) => {
-                    self.attrs.bgcolor = crate::attrs::Color::Idx(n - 92);
+                &[n] if (100..=107).contains(&n) => {
+                    self.attrs.bgcolor =
+                        crate::attrs::Color::Idx(to_u8!(n) - 92);
                 }
-                n => {
-                    log::debug!("unhandled SGR mode: {}", n);
+                ns => {
+                    if log::log_enabled!(log::Level::Debug) {
+                        let n = if ns.len() == 1 {
+                            format!("{}", ns[0])
+                        } else {
+                            format!("{:?}", ns)
+                        };
+                        log::debug!("unhandled SGR mode: {}", n);
+                    }
                 }
             }
         }
