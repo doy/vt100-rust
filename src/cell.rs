@@ -84,6 +84,9 @@ impl Cell {
         self.len & 0x80 == 0x80
     }
 
+    /// Returns whether the cell contains the second half of a wide character
+    /// (in other words, whether the previous cell in the row contains a wide
+    /// character)
     #[must_use]
     pub fn is_wide_continuation(&self) -> bool {
         self.len & 0x40 == 0x40
