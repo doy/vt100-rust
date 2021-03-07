@@ -478,6 +478,44 @@ impl Screen {
         }
     }
 
+    /// Returns terminal escape sequences sufficient to set the current
+    /// terminal's drawing attributes.
+    ///
+    /// Supported drawing attributes are:
+    /// * fgcolor
+    /// * bgcolor
+    /// * bold
+    /// * italic
+    /// * underline
+    /// * inverse
+    #[must_use]
+    pub fn attributes_formatted(&self) -> Vec<u8> {
+        let mut contents = vec![];
+        self.write_attributes_formatted(&mut contents);
+        contents
+    }
+
+    fn write_attributes_formatted(&self, contents: &mut Vec<u8>) {
+        self.attrs.write_escape_code_diff(
+            contents,
+            &crate::attrs::Attrs::default(),
+        );
+    }
+
+    /// Returns terminal escape sequences sufficient to change the previous
+    /// terminal's drawing attributes to the drawing attributes enabled in the
+    /// current terminal.
+    #[must_use]
+    pub fn attributes_diff(&self, prev: &Self) -> Vec<u8> {
+        let mut contents = vec![];
+        self.write_attributes_diff(&mut contents, prev);
+        contents
+    }
+
+    fn write_attributes_diff(&self, contents: &mut Vec<u8>, prev: &Self) {
+        self.attrs.write_escape_code_diff(contents, &prev.attrs);
+    }
+
     /// Returns the `Cell` object at the given location in the terminal, if it
     /// exists.
     #[must_use]
