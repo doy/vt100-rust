@@ -19,67 +19,64 @@ impl Default for Color {
     }
 }
 
-#[derive(enumset::EnumSetType, Debug)]
-pub enum TextMode {
-    Bold,
-    Italic,
-    Underline,
-    Inverse,
-}
+const TEXT_MODE_BOLD: u8 = 0b0000_0001;
+const TEXT_MODE_ITALIC: u8 = 0b0000_0010;
+const TEXT_MODE_UNDERLINE: u8 = 0b0000_0100;
+const TEXT_MODE_INVERSE: u8 = 0b0000_1000;
 
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug)]
 pub struct Attrs {
     pub fgcolor: Color,
     pub bgcolor: Color,
-    pub mode: enumset::EnumSet<TextMode>,
+    pub mode: u8,
 }
 
 impl Attrs {
     pub fn bold(&self) -> bool {
-        self.mode.contains(TextMode::Bold)
+        self.mode & TEXT_MODE_BOLD != 0
     }
 
     pub fn set_bold(&mut self, bold: bool) {
         if bold {
-            self.mode.insert(TextMode::Bold);
+            self.mode |= TEXT_MODE_BOLD;
         } else {
-            self.mode.remove(TextMode::Bold);
+            self.mode &= !TEXT_MODE_BOLD;
         }
     }
 
     pub fn italic(&self) -> bool {
-        self.mode.contains(TextMode::Italic)
+        self.mode & TEXT_MODE_ITALIC != 0
     }
 
     pub fn set_italic(&mut self, italic: bool) {
         if italic {
-            self.mode.insert(TextMode::Italic);
+            self.mode |= TEXT_MODE_ITALIC;
         } else {
-            self.mode.remove(TextMode::Italic);
+            self.mode &= !TEXT_MODE_ITALIC;
         }
     }
 
     pub fn underline(&self) -> bool {
-        self.mode.contains(TextMode::Underline)
+        self.mode & TEXT_MODE_UNDERLINE != 0
     }
 
     pub fn set_underline(&mut self, underline: bool) {
         if underline {
-            self.mode.insert(TextMode::Underline);
+            self.mode |= TEXT_MODE_UNDERLINE;
         } else {
-            self.mode.remove(TextMode::Underline);
+            self.mode &= !TEXT_MODE_UNDERLINE;
         }
     }
 
     pub fn inverse(&self) -> bool {
-        self.mode.contains(TextMode::Inverse)
+        self.mode & TEXT_MODE_INVERSE != 0
     }
 
     pub fn set_inverse(&mut self, inverse: bool) {
         if inverse {
-            self.mode.insert(TextMode::Inverse);
+            self.mode |= TEXT_MODE_INVERSE;
         } else {
-            self.mode.remove(TextMode::Inverse);
+            self.mode &= !TEXT_MODE_INVERSE;
         }
     }
 

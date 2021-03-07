@@ -2,14 +2,11 @@ use crate::term::BufWrite as _;
 use std::convert::TryInto as _;
 use unicode_width::UnicodeWidthChar as _;
 
-#[derive(enumset::EnumSetType, Debug)]
-enum Mode {
-    ApplicationKeypad,
-    ApplicationCursor,
-    HideCursor,
-    AlternateScreen,
-    BracketedPaste,
-}
+const MODE_APPLICATION_KEYPAD: u8 = 0b0000_0001;
+const MODE_APPLICATION_CURSOR: u8 = 0b0000_0010;
+const MODE_HIDE_CURSOR: u8 = 0b0000_0100;
+const MODE_ALTERNATE_SCREEN: u8 = 0b0000_1000;
+const MODE_BRACKETED_PASTE: u8 = 0b0001_0000;
 
 /// The xterm mouse handling mode currently in use.
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
@@ -76,7 +73,7 @@ pub struct Screen {
     title: String,
     icon_name: String,
 
-    modes: enumset::EnumSet<Mode>,
+    modes: u8,
     mouse_protocol_mode: MouseProtocolMode,
     mouse_protocol_encoding: MouseProtocolEncoding,
 
@@ -99,7 +96,7 @@ impl Screen {
             title: String::default(),
             icon_name: String::default(),
 
-            modes: enumset::EnumSet::default(),
+            modes: 0,
             mouse_protocol_mode: MouseProtocolMode::default(),
             mouse_protocol_encoding: MouseProtocolEncoding::default(),
 
@@ -360,14 +357,14 @@ impl Screen {
 
     fn write_input_mode_formatted(&self, contents: &mut Vec<u8>) {
         crate::term::ApplicationKeypad::new(
-            self.mode(Mode::ApplicationKeypad),
+            self.mode(MODE_APPLICATION_KEYPAD),
         )
         .write_buf(contents);
         crate::term::ApplicationCursor::new(
-            self.mode(Mode::ApplicationCursor),
+            self.mode(MODE_APPLICATION_CURSOR),
         )
         .write_buf(contents);
-        crate::term::BracketedPaste::new(self.mode(Mode::BracketedPaste))
+        crate::term::BracketedPaste::new(self.mode(MODE_BRACKETED_PASTE))
             .write_buf(contents);
         crate::term::MouseProtocolMode::new(
             self.mouse_protocol_mode,
@@ -392,25 +389,25 @@ impl Screen {
     }
 
     fn write_input_mode_diff(&self, contents: &mut Vec<u8>, prev: &Self) {
-        if self.mode(Mode::ApplicationKeypad)
-            != prev.mode(Mode::ApplicationKeypad)
+        if self.mode(MODE_APPLICATION_KEYPAD)
+            != prev.mode(MODE_APPLICATION_KEYPAD)
         {
             crate::term::ApplicationKeypad::new(
-                self.mode(Mode::ApplicationKeypad),
+                self.mode(MODE_APPLICATION_KEYPAD),
             )
             .write_buf(contents);
         }
-        if self.mode(Mode::ApplicationCursor)
-            != prev.mode(Mode::ApplicationCursor)
+        if self.mode(MODE_APPLICATION_CURSOR)
+            != prev.mode(MODE_APPLICATION_CURSOR)
         {
             crate::term::ApplicationCursor::new(
-                self.mode(Mode::ApplicationCursor),
+                self.mode(MODE_APPLICATION_CURSOR),
             )
             .write_buf(contents);
         }
-        if self.mode(Mode::BracketedPaste) != prev.mode(Mode::BracketedPaste)
+        if self.mode(MODE_BRACKETED_PASTE) != prev.mode(MODE_BRACKETED_PASTE)
         {
-            crate::term::BracketedPaste::new(self.mode(Mode::BracketedPaste))
+            crate::term::BracketedPaste::new(self.mode(MODE_BRACKETED_PASTE))
                 .write_buf(contents);
         }
         crate::term::MouseProtocolMode::new(
@@ -573,25 +570,25 @@ impl Screen {
     /// Returns whether the terminal should be in application keypad mode.
     #[must_use]
     pub fn application_keypad(&self) -> bool {
-        self.mode(Mode::ApplicationKeypad)
+        self.mode(MODE_APPLICATION_KEYPAD)
     }
 
     /// Returns whether the terminal should be in application cursor mode.
     #[must_use]
     pub fn application_cursor(&self) -> bool {
-        self.mode(Mode::ApplicationCursor)
+        self.mode(MODE_APPLICATION_CURSOR)
     }
 
     /// Returns whether the terminal should be in hide cursor mode.
     #[must_use]
     pub fn hide_cursor(&self) -> bool {
-        self.mode(Mode::HideCursor)
+        self.mode(MODE_HIDE_CURSOR)
     }
 
     /// Returns whether the terminal should be in bracketed paste mode.
     #[must_use]
     pub fn bracketed_paste(&self) -> bool {
-        self.mode(Mode::BracketedPaste)
+        self.mode(MODE_BRACKETED_PASTE)
     }
 
     /// Returns the currently active `MouseProtocolMode`
@@ -647,7 +644,7 @@ impl Screen {
     }
 
     fn grid(&self) -> &crate::grid::Grid {
-        if self.mode(Mode::AlternateScreen) {
+        if self.mode(MODE_ALTERNATE_SCREEN) {
             &self.alternate_grid
         } else {
             &self.grid
@@ -655,7 +652,7 @@ impl Screen {
     }
 
     fn grid_mut(&mut self) -> &mut crate::grid::Grid {
-        if self.mode(Mode::AlternateScreen) {
+        if self.mode(MODE_ALTERNATE_SCREEN) {
             &mut self.alternate_grid
         } else {
             &mut self.grid
@@ -690,11 +687,11 @@ impl Screen {
 
     fn enter_alternate_grid(&mut self) {
         self.grid_mut().set_scrollback(0);
-        self.set_mode(Mode::AlternateScreen);
+        self.set_mode(MODE_ALTERNATE_SCREEN);
     }
 
     fn exit_alternate_grid(&mut self) {
-        self.clear_mode(Mode::AlternateScreen);
+        self.clear_mode(MODE_ALTERNATE_SCREEN);
     }
 
     fn save_cursor(&mut self) {
@@ -707,16 +704,16 @@ impl Screen {
         self.attrs = self.saved_attrs;
     }
 
-    fn set_mode(&mut self, mode: Mode) {
-        self.modes.insert(mode);
+    fn set_mode(&mut self, mode: u8) {
+        self.modes |= mode;
     }
 
-    fn clear_mode(&mut self, mode: Mode) {
-        self.modes.remove(mode);
+    fn clear_mode(&mut self, mode: u8) {
+        self.modes &= !mode;
     }
 
-    fn mode(&self, mode: Mode) -> bool {
-        self.modes.contains(mode)
+    fn mode(&self, mode: u8) -> bool {
+        self.modes & mode != 0
     }
 
     fn set_mouse_mode(&mut self, mode: MouseProtocolMode) {
@@ -927,12 +924,12 @@ impl Screen {
 
     // ESC =
     fn deckpam(&mut self) {
-        self.set_mode(Mode::ApplicationKeypad);
+        self.set_mode(MODE_APPLICATION_KEYPAD);
     }
 
     // ESC >
     fn deckpnm(&mut self) {
-        self.clear_mode(Mode::ApplicationKeypad);
+        self.clear_mode(MODE_APPLICATION_KEYPAD);
     }
 
     // ESC M
@@ -1084,10 +1081,10 @@ impl Screen {
     fn decset(&mut self, params: &vte::Params) {
         for param in params {
             match param {
-                &[1] => self.set_mode(Mode::ApplicationCursor),
+                &[1] => self.set_mode(MODE_APPLICATION_CURSOR),
                 &[6] => self.grid_mut().set_origin_mode(true),
                 &[9] => self.set_mouse_mode(MouseProtocolMode::Press),
-                &[25] => self.clear_mode(Mode::HideCursor),
+                &[25] => self.clear_mode(MODE_HIDE_CURSOR),
                 &[47] => self.enter_alternate_grid(),
                 &[1000] => {
                     self.set_mouse_mode(MouseProtocolMode::PressRelease)
@@ -1107,7 +1104,7 @@ impl Screen {
                     self.alternate_grid.clear();
                     self.enter_alternate_grid();
                 }
-                &[2004] => self.set_mode(Mode::BracketedPaste),
+                &[2004] => self.set_mode(MODE_BRACKETED_PASTE),
                 ns => {
                     if log::log_enabled!(log::Level::Debug) {
                         let n = if ns.len() == 1 {
@@ -1134,10 +1131,10 @@ impl Screen {
     fn decrst(&mut self, params: &vte::Params) {
         for param in params {
             match param {
-                &[1] => self.clear_mode(Mode::ApplicationCursor),
+                &[1] => self.clear_mode(MODE_APPLICATION_CURSOR),
                 &[6] => self.grid_mut().set_origin_mode(false),
                 &[9] => self.clear_mouse_mode(MouseProtocolMode::Press),
-                &[25] => self.set_mode(Mode::HideCursor),
+                &[25] => self.set_mode(MODE_HIDE_CURSOR),
                 &[47] => {
                     self.exit_alternate_grid();
                 }
@@ -1160,7 +1157,7 @@ impl Screen {
                     self.exit_alternate_grid();
                     self.decrc();
                 }
-                &[2004] => self.clear_mode(Mode::BracketedPaste),
+                &[2004] => self.clear_mode(MODE_BRACKETED_PASTE),
                 ns => {
                     if log::log_enabled!(log::Level::Debug) {
                         let n = if ns.len() == 1 {

@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### Changed
+
+* Drop dependency on `enumset`
+
 ## [0.11.0] - 2021-03-07
 
 ### Added
