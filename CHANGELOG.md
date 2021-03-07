@@ -1,5 +1,15 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+
+* `Screen::attributes_formatted` and `Screen::attributes_diff` to retrieve the
+  current state of the drawing attributes as escape sequences
+* `Screen::fgcolor`, `Screen::bgcolor`, `Screen::bold`, `Screen::italic`,
+  `Screen::underline`, and `Screen::inverse` to retrieve the current state of
+  the drawing attributes directly
+
 ## [0.10.0] - 2021-03-06
 
 ### Added
