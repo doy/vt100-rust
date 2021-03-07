@@ -568,6 +568,46 @@ impl Screen {
         self.mouse_protocol_encoding
     }
 
+    /// Returns the currently active foreground color.
+    #[must_use]
+    pub fn fgcolor(&self) -> crate::attrs::Color {
+        self.attrs.fgcolor
+    }
+
+    /// Returns the currently active background color.
+    #[must_use]
+    pub fn bgcolor(&self) -> crate::attrs::Color {
+        self.attrs.bgcolor
+    }
+
+    /// Returns whether newly drawn text should be rendered with the bold text
+    /// attribute.
+    #[must_use]
+    pub fn bold(&self) -> bool {
+        self.attrs.bold()
+    }
+
+    /// Returns whether newly drawn text should be rendered with the italic
+    /// text attribute.
+    #[must_use]
+    pub fn italic(&self) -> bool {
+        self.attrs.italic()
+    }
+
+    /// Returns whether newly drawn text should be rendered with the
+    /// underlined text attribute.
+    #[must_use]
+    pub fn underline(&self) -> bool {
+        self.attrs.underline()
+    }
+
+    /// Returns whether newly drawn text should be rendered with the inverse
+    /// text attribute.
+    #[must_use]
+    pub fn inverse(&self) -> bool {
+        self.attrs.inverse()
+    }
+
     fn grid(&self) -> &crate::grid::Grid {
         if self.mode(Mode::AlternateScreen) {
             &self.alternate_grid
