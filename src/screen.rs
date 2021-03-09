@@ -485,6 +485,12 @@ impl Screen {
     /// * italic
     /// * underline
     /// * inverse
+    ///
+    /// This is not typically necessary, since `contents_formatted` will leave
+    /// the current active drawing attributes in the correct state, but this
+    /// can be useful in the case of drawing additional things on top of a
+    /// terminal output, since you will need to restore the terminal state
+    /// without the terminal contents necessarily being the same.
     #[must_use]
     pub fn attributes_formatted(&self) -> Vec<u8> {
         let mut contents = vec![];
@@ -493,24 +499,11 @@ impl Screen {
     }
 
     fn write_attributes_formatted(&self, contents: &mut Vec<u8>) {
+        crate::term::ClearAttrs::default().write_buf(contents);
         self.attrs.write_escape_code_diff(
             contents,
             &crate::attrs::Attrs::default(),
         );
-    }
-
-    /// Returns terminal escape sequences sufficient to change the previous
-    /// terminal's drawing attributes to the drawing attributes enabled in the
-    /// current terminal.
-    #[must_use]
-    pub fn attributes_diff(&self, prev: &Self) -> Vec<u8> {
-        let mut contents = vec![];
-        self.write_attributes_diff(&mut contents, prev);
-        contents
-    }
-
-    fn write_attributes_diff(&self, contents: &mut Vec<u8>, prev: &Self) {
-        self.attrs.write_escape_code_diff(contents, &prev.attrs);
     }
 
     /// Returns the `Cell` object at the given location in the terminal, if it

@@ -1,5 +1,17 @@
 # Changelog
 
+## [Unreleased]
+
+### Fixed
+
+* `Screen::attributes_formatted` now correctly resets previously set attributes
+  where necessary
+
+### Removed
+
+* Removed `Screen::attributes_diff`, since I can't actually think of any
+  situation where it does a thing that makes sense.
+
 ## [0.11.1] - 2021-03-07
 
 ### Changed
