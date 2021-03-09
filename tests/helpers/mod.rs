@@ -86,6 +86,7 @@ pub fn contents_formatted_reproduces_screen(screen: &vt100::Screen) -> bool {
     let mut new_input = screen.contents_formatted();
     new_input.extend(screen.input_mode_formatted());
     new_input.extend(screen.title_formatted());
+    assert_eq!(new_input, screen.state_formatted());
     new_input.extend(screen.bells_diff(&empty_screen));
     let mut new_parser = vt100::Parser::default();
     new_parser.process(&new_input);
@@ -123,6 +124,7 @@ pub fn contents_diff_reproduces_state_from_screens(
     diff_input.extend(screen.input_mode_diff(&prev_screen));
     diff_input.extend(screen.title_diff(&prev_screen));
     diff_input.extend(screen.bells_diff(&prev_screen));
+    assert_eq!(diff_input, screen.state_diff(&prev_screen));
 
     let mut diff_prev_input = prev_screen.contents_formatted();
     diff_prev_input.extend(screen.input_mode_formatted());

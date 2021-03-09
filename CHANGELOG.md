@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Added
+
+* `Screen::state_formatted` and `Screen::state_diff` convenience wrappers
+
 ### Fixed
 
 * `Screen::attributes_formatted` now correctly resets previously set attributes

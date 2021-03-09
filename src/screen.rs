@@ -226,6 +226,32 @@ impl Screen {
         }
     }
 
+    /// Return escape codes sufficient to reproduce the entire contents of the
+    /// current terminal state. This is a convenience wrapper around
+    /// `contents_formatted`, `input_mode_formatted`, and `title_formatted`.
+    #[must_use]
+    pub fn state_formatted(&self) -> Vec<u8> {
+        let mut contents = vec![];
+        self.write_contents_formatted(&mut contents);
+        self.write_input_mode_formatted(&mut contents);
+        self.write_title_formatted(&mut contents);
+        contents
+    }
+
+    /// Return escape codes sufficient to turn the terminal state of the
+    /// screen `prev` into the current terminal state. This is a convenience
+    /// wrapper around `contents_diff`, `input_mode_diff`, `title_diff`, and
+    /// `bells_diff`.
+    #[must_use]
+    pub fn state_diff(&self, prev: &Self) -> Vec<u8> {
+        let mut contents = vec![];
+        self.write_contents_diff(&mut contents, prev);
+        self.write_input_mode_diff(&mut contents, prev);
+        self.write_title_diff(&mut contents, prev);
+        self.write_bells_diff(&mut contents, prev);
+        contents
+    }
+
     /// Returns the formatted visible contents of the terminal.
     ///
     /// Formatting information will be included inline as terminal escape
