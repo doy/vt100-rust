@@ -13,13 +13,13 @@ categories = ["command-line-interface", "encoding"]
 license = "MIT"
 
 [dependencies]
-itoa = "0.4"
-log = "0.4"
-unicode-width = "0.1"
-vte = "0.10"
+itoa = "0.4.8"
+log = "0.4.14"
+unicode-width = "0.1.9"
+vte = "0.10.1"
 
 [dev-dependencies]
 quickcheck = "0.9"
 rand = "0.7"
-serde = { version = "1", features = ["derive"] }
-serde_json = "1"
+serde = { version = "1.0.130", features = ["derive"] }
+serde_json = "1.0.69"
