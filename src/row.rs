@@ -276,7 +276,7 @@ impl Row {
                 >= self.cols() - if prev_first_cell.is_wide() { 1 } else { 0 }
         {
             let mut cell_contents = prev_first_cell.contents();
-            let need_erase = if cell_contents == "" {
+            let need_erase = if cell_contents.is_empty() {
                 cell_contents = " ".to_string();
                 true
             } else {

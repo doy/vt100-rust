@@ -11,7 +11,7 @@ pub struct Cell {
 }
 
 #[allow(clippy::collapsible_if)]
-impl PartialEq<Cell> for Cell {
+impl PartialEq<Self> for Cell {
     fn eq(&self, other: &Self) -> bool {
         if self.len != other.len {
             return false;

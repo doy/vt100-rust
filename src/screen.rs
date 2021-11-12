@@ -1092,7 +1092,7 @@ impl Screen {
     fn sm(&mut self, params: &vte::Params) {
         // nothing, i think?
         if log::log_enabled!(log::Level::Debug) {
-            log::debug!("unhandled SM mode: {}", param_str(params))
+            log::debug!("unhandled SM mode: {}", param_str(params));
         }
     }
 
@@ -1106,17 +1106,17 @@ impl Screen {
                 &[25] => self.clear_mode(MODE_HIDE_CURSOR),
                 &[47] => self.enter_alternate_grid(),
                 &[1000] => {
-                    self.set_mouse_mode(MouseProtocolMode::PressRelease)
+                    self.set_mouse_mode(MouseProtocolMode::PressRelease);
                 }
                 &[1002] => {
-                    self.set_mouse_mode(MouseProtocolMode::ButtonMotion)
+                    self.set_mouse_mode(MouseProtocolMode::ButtonMotion);
                 }
                 &[1003] => self.set_mouse_mode(MouseProtocolMode::AnyMotion),
                 &[1005] => {
-                    self.set_mouse_encoding(MouseProtocolEncoding::Utf8)
+                    self.set_mouse_encoding(MouseProtocolEncoding::Utf8);
                 }
                 &[1006] => {
-                    self.set_mouse_encoding(MouseProtocolEncoding::Sgr)
+                    self.set_mouse_encoding(MouseProtocolEncoding::Sgr);
                 }
                 &[1049] => {
                     self.decsc();
@@ -1142,7 +1142,7 @@ impl Screen {
     fn rm(&mut self, params: &vte::Params) {
         // nothing, i think?
         if log::log_enabled!(log::Level::Debug) {
-            log::debug!("unhandled RM mode: {}", param_str(params))
+            log::debug!("unhandled RM mode: {}", param_str(params));
         }
     }
 
@@ -1158,19 +1158,19 @@ impl Screen {
                     self.exit_alternate_grid();
                 }
                 &[1000] => {
-                    self.clear_mouse_mode(MouseProtocolMode::PressRelease)
+                    self.clear_mouse_mode(MouseProtocolMode::PressRelease);
                 }
                 &[1002] => {
-                    self.clear_mouse_mode(MouseProtocolMode::ButtonMotion)
+                    self.clear_mouse_mode(MouseProtocolMode::ButtonMotion);
                 }
                 &[1003] => {
-                    self.clear_mouse_mode(MouseProtocolMode::AnyMotion)
+                    self.clear_mouse_mode(MouseProtocolMode::AnyMotion);
                 }
                 &[1005] => {
-                    self.clear_mouse_encoding(MouseProtocolEncoding::Utf8)
+                    self.clear_mouse_encoding(MouseProtocolEncoding::Utf8);
                 }
                 &[1006] => {
-                    self.clear_mouse_encoding(MouseProtocolEncoding::Sgr)
+                    self.clear_mouse_encoding(MouseProtocolEncoding::Sgr);
                 }
                 &[1049] => {
                     self.exit_alternate_grid();
@@ -1374,7 +1374,7 @@ impl Screen {
 
 impl vte::Perform for Screen {
     fn print(&mut self, c: char) {
-        self.text(c)
+        self.text(c);
     }
 
     fn execute(&mut self, b: u8) {
@@ -1450,7 +1450,7 @@ impl vte::Perform for Screen {
                             "unhandled csi sequence: CSI {} {}",
                             param_str(params),
                             c
-                        )
+                        );
                     }
                 }
             },
@@ -1465,7 +1465,7 @@ impl vte::Perform for Screen {
                             "unhandled csi sequence: CSI ? {} {}",
                             param_str(params),
                             c
-                        )
+                        );
                     }
                 }
             },
@@ -1476,7 +1476,7 @@ impl vte::Perform for Screen {
                         i,
                         param_str(params),
                         c
-                    )
+                    );
                 }
             }
         }
@@ -1492,7 +1492,7 @@ impl vte::Perform for Screen {
                     log::debug!(
                         "unhandled osc sequence: OSC {}",
                         osc_param_str(params),
-                    )
+                    );
                 }
             }
         }

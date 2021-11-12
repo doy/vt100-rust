@@ -26,9 +26,9 @@ impl BufWrite for ClearRowForward {
 
 #[derive(Default, Debug)]
 #[must_use = "this struct does nothing unless you call write_buf"]
-pub struct CRLF;
+pub struct Crlf;
 
-impl BufWrite for CRLF {
+impl BufWrite for Crlf {
     fn write_buf(&self, buf: &mut Vec<u8>) {
         buf.extend_from_slice(b"\r\n");
     }
@@ -100,7 +100,7 @@ pub struct ClearAttrs;
 
 impl BufWrite for ClearAttrs {
     fn write_buf(&self, buf: &mut Vec<u8>) {
-        buf.extend_from_slice(b"\x1b[m")
+        buf.extend_from_slice(b"\x1b[m");
     }
 }
 
@@ -149,6 +149,7 @@ impl Attrs {
 
 impl BufWrite for Attrs {
     #[allow(unused_assignments)]
+    #[allow(clippy::branches_sharing_code)]
     fn write_buf(&self, buf: &mut Vec<u8>) {
         if self.fgcolor.is_none()
             && self.bgcolor.is_none()
@@ -341,9 +342,9 @@ impl HideCursor {
 impl BufWrite for HideCursor {
     fn write_buf(&self, buf: &mut Vec<u8>) {
         if self.state {
-            buf.extend_from_slice(b"\x1b[?25l")
+            buf.extend_from_slice(b"\x1b[?25l");
         } else {
-            buf.extend_from_slice(b"\x1b[?25h")
+            buf.extend_from_slice(b"\x1b[?25h");
         }
     }
 }
@@ -364,7 +365,7 @@ impl MoveFromTo {
 impl BufWrite for MoveFromTo {
     fn write_buf(&self, buf: &mut Vec<u8>) {
         if self.to.row == self.from.row + 1 && self.to.col == 0 {
-            crate::term::CRLF::default().write_buf(buf);
+            crate::term::Crlf::default().write_buf(buf);
         } else if self.from.row == self.to.row && self.from.col < self.to.col
         {
             crate::term::MoveRight::new(self.to.col - self.from.col)
@@ -458,9 +459,9 @@ impl ApplicationKeypad {
 impl BufWrite for ApplicationKeypad {
     fn write_buf(&self, buf: &mut Vec<u8>) {
         if self.state {
-            buf.extend_from_slice(b"\x1b=")
+            buf.extend_from_slice(b"\x1b=");
         } else {
-            buf.extend_from_slice(b"\x1b>")
+            buf.extend_from_slice(b"\x1b>");
         }
     }
 }
@@ -480,9 +481,9 @@ impl ApplicationCursor {
 impl BufWrite for ApplicationCursor {
     fn write_buf(&self, buf: &mut Vec<u8>) {
         if self.state {
-            buf.extend_from_slice(b"\x1b[?1h")
+            buf.extend_from_slice(b"\x1b[?1h");
         } else {
-            buf.extend_from_slice(b"\x1b[?1l")
+            buf.extend_from_slice(b"\x1b[?1l");
         }
     }
 }
@@ -502,9 +503,9 @@ impl BracketedPaste {
 impl BufWrite for BracketedPaste {
     fn write_buf(&self, buf: &mut Vec<u8>) {
         if self.state {
-            buf.extend_from_slice(b"\x1b[?2004h")
+            buf.extend_from_slice(b"\x1b[?2004h");
         } else {
-            buf.extend_from_slice(b"\x1b[?2004l")
+            buf.extend_from_slice(b"\x1b[?2004l");
         }
     }
 }

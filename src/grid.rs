@@ -187,7 +187,7 @@ impl Grid {
         for row in self.visible_rows() {
             row.write_contents(contents, 0, self.size.cols, wrapping);
             if !row.wrapped() {
-                contents.push_str("\n");
+                contents.push('\n');
             }
             wrapping = row.wrapped();
         }
@@ -551,7 +551,7 @@ impl Grid {
 
     pub fn set_origin_mode(&mut self, mode: bool) {
         self.origin_mode = mode;
-        self.set_pos(Pos { row: 0, col: 0 })
+        self.set_pos(Pos { row: 0, col: 0 });
     }
 
     pub fn row_inc_clamp(&mut self, count: u16) {
