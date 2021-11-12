@@ -662,6 +662,12 @@ impl Screen {
         self.attrs.inverse()
     }
 
+    /// Returns whether the alternate screen is currently in use.
+    #[must_use]
+    pub fn alternate_screen(&self) -> bool {
+        self.mode(MODE_ALTERNATE_SCREEN)
+    }
+
     fn grid(&self) -> &crate::grid::Grid {
         if self.mode(MODE_ALTERNATE_SCREEN) {
             &self.alternate_grid

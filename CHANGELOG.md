@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+
+* `Screen::alternate_screen` to determine if the alternate screen is in use
+
 ## [0.12.0] - 2021-03-09
 
 ### Added
