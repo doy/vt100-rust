@@ -586,6 +586,12 @@ impl Screen {
         self.visual_bell_count
     }
 
+    /// Returns whether the alternate screen is currently in use.
+    #[must_use]
+    pub fn alternate_screen(&self) -> bool {
+        self.mode(MODE_ALTERNATE_SCREEN)
+    }
+
     /// Returns whether the terminal should be in application keypad mode.
     #[must_use]
     pub fn application_keypad(&self) -> bool {
@@ -660,12 +666,6 @@ impl Screen {
     #[must_use]
     pub fn inverse(&self) -> bool {
         self.attrs.inverse()
-    }
-
-    /// Returns whether the alternate screen is currently in use.
-    #[must_use]
-    pub fn alternate_screen(&self) -> bool {
-        self.mode(MODE_ALTERNATE_SCREEN)
     }
 
     fn grid(&self) -> &crate::grid::Grid {
