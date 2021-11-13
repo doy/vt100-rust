@@ -50,6 +50,10 @@ fn unhex(s: &[u8]) -> Vec<u8> {
     while i < s.len() {
         if s[i] == b'\\' {
             match s[i + 1] {
+                b'\\' => {
+                    ret.push(b'\\');
+                    i += 2;
+                }
                 b'x' => {
                     let upper = s[i + 2];
                     let lower = s[i + 3];
