@@ -92,7 +92,7 @@ pub fn contents_formatted_reproduces_screen(screen: &vt100::Screen) -> bool {
     new_parser.process(&new_input);
     let got_screen = new_parser.screen().clone();
 
-    compare_screens(&got_screen, &screen)
+    compare_screens(&got_screen, screen)
 }
 
 fn assert_contents_formatted_reproduces_state(input: &[u8]) {
@@ -120,11 +120,11 @@ pub fn contents_diff_reproduces_state_from_screens(
     prev_screen: &vt100::Screen,
     screen: &vt100::Screen,
 ) -> bool {
-    let mut diff_input = screen.contents_diff(&prev_screen);
-    diff_input.extend(screen.input_mode_diff(&prev_screen));
-    diff_input.extend(screen.title_diff(&prev_screen));
-    diff_input.extend(screen.bells_diff(&prev_screen));
-    assert_eq!(diff_input, screen.state_diff(&prev_screen));
+    let mut diff_input = screen.contents_diff(prev_screen);
+    diff_input.extend(screen.input_mode_diff(prev_screen));
+    diff_input.extend(screen.title_diff(prev_screen));
+    diff_input.extend(screen.bells_diff(prev_screen));
+    assert_eq!(diff_input, screen.state_diff(prev_screen));
 
     let mut diff_prev_input = prev_screen.contents_formatted();
     diff_prev_input.extend(screen.input_mode_formatted());
@@ -137,7 +137,7 @@ pub fn contents_diff_reproduces_state_from_screens(
     new_parser.process(&diff_input);
     let got_screen = new_parser.screen().clone();
 
-    compare_screens(&got_screen, &screen)
+    compare_screens(&got_screen, screen)
 }
 
 #[allow(dead_code)]

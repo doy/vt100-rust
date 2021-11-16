@@ -15,7 +15,7 @@ fn draw_frames(frames: &[Vec<u8>]) {
     let mut stdout = std::io::stdout();
     let mut parser = vt100::Parser::default();
     for frame in frames {
-        parser.process(&frame);
+        parser.process(frame);
         let contents = parser.screen().contents_formatted();
         stdout.write_all(&contents).unwrap();
     }

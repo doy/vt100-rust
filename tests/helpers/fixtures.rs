@@ -285,7 +285,7 @@ fn assert_produces(input: &[u8], expected: &FixtureScreen) {
                 .cells
                 .get(&format!("{},{}", row, col))
                 .cloned()
-                .unwrap_or_else(FixtureCell::default);
+                .unwrap_or_default();
             let got_cell = parser.screen().cell(row, col).unwrap();
             assert_eq!(got_cell.contents(), expected_cell.contents);
             assert_eq!(got_cell.is_wide(), expected_cell.is_wide);

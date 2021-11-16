@@ -16,7 +16,7 @@ fn draw_frames(frames: &[Vec<u8>]) {
     let mut parser = vt100::Parser::default();
     let mut screen = parser.screen().clone();
     for frame in frames {
-        parser.process(&frame);
+        parser.process(frame);
         let new_screen = parser.screen().clone();
         let diff = new_screen.contents_diff(&screen);
         stdout.write_all(&diff).unwrap();

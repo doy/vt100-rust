@@ -30,11 +30,11 @@ fn choose_terminal_input_fragment<G: quickcheck::Gen>(g: &mut G) -> Vec<u8> {
         Text,
         Control,
         Escape,
-        CSI,
+        Csi,
         #[allow(dead_code)]
-        OSC,
+        Osc,
         #[allow(dead_code)]
-        DCS,
+        Dcs,
     }
 
     impl rand::distributions::Distribution<Fragment>
@@ -45,7 +45,7 @@ fn choose_terminal_input_fragment<G: quickcheck::Gen>(g: &mut G) -> Vec<u8> {
                 0u8..=231 => Fragment::Text,
                 232..=239 => Fragment::Control,
                 240..=247 => Fragment::Escape,
-                248..=255 => Fragment::CSI,
+                248..=255 => Fragment::Csi,
             }
         }
     }
@@ -73,18 +73,18 @@ fn choose_terminal_input_fragment<G: quickcheck::Gen>(g: &mut G) -> Vec<u8> {
             v.push(c);
             v
         }
-        Fragment::CSI => {
+        Fragment::Csi => {
             let mut v = vec![0x1b, b'['];
             // TODO: params
             let c = g.gen_range(b'@', b'~');
             v.push(c);
             v
         }
-        Fragment::OSC => {
+        Fragment::Osc => {
             // TODO
             unimplemented!()
         }
-        Fragment::DCS => {
+        Fragment::Dcs => {
             // TODO
             unimplemented!()
         }
