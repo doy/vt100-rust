@@ -285,6 +285,7 @@ impl Screen {
         start: u16,
         width: u16,
     ) -> impl Iterator<Item = Vec<u8>> + '_ {
+        let mut wrapping = false;
         self.grid().visible_rows().enumerate().map(move |(i, row)| {
             let i = i.try_into().unwrap();
             let mut contents = vec![];
@@ -293,10 +294,11 @@ impl Screen {
                 start,
                 width,
                 i,
-                false,
+                wrapping,
                 crate::grid::Pos { row: i, col: start },
                 crate::attrs::Attrs::default(),
             );
+            wrapping = row.wrapped();
             contents
         })
     }
@@ -532,13 +534,6 @@ impl Screen {
         );
     }
 
-    /// Returns the `Cell` object at the given location in the terminal, if it
-    /// exists.
-    #[must_use]
-    pub fn cell(&self, row: u16, col: u16) -> Option<&crate::cell::Cell> {
-        self.grid().visible_cell(crate::grid::Pos { row, col })
-    }
-
     /// Returns the current cursor position of the terminal.
     ///
     /// The return value will be (row, col).
@@ -546,6 +541,46 @@ impl Screen {
     pub fn cursor_position(&self) -> (u16, u16) {
         let pos = self.grid().pos();
         (pos.row, pos.col)
+    }
+
+    /// Returns terminal escape sequences sufficient to set the current
+    /// cursor state of the terminal.
+    ///
+    /// This is not typically necessary, since `contents_formatted` will leave
+    /// the cursor in the correct state, but this can be useful in the case of
+    /// drawing additional things on top of a terminal output, since you will
+    /// need to restore the terminal state without the terminal contents
+    /// necessarily being the same.
+    ///
+    /// Note that this is more complicated than it sounds, because the cursor
+    /// position's state includes more than just the data returned by
+    /// `cursor_position`, since moving the cursor to the next row during text
+    /// wrapping is delayed until a character is written.
+    #[must_use]
+    pub fn cursor_state_formatted(&self) -> Vec<u8> {
+        let mut contents = vec![];
+        self.write_cursor_state_formatted(&mut contents);
+        contents
+    }
+
+    fn write_cursor_state_formatted(&self, contents: &mut Vec<u8>) {
+        crate::term::HideCursor::new(self.hide_cursor()).write_buf(contents);
+        self.grid().write_cursor_position_formatted(contents, None);
+    }
+
+    /// Returns the `Cell` object at the given location in the terminal, if it
+    /// exists.
+    #[must_use]
+    pub fn cell(&self, row: u16, col: u16) -> Option<&crate::cell::Cell> {
+        self.grid().visible_cell(crate::grid::Pos { row, col })
+    }
+
+    /// Returns whether the text in row `row` should wrap to the next line.
+    #[must_use]
+    pub fn row_wrapped(&self, row: u16) -> bool {
+        self.grid()
+            .visible_row(crate::grid::Pos { row, col: 0 })
+            .map_or(false, crate::row::Row::wrapped)
     }
 
     /// Returns the terminal's window title.

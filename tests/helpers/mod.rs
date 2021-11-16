@@ -1,3 +1,5 @@
+use std::convert::TryInto as _;
+
 mod fixtures;
 pub use fixtures::fixture;
 pub use fixtures::FixtureScreen;
@@ -21,18 +23,55 @@ macro_rules! ok {
     };
 }
 
+#[derive(Eq, PartialEq)]
+struct Bytes<'a>(&'a [u8]);
+
+impl<'a> std::fmt::Debug for Bytes<'a> {
+    fn fmt(
+        &self,
+        f: &mut std::fmt::Formatter<'_>,
+    ) -> Result<(), std::fmt::Error> {
+        f.write_str("b\"")?;
+        for c in self.0 {
+            match c {
+                10 => f.write_str("\\n")?,
+                13 => f.write_str("\\r")?,
+                92 => f.write_str("\\\\")?,
+                32..=126 => f.write_str(&char::from(*c).to_string())?,
+                _ => f.write_fmt(format_args!("\\x{:02x}", c))?,
+            }
+        }
+        f.write_str("\"")?;
+        Ok(())
+    }
+}
+
 pub fn compare_screens(
     got: &vt100::Screen,
     expected: &vt100::Screen,
 ) -> bool {
-    is!(got.contents(), expected.contents());
-    is!(got.contents_formatted(), expected.contents_formatted());
-    is!(
-        got.contents_diff(vt100::Parser::default().screen()),
-        expected.contents_diff(vt100::Parser::default().screen())
-    );
-
     let (rows, cols) = got.size();
+
+    is!(got.contents(), expected.contents());
+    is!(
+        Bytes(&got.contents_formatted()),
+        Bytes(&expected.contents_formatted())
+    );
+    for (got_row, expected_row) in
+        got.rows(0, cols).zip(expected.rows(0, cols))
+    {
+        is!(got_row, expected_row);
+    }
+    for (got_row, expected_row) in got
+        .rows_formatted(0, cols)
+        .zip(expected.rows_formatted(0, cols))
+    {
+        is!(Bytes(&got_row), Bytes(&expected_row));
+    }
+    is!(
+        Bytes(&got.contents_diff(vt100::Parser::default().screen())),
+        Bytes(&expected.contents_diff(vt100::Parser::default().screen()))
+    );
 
     for row in 0..rows {
         for col in 0..cols {
@@ -80,6 +119,12 @@ pub fn contents_formatted_reproduces_state(input: &[u8]) -> bool {
     contents_formatted_reproduces_screen(parser.screen())
 }
 
+pub fn rows_formatted_reproduces_state(input: &[u8]) -> bool {
+    let mut parser = vt100::Parser::default();
+    parser.process(input);
+    rows_formatted_reproduces_screen(parser.screen())
+}
+
 pub fn contents_formatted_reproduces_screen(screen: &vt100::Screen) -> bool {
     let empty_screen = vt100::Parser::default().screen().clone();
 
@@ -95,8 +140,37 @@ pub fn contents_formatted_reproduces_screen(screen: &vt100::Screen) -> bool {
     compare_screens(&got_screen, screen)
 }
 
+pub fn rows_formatted_reproduces_screen(screen: &vt100::Screen) -> bool {
+    let empty_screen = vt100::Parser::default().screen().clone();
+
+    let mut new_input = vec![];
+    let mut wrapped = false;
+    for (idx, row) in screen.rows_formatted(0, 80).enumerate() {
+        new_input.extend(b"\x1b[m");
+        if !wrapped {
+            new_input.extend(format!("\x1b[{}H", idx + 1).as_bytes());
+        }
+        new_input.extend(row);
+        wrapped = screen.row_wrapped(idx.try_into().unwrap());
+    }
+    new_input.extend(screen.cursor_state_formatted());
+    new_input.extend(screen.attributes_formatted());
+    new_input.extend(screen.input_mode_formatted());
+    new_input.extend(screen.title_formatted());
+    new_input.extend(screen.bells_diff(&empty_screen));
+    let mut new_parser = vt100::Parser::default();
+    new_parser.process(&new_input);
+    let got_screen = new_parser.screen().clone();
+
+    compare_screens(&got_screen, screen)
+}
+
 fn assert_contents_formatted_reproduces_state(input: &[u8]) {
     assert!(contents_formatted_reproduces_state(input));
+}
+
+fn assert_rows_formatted_reproduces_state(input: &[u8]) {
+    assert!(rows_formatted_reproduces_state(input));
 }
 
 #[allow(dead_code)]
@@ -167,6 +241,7 @@ pub fn assert_reproduces_state_from(input: &[u8], prev_input: &[u8]) {
     let full_input: Vec<_> =
         prev_input.iter().chain(input.iter()).copied().collect();
     assert_contents_formatted_reproduces_state(&full_input);
+    assert_rows_formatted_reproduces_state(&full_input);
     assert_contents_diff_reproduces_state_from(input, prev_input);
 }
 

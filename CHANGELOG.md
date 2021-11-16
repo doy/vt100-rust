@@ -5,6 +5,16 @@
 ### Added
 
 * `Screen::alternate_screen` to determine if the alternate screen is in use
+* `Screen::row_wrapped` to determine whether the row at the given index should
+  wrap its text
+* `Screen::cursor_state_formatted` to set the cursor position and hidden state
+  (including internal state like the one-past-the-end state which isn't visible
+  in the return value of `cursor_position`)
+
+### Fixed
+
+* `Screen::rows_formatted` now outputs correct escape codes in some edge cases
+  at the beginning of a row when the previous row was wrapped
 
 ## [0.12.0] - 2021-03-09
 

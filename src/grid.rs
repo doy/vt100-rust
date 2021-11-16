@@ -223,79 +223,7 @@ impl Grid {
             wrapping = row.wrapped();
         }
 
-        // writing a character to the last column of a row doesn't wrap the
-        // cursor immediately - it waits until the next character is actually
-        // drawn. it is only possible for the cursor to have this kind of
-        // position after drawing a character though, so if we end in this
-        // position, we need to redraw the character at the end of the row.
-        if prev_pos != self.pos && self.pos.col >= self.size.cols {
-            let mut pos = Pos {
-                row: self.pos.row,
-                col: self.size.cols - 1,
-            };
-            if self.visible_cell(pos).unwrap().is_wide_continuation() {
-                pos.col = self.size.cols - 2;
-            }
-            let cell = self.visible_cell(pos).unwrap();
-            if cell.has_contents() {
-                crate::term::MoveFromTo::new(prev_pos, pos)
-                    .write_buf(contents);
-                contents.extend(cell.contents().as_bytes());
-            } else {
-                // if the cell doesn't have contents, we can't have gotten
-                // here by drawing a character in the last column. this means
-                // that as far as i'm aware, we have to have reached here from
-                // a newline when we were already after the end of an earlier
-                // row. in the case where we are already after the end of an
-                // earlier row, we can just write a few newlines, otherwise we
-                // also need to do the same as above to get ourselves to after
-                // the end of a row.
-                let orig_row = pos.row;
-                let mut found = false;
-                for i in (0..orig_row).rev() {
-                    pos.row = i;
-                    pos.col = self.size.cols - 1;
-                    if self.visible_cell(pos).unwrap().is_wide_continuation()
-                    {
-                        pos.col = self.size.cols - 2;
-                    }
-                    let cell = self.visible_cell(pos).unwrap();
-                    if cell.has_contents() {
-                        if prev_pos.row != i || prev_pos.col < self.size.cols
-                        {
-                            crate::term::MoveFromTo::new(prev_pos, pos)
-                                .write_buf(contents);
-                            contents.extend(cell.contents().as_bytes());
-                        }
-                        contents.extend(
-                            "\n".repeat((orig_row - i) as usize).as_bytes(),
-                        );
-                        found = true;
-                        break;
-                    }
-                }
-
-                // this can happen if you get the cursor off the end of a row,
-                // and then do something to clear the end of the current row
-                // without moving the cursor (IL, DL, ED, EL, etc). we know
-                // there can't be something in the last column because we
-                // would have caught that above, so it should be safe to
-                // overwrite it.
-                if !found {
-                    pos.row = orig_row;
-                    crate::term::MoveFromTo::new(prev_pos, pos)
-                        .write_buf(contents);
-                    contents.push(b' ');
-                    crate::term::SaveCursor::default().write_buf(contents);
-                    crate::term::Backspace::default().write_buf(contents);
-                    crate::term::EraseChar::new(1).write_buf(contents);
-                    crate::term::RestoreCursor::default().write_buf(contents);
-                }
-            }
-        } else {
-            crate::term::MoveFromTo::new(prev_pos, self.pos)
-                .write_buf(contents);
-        }
+        self.write_cursor_position_formatted(contents, Some(prev_pos));
 
         prev_attrs
     }
@@ -327,12 +255,22 @@ impl Grid {
             wrapping = row.wrapped();
         }
 
+        self.write_cursor_position_formatted(contents, Some(prev_pos));
+
+        prev_attrs
+    }
+
+    pub fn write_cursor_position_formatted(
+        &self,
+        contents: &mut Vec<u8>,
+        prev_pos: Option<Pos>,
+    ) {
         // writing a character to the last column of a row doesn't wrap the
         // cursor immediately - it waits until the next character is actually
         // drawn. it is only possible for the cursor to have this kind of
         // position after drawing a character though, so if we end in this
         // position, we need to redraw the character at the end of the row.
-        if prev_pos != self.pos && self.pos.col >= self.size.cols {
+        if prev_pos != Some(self.pos) && self.pos.col >= self.size.cols {
             let mut pos = Pos {
                 row: self.pos.row,
                 col: self.size.cols - 1,
@@ -342,8 +280,12 @@ impl Grid {
             }
             let cell = self.visible_cell(pos).unwrap();
             if cell.has_contents() {
-                crate::term::MoveFromTo::new(prev_pos, pos)
-                    .write_buf(contents);
+                if let Some(prev_pos) = prev_pos {
+                    crate::term::MoveFromTo::new(prev_pos, pos)
+                        .write_buf(contents);
+                } else {
+                    crate::term::MoveTo::new(pos).write_buf(contents);
+                }
                 contents.extend(cell.contents().as_bytes());
             } else {
                 // if the cell doesn't have contents, we can't have gotten
@@ -365,10 +307,16 @@ impl Grid {
                     }
                     let cell = self.visible_cell(pos).unwrap();
                     if cell.has_contents() {
-                        if prev_pos.row != i || prev_pos.col < self.size.cols
-                        {
-                            crate::term::MoveFromTo::new(prev_pos, pos)
-                                .write_buf(contents);
+                        if let Some(prev_pos) = prev_pos {
+                            if prev_pos.row != i
+                                || prev_pos.col < self.size.cols
+                            {
+                                crate::term::MoveFromTo::new(prev_pos, pos)
+                                    .write_buf(contents);
+                                contents.extend(cell.contents().as_bytes());
+                            }
+                        } else {
+                            crate::term::MoveTo::new(pos).write_buf(contents);
                             contents.extend(cell.contents().as_bytes());
                         }
                         contents.extend(
@@ -387,8 +335,12 @@ impl Grid {
                 // overwrite it.
                 if !found {
                     pos.row = orig_row;
-                    crate::term::MoveFromTo::new(prev_pos, pos)
-                        .write_buf(contents);
+                    if let Some(prev_pos) = prev_pos {
+                        crate::term::MoveFromTo::new(prev_pos, pos)
+                            .write_buf(contents);
+                    } else {
+                        crate::term::MoveTo::new(pos).write_buf(contents);
+                    }
                     contents.push(b' ');
                     crate::term::SaveCursor::default().write_buf(contents);
                     crate::term::Backspace::default().write_buf(contents);
@@ -396,12 +348,12 @@ impl Grid {
                     crate::term::RestoreCursor::default().write_buf(contents);
                 }
             }
-        } else {
+        } else if let Some(prev_pos) = prev_pos {
             crate::term::MoveFromTo::new(prev_pos, self.pos)
                 .write_buf(contents);
+        } else {
+            crate::term::MoveTo::new(self.pos).write_buf(contents);
         }
-
-        prev_attrs
     }
 
     pub fn erase_all(&mut self, attrs: crate::attrs::Attrs) {
