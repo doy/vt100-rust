@@ -1,5 +1,4 @@
 use crate::term::BufWrite as _;
-use std::convert::TryInto as _;
 use unicode_width::UnicodeWidthChar as _;
 
 const MODE_APPLICATION_KEYPAD: u8 = 0b0000_0001;

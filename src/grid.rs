@@ -1,5 +1,4 @@
 use crate::term::BufWrite as _;
-use std::convert::TryInto as _;
 
 #[derive(Clone, Debug)]
 pub struct Grid {

@@ -1,5 +1,3 @@
-use std::convert::TryInto as _;
-
 mod fixtures;
 pub use fixtures::fixture;
 pub use fixtures::FixtureScreen;
