@@ -1,6 +1,7 @@
 \x1b[10;10H
 \x1b[d
 \x1b[15d
+\x1b[150d
 \x1b[H
 \x1b[8H
 \x1b[15G

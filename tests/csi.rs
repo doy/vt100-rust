@@ -6,6 +6,16 @@ fn absolute_movement() {
 }
 
 #[test]
+fn row_clamp() {
+    let mut vt = vt100::Parser::default();
+    assert_eq!(vt.screen().cursor_position(), (0, 0));
+    vt.process(b"\x1b[15d");
+    assert_eq!(vt.screen().cursor_position(), (14, 0));
+    vt.process(b"\x1b[150d");
+    assert_eq!(vt.screen().cursor_position(), (23, 0));
+}
+
+#[test]
 fn relative_movement() {
     helpers::fixture("relative_movement");
 }

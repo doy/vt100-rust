@@ -15,6 +15,7 @@
 
 * `Screen::rows_formatted` now outputs correct escape codes in some edge cases
   at the beginning of a row when the previous row was wrapped
+* VPA escape sequence can no longer position the cursor off the screen
 
 ## [0.12.0] - 2021-03-09
 
