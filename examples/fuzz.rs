@@ -31,6 +31,17 @@ fn main() {
             "full"
         );
 
+        let mut vt_diff_empty = vt100::Parser::default();
+        vt_diff_empty.process(&vt_base.screen().state_diff(&empty_screen));
+        vt_diff_empty.process(&vt_base.screen().bells_diff(&empty_screen));
+        assert!(
+            helpers::compare_screens(
+                vt_base.screen(),
+                vt_diff_empty.screen()
+            ),
+            "diff-empty"
+        );
+
         vt_diff.process(&vt_base.screen().state_diff(&prev_screen));
         vt_diff.process(&vt_base.screen().bells_diff(&empty_screen));
         prev_screen = vt_base.screen().clone();
