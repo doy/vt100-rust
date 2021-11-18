@@ -1,0 +1,7 @@
+#!/bin/sh
+set -eu
+
+cd fuzz
+cargo afl build --release
+mkdir -p out
+cargo afl fuzz -i in -o out -t 10000 target/release/fuzz
