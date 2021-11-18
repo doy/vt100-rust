@@ -20,7 +20,7 @@ fn main() {
     for line in inputs.lines() {
         let line = line.unwrap();
 
-        let input = unhex(line.as_bytes());
+        let input = helpers::unhex(line.as_bytes());
         let mut input_file = std::fs::File::create(format!(
             "tests/data/fixtures/{}/{}.typescript",
             name, i
@@ -42,62 +42,4 @@ fn main() {
 
         i += 1;
     }
-}
-
-fn unhex(s: &[u8]) -> Vec<u8> {
-    let mut ret = vec![];
-    let mut i = 0;
-    while i < s.len() {
-        if s[i] == b'\\' {
-            match s[i + 1] {
-                b'\\' => {
-                    ret.push(b'\\');
-                    i += 2;
-                }
-                b'x' => {
-                    let upper = s[i + 2];
-                    let lower = s[i + 3];
-                    ret.push(helpers::hex(upper, lower).unwrap());
-                    i += 4;
-                }
-                b'u' => {
-                    assert_eq!(s[i + 2], b'{');
-                    let mut digits = vec![];
-                    let mut j = i + 3;
-                    while s[j] != b'}' {
-                        digits.push(s[j]);
-                        j += 1;
-                    }
-                    let digits: Vec<_> = digits
-                        .iter()
-                        .copied()
-                        .skip_while(|x| x == &b'0')
-                        .collect();
-                    let digits = String::from_utf8(digits).unwrap();
-                    let codepoint = u32::from_str_radix(&digits, 16).unwrap();
-                    let c = char::try_from(codepoint).unwrap();
-                    let mut bytes = [0; 4];
-                    ret.extend(c.encode_utf8(&mut bytes).bytes());
-                    i = j + 1;
-                }
-                b'r' => {
-                    ret.push(0x0d);
-                    i += 2;
-                }
-                b'n' => {
-                    ret.push(0x0a);
-                    i += 2;
-                }
-                b't' => {
-                    ret.push(0x09);
-                    i += 2;
-                }
-                _ => panic!("invalid escape"),
-            }
-        } else {
-            ret.push(s[i]);
-            i += 1;
-        }
-    }
-    ret
 }
