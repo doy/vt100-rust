@@ -357,10 +357,23 @@ impl Grid {
                         crate::term::MoveTo::new(pos).write_buf(contents);
                     }
                     contents.push(b' ');
+                    // we know that the cell has no contents, but it still may
+                    // have drawing attributes (background color, etc)
+                    let end_cell = self.visible_cell(pos).unwrap();
+                    end_cell.attrs().write_escape_code_diff(
+                        contents,
+                        &prev_attrs.unwrap_or_default(),
+                    );
                     crate::term::SaveCursor::default().write_buf(contents);
                     crate::term::Backspace::default().write_buf(contents);
                     crate::term::EraseChar::new(1).write_buf(contents);
                     crate::term::RestoreCursor::default().write_buf(contents);
+                    if let Some(prev_attrs) = prev_attrs {
+                        prev_attrs.write_escape_code_diff(
+                            contents,
+                            end_cell.attrs(),
+                        );
+                    }
                 }
             }
         } else if let Some(prev_pos) = prev_pos {
