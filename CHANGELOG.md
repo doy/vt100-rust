@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+## Fixed
+
+* Fixed some line wrapping state issues with `contents_diff`
+
 ## [0.13.0] - 2021-11-17
 
 ### Added

@@ -391,7 +391,14 @@ impl Row {
             crate::term::ClearRowForward::default().write_buf(contents);
         }
 
-        if prev.wrapped && !self.wrapped {
+        // if this row is going from wrapped to not wrapped, we need to erase
+        // and redraw the last character to break wrapping. if this row is
+        // wrapped, we need to redraw the last character without erasing it to
+        // position the cursor after the end of the line correctly so that
+        // drawing the next line can just start writing and be wrapped.
+        if (!self.wrapped && prev.wrapped)
+            || (self.wrapped && prev_pos.col < self.cols())
+        {
             let end_pos = if self
                 .get(self.cols() - 1)
                 .unwrap()
@@ -410,7 +417,9 @@ impl Row {
             crate::term::MoveFromTo::new(prev_pos, end_pos)
                 .write_buf(contents);
             prev_pos = end_pos;
-            crate::term::EraseChar::new(1).write_buf(contents);
+            if !self.wrapped {
+                crate::term::EraseChar::new(1).write_buf(contents);
+            }
             let end_cell = self.get(end_pos.col).unwrap();
             contents.extend(end_cell.contents().as_bytes());
             prev_pos.col += if end_cell.is_wide() { 2 } else { 1 };
