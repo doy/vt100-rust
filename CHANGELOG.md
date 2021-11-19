@@ -5,6 +5,8 @@
 ## Fixed
 
 * Fixed some line wrapping state issues with `contents_diff`
+* Fixed cursor positioning after writing zero width characters at the end of
+  the line
 
 ## [0.13.0] - 2021-11-17
 

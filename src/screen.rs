@@ -807,17 +807,6 @@ impl Screen {
 
         let width = c.width().unwrap_or(0).try_into().unwrap();
 
-        // zero width characters still cause the cursor to wrap - this doesn't
-        // affect which cell they go into (the "previous cell" for both (row,
-        // max_col + 1) and (row + 1, 0) is (row, max_col)), but does affect
-        // further movement afterwards - writing an `a` at (row, max_col)
-        // followed by a crlf puts the cursor at (row + 1,
-        // 0), but writing a `à` (specifically `a` followed by a combining
-        // grave accent - the normalized U+00E0 "latin small letter a with
-        // grave" behaves the same as `a`) at (row, max_col) followed by a
-        // crlf puts the cursor at (row + 2, 0)
-        let wrap_width = if width == 0 { 1 } else { width };
-
         // it doesn't make any sense to wrap if the last column in a row
         // didn't already have contents. don't try to handle the case where a
         // character wraps because there was only one column left in the
@@ -827,7 +816,7 @@ impl Screen {
         // (xterm handles this by introducing the concept of triple width
         // cells, which i really don't want to do).
         let mut wrap = false;
-        if pos.col > size.cols - wrap_width {
+        if pos.col > size.cols - width {
             let last_cell = self
                 .drawing_cell(crate::grid::Pos {
                     row: pos.row,
@@ -838,7 +827,7 @@ impl Screen {
                 wrap = true;
             }
         }
-        self.grid_mut().col_wrap(wrap_width, wrap);
+        self.grid_mut().col_wrap(width, wrap);
         let pos = self.grid().pos();
 
         if width == 0 {
