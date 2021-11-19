@@ -251,7 +251,9 @@ pub fn format_bytes(bytes: &[u8]) -> String {
             10 => v.extend(b"\\n"),
             13 => v.extend(b"\\r"),
             27 => v.extend(b"\\e"),
-            c if c < 32 => v.extend(format!("\\x{:02x}", c).as_bytes()),
+            c if c < 32 || c == 127 => {
+                v.extend(format!("\\x{:02x}", c).as_bytes())
+            }
             b => v.push(b),
         }
     }
