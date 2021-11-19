@@ -135,11 +135,23 @@ impl Row {
         width: u16,
         row: u16,
         wrapping: bool,
-        mut prev_pos: crate::grid::Pos,
-        mut prev_attrs: crate::attrs::Attrs,
+        prev_pos: Option<crate::grid::Pos>,
+        prev_attrs: Option<crate::attrs::Attrs>,
     ) -> (crate::grid::Pos, crate::attrs::Attrs) {
         let mut prev_was_wide = false;
         let default_cell = crate::cell::Cell::default();
+
+        let mut prev_pos = if let Some(prev_pos) = prev_pos {
+            prev_pos
+        } else if wrapping {
+            crate::grid::Pos {
+                row: row - 1,
+                col: self.cols(),
+            }
+        } else {
+            crate::grid::Pos { row, col: start }
+        };
+        let mut prev_attrs = prev_attrs.unwrap_or_default();
 
         let first_cell = self.get(start).unwrap();
         if wrapping && first_cell == &default_cell {

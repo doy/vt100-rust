@@ -214,15 +214,19 @@ impl Grid {
                 self.size.cols,
                 i,
                 wrapping,
-                prev_pos,
-                prev_attrs,
+                Some(prev_pos),
+                Some(prev_attrs),
             );
             prev_pos = new_pos;
             prev_attrs = new_attrs;
             wrapping = row.wrapped();
         }
 
-        self.write_cursor_position_formatted(contents, Some(prev_pos));
+        self.write_cursor_position_formatted(
+            contents,
+            Some(prev_pos),
+            Some(prev_attrs),
+        );
 
         prev_attrs
     }
@@ -254,7 +258,11 @@ impl Grid {
             wrapping = row.wrapped();
         }
 
-        self.write_cursor_position_formatted(contents, Some(prev_pos));
+        self.write_cursor_position_formatted(
+            contents,
+            Some(prev_pos),
+            Some(prev_attrs),
+        );
 
         prev_attrs
     }
@@ -263,6 +271,7 @@ impl Grid {
         &self,
         contents: &mut Vec<u8>,
         prev_pos: Option<Pos>,
+        prev_attrs: Option<crate::attrs::Attrs>,
     ) {
         // writing a character to the last column of a row doesn't wrap the
         // cursor immediately - it waits until the next character is actually
@@ -285,7 +294,14 @@ impl Grid {
                 } else {
                     crate::term::MoveTo::new(pos).write_buf(contents);
                 }
+                cell.attrs().write_escape_code_diff(
+                    contents,
+                    &prev_attrs.unwrap_or_default(),
+                );
                 contents.extend(cell.contents().as_bytes());
+                if let Some(prev_attrs) = prev_attrs {
+                    prev_attrs.write_escape_code_diff(contents, cell.attrs());
+                }
             } else {
                 // if the cell doesn't have contents, we can't have gotten
                 // here by drawing a character in the last column. this means

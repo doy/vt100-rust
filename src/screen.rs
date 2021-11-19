@@ -294,10 +294,12 @@ impl Screen {
                 width,
                 i,
                 wrapping,
-                crate::grid::Pos { row: i, col: start },
-                crate::attrs::Attrs::default(),
+                None,
+                None,
             );
-            wrapping = row.wrapped();
+            if start == 0 && width == self.grid.size().cols {
+                wrapping = row.wrapped();
+            }
             contents
         })
     }
@@ -551,10 +553,12 @@ impl Screen {
     /// need to restore the terminal state without the terminal contents
     /// necessarily being the same.
     ///
-    /// Note that this is more complicated than it sounds, because the cursor
-    /// position's state includes more than just the data returned by
-    /// `cursor_position`, since moving the cursor to the next row during text
-    /// wrapping is delayed until a character is written.
+    /// Note that the bytes returned by this function may alter the active
+    /// drawing attributes, because it may require redrawing existing cells in
+    /// order to position the cursor correctly (for instance, in the case
+    /// where the cursor is past the end of a row). Therefore, you should
+    /// ensure to reset the active drawing attributes if necessary after
+    /// processing this data, for instance by using `attributes_formatted`.
     #[must_use]
     pub fn cursor_state_formatted(&self) -> Vec<u8> {
         let mut contents = vec![];
@@ -564,7 +568,15 @@ impl Screen {
 
     fn write_cursor_state_formatted(&self, contents: &mut Vec<u8>) {
         crate::term::HideCursor::new(self.hide_cursor()).write_buf(contents);
-        self.grid().write_cursor_position_formatted(contents, None);
+        self.grid()
+            .write_cursor_position_formatted(contents, None, None);
+
+        // we don't just call write_attributes_formatted here, because that
+        // would still be confusing - consider the case where the user sets
+        // their own unrelated drawing attributes (on a different parser
+        // instance) and then calls cursor_state_formatted. just documenting
+        // it and letting the user handle it on their own is more
+        // straightforward.
     }
 
     /// Returns the `Cell` object at the given location in the terminal, if it
