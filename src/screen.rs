@@ -915,7 +915,7 @@ impl Screen {
                         col: drawing_pos.col + 1,
                     })
                     .unwrap();
-                next_cell.clear(attrs);
+                next_cell.set(' ', attrs);
             }
 
             let cell = self.current_cell_mut();
