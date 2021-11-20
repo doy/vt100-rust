@@ -322,17 +322,40 @@ impl Grid {
                     }
                     let cell = self.visible_cell(pos).unwrap();
                     if cell.has_contents() {
+                        // not sure why this is triggering here, seems like a
+                        // clippy bug
+                        #[allow(clippy::option_if_let_else)]
                         if let Some(prev_pos) = prev_pos {
                             if prev_pos.row != i
                                 || prev_pos.col < self.size.cols
                             {
                                 crate::term::MoveFromTo::new(prev_pos, pos)
                                     .write_buf(contents);
+                                cell.attrs().write_escape_code_diff(
+                                    contents,
+                                    &prev_attrs.unwrap_or_default(),
+                                );
                                 contents.extend(cell.contents().as_bytes());
+                                if let Some(prev_attrs) = prev_attrs {
+                                    prev_attrs.write_escape_code_diff(
+                                        contents,
+                                        cell.attrs(),
+                                    );
+                                }
                             }
                         } else {
                             crate::term::MoveTo::new(pos).write_buf(contents);
+                            cell.attrs().write_escape_code_diff(
+                                contents,
+                                &prev_attrs.unwrap_or_default(),
+                            );
                             contents.extend(cell.contents().as_bytes());
+                            if let Some(prev_attrs) = prev_attrs {
+                                prev_attrs.write_escape_code_diff(
+                                    contents,
+                                    cell.attrs(),
+                                );
+                            }
                         }
                         contents.extend(
                             "\n".repeat((orig_row - i) as usize).as_bytes(),
