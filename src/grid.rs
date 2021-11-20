@@ -273,6 +273,7 @@ impl Grid {
         prev_pos: Option<Pos>,
         prev_attrs: Option<crate::attrs::Attrs>,
     ) {
+        let prev_attrs = prev_attrs.unwrap_or_default();
         // writing a character to the last column of a row doesn't wrap the
         // cursor immediately - it waits until the next character is actually
         // drawn. it is only possible for the cursor to have this kind of
@@ -294,14 +295,9 @@ impl Grid {
                 } else {
                     crate::term::MoveTo::new(pos).write_buf(contents);
                 }
-                cell.attrs().write_escape_code_diff(
-                    contents,
-                    &prev_attrs.unwrap_or_default(),
-                );
+                cell.attrs().write_escape_code_diff(contents, &prev_attrs);
                 contents.extend(cell.contents().as_bytes());
-                if let Some(prev_attrs) = prev_attrs {
-                    prev_attrs.write_escape_code_diff(contents, cell.attrs());
-                }
+                prev_attrs.write_escape_code_diff(contents, cell.attrs());
             } else {
                 // if the cell doesn't have contents, we can't have gotten
                 // here by drawing a character in the last column. this means
@@ -333,29 +329,25 @@ impl Grid {
                                     .write_buf(contents);
                                 cell.attrs().write_escape_code_diff(
                                     contents,
-                                    &prev_attrs.unwrap_or_default(),
+                                    &prev_attrs,
                                 );
                                 contents.extend(cell.contents().as_bytes());
-                                if let Some(prev_attrs) = prev_attrs {
-                                    prev_attrs.write_escape_code_diff(
-                                        contents,
-                                        cell.attrs(),
-                                    );
-                                }
-                            }
-                        } else {
-                            crate::term::MoveTo::new(pos).write_buf(contents);
-                            cell.attrs().write_escape_code_diff(
-                                contents,
-                                &prev_attrs.unwrap_or_default(),
-                            );
-                            contents.extend(cell.contents().as_bytes());
-                            if let Some(prev_attrs) = prev_attrs {
                                 prev_attrs.write_escape_code_diff(
                                     contents,
                                     cell.attrs(),
                                 );
                             }
+                        } else {
+                            crate::term::MoveTo::new(pos).write_buf(contents);
+                            cell.attrs().write_escape_code_diff(
+                                contents,
+                                &prev_attrs,
+                            );
+                            contents.extend(cell.contents().as_bytes());
+                            prev_attrs.write_escape_code_diff(
+                                contents,
+                                cell.attrs(),
+                            );
                         }
                         contents.extend(
                             "\n".repeat((orig_row - i) as usize).as_bytes(),
@@ -383,20 +375,15 @@ impl Grid {
                     // we know that the cell has no contents, but it still may
                     // have drawing attributes (background color, etc)
                     let end_cell = self.visible_cell(pos).unwrap();
-                    end_cell.attrs().write_escape_code_diff(
-                        contents,
-                        &prev_attrs.unwrap_or_default(),
-                    );
+                    end_cell
+                        .attrs()
+                        .write_escape_code_diff(contents, &prev_attrs);
                     crate::term::SaveCursor::default().write_buf(contents);
                     crate::term::Backspace::default().write_buf(contents);
                     crate::term::EraseChar::new(1).write_buf(contents);
                     crate::term::RestoreCursor::default().write_buf(contents);
-                    if let Some(prev_attrs) = prev_attrs {
-                        prev_attrs.write_escape_code_diff(
-                            contents,
-                            end_cell.attrs(),
-                        );
-                    }
+                    prev_attrs
+                        .write_escape_code_diff(contents, end_cell.attrs());
                 }
             }
         } else if let Some(prev_pos) = prev_pos {
