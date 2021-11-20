@@ -20,3 +20,4 @@ foo\x1b[5;5Hbarbar\x1b[10;10Hbazbaz\x1b[20;20Hquux
 \x1bc\x1b[5;5H
 \x1b[41m\x1b[2K
 \x1bc\x1b[1;80H\x1b[41ma\x1b[1K
+\x1bc\x1b[1;80H\x1b[41maa\x1b[1K
