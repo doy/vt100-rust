@@ -421,7 +421,7 @@ impl Row {
         // position the cursor after the end of the line correctly so that
         // drawing the next line can just start writing and be wrapped.
         if (!self.wrapped && prev.wrapped)
-            || (self.wrapped && prev_pos.col < self.cols())
+            || (!prev.wrapped && self.wrapped && prev_pos.col < self.cols())
         {
             let end_pos = if self
                 .get(self.cols() - 1)
