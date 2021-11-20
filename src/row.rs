@@ -267,7 +267,13 @@ impl Row {
                 && prev_pos.row + 1 == new_pos.row
                 && prev_pos.col >= self.cols()
             {
-                contents.extend(" ".repeat(new_pos.col as usize).as_bytes());
+                if new_pos.col > 0 {
+                    contents
+                        .extend(" ".repeat(new_pos.col as usize).as_bytes());
+                } else {
+                    contents.extend(b" ");
+                    crate::term::Backspace::default().write_buf(contents);
+                }
             } else {
                 crate::term::MoveFromTo::new(prev_pos, new_pos)
                     .write_buf(contents);
@@ -430,8 +436,21 @@ impl Row {
         }
         if let Some((prev_col, attrs)) = erase {
             let new_pos = crate::grid::Pos { row, col: prev_col };
-            crate::term::MoveFromTo::new(prev_pos, new_pos)
-                .write_buf(contents);
+            if wrapping
+                && prev_pos.row + 1 == new_pos.row
+                && prev_pos.col >= self.cols()
+            {
+                if new_pos.col > 0 {
+                    contents
+                        .extend(" ".repeat(new_pos.col as usize).as_bytes());
+                } else {
+                    contents.extend(b" ");
+                    crate::term::Backspace::default().write_buf(contents);
+                }
+            } else {
+                crate::term::MoveFromTo::new(prev_pos, new_pos)
+                    .write_buf(contents);
+            }
             prev_pos = new_pos;
             if &prev_attrs != attrs {
                 attrs.write_escape_code_diff(contents, &prev_attrs);
