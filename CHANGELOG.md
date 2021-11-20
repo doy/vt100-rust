@@ -4,12 +4,11 @@
 
 ## Fixed
 
-* Fixed some line wrapping state issues with `contents_diff`
+* Fixed various line wrapping state issues
 * Fixed cursor positioning after writing zero width characters at the end of
   the line
 * Fixed `Screen::cursor_state_formatted` to draw the last character in a line
   with the appropriate drawing attributes if it needs to redraw it
-* Maintain wrapped state when overwriting a wide character at the end of a line
 
 ## [0.13.0] - 2021-11-17
 

@@ -49,9 +49,10 @@ impl Row {
     }
 
     pub fn erase(&mut self, i: usize, attrs: crate::attrs::Attrs) {
+        let wide = self.cells.get_mut(i).unwrap().is_wide();
         self.clear_wide(i.try_into().unwrap());
         self.cells.get_mut(i).unwrap().clear(attrs);
-        if i == self.cols() as usize - 1 {
+        if i == self.cols() as usize - if wide { 2 } else { 1 } {
             self.wrapped = false;
         }
     }
