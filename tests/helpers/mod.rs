@@ -66,6 +66,9 @@ pub fn compare_screens(
     {
         is!(Bytes(&got_row), Bytes(&expected_row));
     }
+    for i in 0..rows {
+        is!(got.row_wrapped(i), expected.row_wrapped(i));
+    }
     is!(
         Bytes(&got.contents_diff(vt100::Parser::default().screen())),
         Bytes(&expected.contents_diff(vt100::Parser::default().screen()))
