@@ -4,13 +4,16 @@ use std::io::Read as _;
 mod helpers;
 
 fn check_full(vt_base: &vt100::Screen, empty: &vt100::Screen, idx: usize) {
+    let mut input = vec![];
+    input.extend(vt_base.state_formatted());
+    input.extend(vt_base.bells_diff(empty));
     let mut vt_full = vt100::Parser::default();
-    vt_full.process(&vt_base.state_formatted());
-    vt_full.process(&vt_base.bells_diff(empty));
+    vt_full.process(&input);
     assert!(
         helpers::compare_screens(vt_full.screen(), vt_base),
-        "{}: full",
+        "{}: full:\n{}",
         idx,
+        helpers::format_bytes(&input),
     );
 }
 
@@ -19,13 +22,16 @@ fn check_diff_empty(
     empty: &vt100::Screen,
     idx: usize,
 ) {
+    let mut input = vec![];
+    input.extend(vt_base.state_diff(empty));
+    input.extend(vt_base.bells_diff(empty));
     let mut vt_diff_empty = vt100::Parser::default();
-    vt_diff_empty.process(&vt_base.state_diff(empty));
-    vt_diff_empty.process(&vt_base.bells_diff(empty));
+    vt_diff_empty.process(&input);
     assert!(
         helpers::compare_screens(vt_diff_empty.screen(), vt_base),
-        "{}: diff-empty",
+        "{}: diff-empty:\n{}",
         idx,
+        helpers::format_bytes(&input),
     );
 }
 
@@ -36,35 +42,41 @@ fn check_diff(
     empty: &vt100::Screen,
     idx: usize,
 ) {
-    vt_diff.process(&vt_base.state_diff(prev));
-    vt_diff.process(&vt_base.bells_diff(empty));
+    let mut input = vec![];
+    input.extend(vt_base.state_diff(prev));
+    input.extend(vt_base.bells_diff(empty));
+    vt_diff.process(&input);
     assert!(
         helpers::compare_screens(vt_diff.screen(), vt_base),
-        "{}: diff",
+        "{}: diff:\n{}",
         idx,
+        helpers::format_bytes(&input),
     );
 }
 
 fn check_rows(vt_base: &vt100::Screen, empty: &vt100::Screen, idx: usize) {
-    let mut vt_rows = vt100::Parser::default();
+    let mut input = vec![];
     let mut wrapped = false;
     for (idx, row) in vt_base.rows_formatted(0, 80).enumerate() {
-        vt_rows.process(b"\x1b[m");
+        input.extend(b"\x1b[m");
         if !wrapped {
-            vt_rows.process(format!("\x1b[{}H", idx + 1).as_bytes());
+            input.extend(format!("\x1b[{}H", idx + 1).as_bytes());
         }
-        vt_rows.process(&row);
+        input.extend(&row);
         wrapped = vt_base.row_wrapped(idx.try_into().unwrap());
     }
-    vt_rows.process(&vt_base.cursor_state_formatted());
-    vt_rows.process(&vt_base.attributes_formatted());
-    vt_rows.process(&vt_base.input_mode_formatted());
-    vt_rows.process(&vt_base.title_formatted());
-    vt_rows.process(&vt_base.bells_diff(empty));
+    input.extend(&vt_base.cursor_state_formatted());
+    input.extend(&vt_base.attributes_formatted());
+    input.extend(&vt_base.input_mode_formatted());
+    input.extend(&vt_base.title_formatted());
+    input.extend(&vt_base.bells_diff(empty));
+    let mut vt_rows = vt100::Parser::default();
+    vt_rows.process(&input);
     assert!(
         helpers::compare_screens(vt_rows.screen(), vt_base),
-        "{}: rows",
+        "{}: rows:\n{}",
         idx,
+        helpers::format_bytes(&input),
     );
 }
 
