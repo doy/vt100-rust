@@ -65,6 +65,7 @@ fn check_rows(vt_base: &vt100::Screen, empty: &vt100::Screen, idx: usize) {
         input.extend(&row);
         wrapped = vt_base.row_wrapped(idx.try_into().unwrap());
     }
+    input.extend(b"\x1b[m");
     input.extend(&vt_base.cursor_state_formatted());
     input.extend(&vt_base.attributes_formatted());
     input.extend(&vt_base.input_mode_formatted());

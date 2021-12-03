@@ -154,6 +154,7 @@ pub fn rows_formatted_reproduces_screen(screen: &vt100::Screen) -> bool {
         new_input.extend(row);
         wrapped = screen.row_wrapped(idx.try_into().unwrap());
     }
+    new_input.extend(b"\x1b[m");
     new_input.extend(screen.cursor_state_formatted());
     new_input.extend(screen.attributes_formatted());
     new_input.extend(screen.input_mode_formatted());
