@@ -457,6 +457,11 @@ impl Row {
             }
             let end_cell = self.get(end_pos.col).unwrap();
             if end_cell.has_contents() {
+                let attrs = end_cell.attrs();
+                if &prev_attrs != attrs {
+                    attrs.write_escape_code_diff(contents, &prev_attrs);
+                    prev_attrs = *attrs;
+                }
                 contents.extend(end_cell.contents().as_bytes());
                 prev_pos.col += if end_cell.is_wide() { 2 } else { 1 };
             }
