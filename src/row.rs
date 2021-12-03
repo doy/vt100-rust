@@ -446,8 +446,10 @@ impl Row {
                 crate::term::EraseChar::new(1).write_buf(contents);
             }
             let end_cell = self.get(end_pos.col).unwrap();
-            contents.extend(end_cell.contents().as_bytes());
-            prev_pos.col += if end_cell.is_wide() { 2 } else { 1 };
+            if end_cell.has_contents() {
+                contents.extend(end_cell.contents().as_bytes());
+                prev_pos.col += if end_cell.is_wide() { 2 } else { 1 };
+            }
         }
 
         (prev_pos, prev_attrs)
