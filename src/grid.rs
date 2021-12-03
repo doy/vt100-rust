@@ -612,13 +612,14 @@ impl Grid {
 
     pub fn col_wrap(&mut self, width: u16, wrap: bool) {
         if self.pos.col > self.size.cols - width {
-            let prev_pos = self.pos;
+            let mut prev_pos = self.pos;
             self.pos.col = 0;
             let scrolled = self.row_inc_scroll(1);
+            prev_pos.row -= scrolled;
             let new_pos = self.pos;
-            self.drawing_row_mut(prev_pos).unwrap().wrap(
-                wrap && (prev_pos.row + 1 == new_pos.row || scrolled == 1),
-            );
+            self.drawing_row_mut(prev_pos)
+                .unwrap()
+                .wrap(wrap && prev_pos.row + 1 == new_pos.row);
         }
     }
 
