@@ -156,6 +156,11 @@ impl Row {
 
         let first_cell = self.get(start).unwrap();
         if wrapping && first_cell == &default_cell {
+            let default_attrs = default_cell.attrs();
+            if &prev_attrs != default_attrs {
+                default_attrs.write_escape_code_diff(contents, &prev_attrs);
+                prev_attrs = *default_attrs;
+            }
             contents.push(b' ');
             crate::term::Backspace::default().write_buf(contents);
             crate::term::EraseChar::new(1).write_buf(contents);
@@ -294,6 +299,12 @@ impl Row {
             && prev_pos.col
                 >= self.cols() - if prev_first_cell.is_wide() { 1 } else { 0 }
         {
+            let first_cell_attrs = first_cell.attrs();
+            if &prev_attrs != first_cell_attrs {
+                first_cell_attrs
+                    .write_escape_code_diff(contents, &prev_attrs);
+                prev_attrs = *first_cell_attrs;
+            }
             let mut cell_contents = prev_first_cell.contents();
             let need_erase = if cell_contents.is_empty() {
                 cell_contents = " ".to_string();
