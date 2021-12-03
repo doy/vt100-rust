@@ -481,6 +481,7 @@ impl Grid {
         for _ in 0..count {
             self.rows.remove(self.scroll_bottom as usize);
             self.rows.insert(self.pos.row as usize, self.new_row());
+            self.rows[self.scroll_bottom as usize].wrap(false);
         }
     }
 
@@ -514,6 +515,7 @@ impl Grid {
         for _ in 0..count {
             self.rows.remove(self.scroll_bottom as usize);
             self.rows.insert(self.scroll_top as usize, self.new_row());
+            self.rows[self.scroll_bottom as usize].wrap(false);
         }
     }
 
