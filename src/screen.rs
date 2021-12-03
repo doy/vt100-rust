@@ -1571,7 +1571,7 @@ impl vte::Perform for Screen {
 }
 
 fn canonicalize_params_1(params: &vte::Params, default: u16) -> u16 {
-    let first = params.iter().next().map_or(0, |x| x[0]);
+    let first = params.iter().next().map_or(0, |x| *x.get(0).unwrap_or(&0));
     if first == 0 {
         default
     } else {
@@ -1585,10 +1585,10 @@ fn canonicalize_params_2(
     default2: u16,
 ) -> (u16, u16) {
     let mut iter = params.iter();
-    let first = iter.next().map_or(0, |x| x[0]);
+    let first = iter.next().map_or(0, |x| *x.get(0).unwrap_or(&0));
     let first = if first == 0 { default1 } else { first };
 
-    let second = iter.next().map_or(0, |x| x[0]);
+    let second = iter.next().map_or(0, |x| *x.get(0).unwrap_or(&0));
     let second = if second == 0 { default2 } else { second };
 
     (first, second)
@@ -1599,10 +1599,10 @@ fn canonicalize_params_decstbm(
     size: crate::grid::Size,
 ) -> (u16, u16) {
     let mut iter = params.iter();
-    let top = iter.next().map_or(0, |x| x[0]);
+    let top = iter.next().map_or(0, |x| *x.get(0).unwrap_or(&0));
     let top = if top == 0 { 1 } else { top };
 
-    let bottom = iter.next().map_or(0, |x| x[0]);
+    let bottom = iter.next().map_or(0, |x| *x.get(0).unwrap_or(&0));
     let bottom = if bottom == 0 { size.rows } else { bottom };
 
     (top, bottom)
