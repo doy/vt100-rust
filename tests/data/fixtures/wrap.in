@@ -30,3 +30,5 @@ a
 \x1bc\x1b[1;79Hネa\x1b[1;79Hb
 \x1bc\x1b[1;79Hネa\x1b[1;78Hネ
 \x1bc\x1b[24;80Hab
+\x1bc\x1b[23;80Ha\x1b[24;80Ha
+b
