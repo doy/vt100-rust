@@ -12,3 +12,4 @@ obar
 \x1b[1;80H \x1b[X
 \x1bc\x1b[1;78Hネab
 \x1b[H\x1b[@
+\x1bc\x1b[1mデ\x08\x1b[@

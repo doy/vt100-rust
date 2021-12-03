@@ -939,7 +939,7 @@ impl Screen {
                     }
                 }
                 let next_cell = self.current_cell_mut();
-                next_cell.clear(attrs);
+                next_cell.clear(crate::attrs::Attrs::default());
                 next_cell.set_wide_continuation(true);
                 self.grid_mut().col_inc(1);
             }
