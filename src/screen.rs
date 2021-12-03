@@ -924,13 +924,19 @@ impl Screen {
             if width > 1 {
                 let pos = self.grid().pos();
                 if self.current_cell().is_wide() {
-                    let next_next_cell = self
-                        .drawing_cell_mut(crate::grid::Pos {
-                            row: pos.row,
-                            col: pos.col + 1,
-                        })
-                        .unwrap();
+                    let next_next_pos = crate::grid::Pos {
+                        row: pos.row,
+                        col: pos.col + 1,
+                    };
+                    let next_next_cell =
+                        self.drawing_cell_mut(next_next_pos).unwrap();
                     next_next_cell.clear(attrs);
+                    if next_next_pos.col == size.cols - 1 {
+                        self.grid_mut()
+                            .drawing_row_mut(next_next_pos)
+                            .unwrap()
+                            .wrap(false);
+                    }
                 }
                 let next_cell = self.current_cell_mut();
                 next_cell.clear(attrs);
