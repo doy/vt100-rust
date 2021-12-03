@@ -549,11 +549,16 @@ impl Grid {
         self.row_clamp_bottom(in_scroll_region);
     }
 
-    pub fn row_inc_scroll(&mut self, count: u16) {
+    pub fn row_inc_scroll(&mut self, count: u16) -> u16 {
         let in_scroll_region = self.in_scroll_region();
         self.pos.row = self.pos.row.saturating_add(count);
         let lines = self.row_clamp_bottom(in_scroll_region);
-        self.scroll_up(lines);
+        if in_scroll_region {
+            self.scroll_up(lines);
+            lines
+        } else {
+            0
+        }
     }
 
     pub fn row_dec_clamp(&mut self, count: u16) {
@@ -607,9 +612,13 @@ impl Grid {
 
     pub fn col_wrap(&mut self, width: u16, wrap: bool) {
         if self.pos.col > self.size.cols - width {
-            self.current_row_mut().wrap(wrap);
+            let prev_pos = self.pos;
             self.pos.col = 0;
-            self.row_inc_scroll(1);
+            let scrolled = self.row_inc_scroll(1);
+            let new_pos = self.pos;
+            self.drawing_row_mut(prev_pos).unwrap().wrap(
+                wrap && (prev_pos.row + 1 == new_pos.row || scrolled == 1),
+            );
         }
     }
 
