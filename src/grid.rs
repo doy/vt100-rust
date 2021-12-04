@@ -472,7 +472,7 @@ impl Grid {
         let size = self.size;
         let pos = self.pos;
         let row = self.current_row_mut();
-        for col in pos.col..((pos.col + count).min(size.cols)) {
+        for col in pos.col..((pos.col.saturating_add(count)).min(size.cols)) {
             row.erase(col as usize, attrs);
         }
     }

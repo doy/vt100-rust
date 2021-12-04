@@ -6,9 +6,10 @@ fn intermediate_control() {
 }
 
 #[test]
-fn many_empty_params() {
+fn params() {
     let mut parser = vt100::Parser::default();
     parser.process(b"\x1b[::::::::::::::::::::::::::::::::@");
     parser.process(b"\x1b[::::::::::::::::::::::::::::::::H");
     parser.process(b"\x1b[::::::::::::::::::::::::::::::::r");
+    parser.process(b"a\x1b[8888888X");
 }
