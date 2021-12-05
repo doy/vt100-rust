@@ -1,5 +1,12 @@
 # Changelog
 
+## [Unreleased]
+
+## Changed
+
+* Delay allocation of the alternate screen until it is used (saves a bit of
+  memory in basic cases)
+
 ## [0.13.1] - 2021-12-04
 
 ## Fixed

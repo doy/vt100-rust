@@ -21,7 +21,7 @@ impl Grid {
             size,
             pos: Pos::default(),
             saved_pos: Pos::default(),
-            rows: vec![crate::row::Row::new(size.cols); size.rows as usize],
+            rows: vec![],
             scroll_top: 0,
             scroll_bottom: size.rows - 1,
             origin_mode: false,
@@ -29,6 +29,17 @@ impl Grid {
             scrollback: std::collections::VecDeque::new(),
             scrollback_len,
             scrollback_offset: 0,
+        }
+    }
+
+    pub fn allocate_rows(&mut self) {
+        if self.rows.is_empty() {
+            self.rows.extend(
+                std::iter::repeat_with(|| {
+                    crate::row::Row::new(self.size.cols)
+                })
+                .take(self.size.rows as usize),
+            );
         }
     }
 

@@ -85,8 +85,10 @@ impl Screen {
         size: crate::grid::Size,
         scrollback_len: usize,
     ) -> Self {
+        let mut grid = crate::grid::Grid::new(size, scrollback_len);
+        grid.allocate_rows();
         Self {
-            grid: crate::grid::Grid::new(size, scrollback_len),
+            grid,
             alternate_grid: crate::grid::Grid::new(size, 0),
 
             attrs: crate::attrs::Attrs::default(),
@@ -759,6 +761,7 @@ impl Screen {
     fn enter_alternate_grid(&mut self) {
         self.grid_mut().set_scrollback(0);
         self.set_mode(MODE_ALTERNATE_SCREEN);
+        self.alternate_grid.allocate_rows();
     }
 
     fn exit_alternate_grid(&mut self) {
