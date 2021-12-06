@@ -25,3 +25,4 @@ rand = "0.7"
 serde = { version = "1.0.130", features = ["derive"] }
 serde_json = "1.0.69"
 terminal_size = "0.1.17"
+vte = "0.10.1"
