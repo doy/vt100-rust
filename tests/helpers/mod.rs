@@ -2,12 +2,20 @@ mod fixtures;
 pub use fixtures::fixture;
 pub use fixtures::FixtureScreen;
 
+pub static mut QUIET: bool = false;
+
 macro_rules! is {
     ($got:expr, $expected:expr) => {
         if ($got) != ($expected) {
-            eprintln!("{} != {}:", stringify!($got), stringify!($expected));
-            eprintln!("     got: {:?}", $got);
-            eprintln!("expected: {:?}", $expected);
+            if !unsafe { QUIET } {
+                eprintln!(
+                    "{} != {}:",
+                    stringify!($got),
+                    stringify!($expected)
+                );
+                eprintln!("     got: {:?}", $got);
+                eprintln!("expected: {:?}", $expected);
+            }
             return false;
         }
     };
@@ -15,7 +23,9 @@ macro_rules! is {
 macro_rules! ok {
     ($e:expr) => {
         if !($e) {
-            eprintln!("!{}", stringify!($e));
+            if !unsafe { QUIET } {
+                eprintln!("!{}", stringify!($e));
+            }
             return false;
         }
     };
