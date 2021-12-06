@@ -36,7 +36,7 @@ impl Cell {
         // strings in this context should always be an arbitrary character
         // followed by zero or more zero-width characters, so we should only
         // have to look at the first character
-        self.set_wide(c.width().unwrap_or(0) > 1);
+        self.set_wide(c.width().unwrap_or(1) > 1);
         self.attrs = a;
     }
 

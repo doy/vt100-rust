@@ -820,7 +820,12 @@ impl Screen {
         let size = self.grid().size();
         let attrs = self.attrs;
 
-        let width = c.width().unwrap_or(0).try_into().unwrap();
+        let width = c.width();
+        if width.is_none() && (c as u32) < 256 {
+            // don't even try to draw control characters
+            return;
+        }
+        let width = width.unwrap_or(1).try_into().unwrap();
 
         // it doesn't make any sense to wrap if the last column in a row
         // didn't already have contents. don't try to handle the case where a

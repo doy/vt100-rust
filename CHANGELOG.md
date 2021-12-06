@@ -1,15 +1,27 @@
 # Changelog
 
+## [Unreleased]
+
+### Changed
+
+* Unknown UTF-8 characters default to a width of 1, rather than 0 (except for
+  control characters, as mentioned below)
+
+### Fixed
+
+* Ignore C1 control characters rather than adding them to the cell data, since
+  they are non-printable
+
 ## [0.13.2] - 2021-12-05
 
-## Changed
+### Changed
 
 * Delay allocation of the alternate screen until it is used (saves a bit of
   memory in basic cases)
 
 ## [0.13.1] - 2021-12-04
 
-## Fixed
+### Fixed
 
 * Fixed various line wrapping state issues
 * Fixed cursor positioning after writing zero width characters at the end of
