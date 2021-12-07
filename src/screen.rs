@@ -78,6 +78,8 @@ pub struct Screen {
 
     audible_bell_count: usize,
     visual_bell_count: usize,
+
+    errors: usize,
 }
 
 impl Screen {
@@ -103,6 +105,8 @@ impl Screen {
 
             audible_bell_count: 0,
             visual_bell_count: 0,
+
+            errors: 0,
         }
     }
 
@@ -634,6 +638,16 @@ impl Screen {
         self.visual_bell_count
     }
 
+    /// Returns the number of parsing errors seen so far.
+    ///
+    /// Currently this only tracks invalid UTF-8 and control characters other
+    /// than `0x07`-`0x0f`. This can give an idea of whether the input stream
+    /// being fed to the parser is reasonable or not.
+    #[must_use]
+    pub fn errors(&self) -> usize {
+        self.errors
+    }
+
     /// Returns whether the alternate screen is currently in use.
     #[must_use]
     pub fn alternate_screen(&self) -> bool {
@@ -1017,6 +1031,7 @@ impl Screen {
         let icon_name = self.icon_name.clone();
         let audible_bell_count = self.audible_bell_count;
         let visual_bell_count = self.visual_bell_count;
+        let errors = self.errors;
 
         *self = Self::new(self.grid.size(), self.grid.scrollback_len());
 
@@ -1024,6 +1039,7 @@ impl Screen {
         self.icon_name = icon_name;
         self.audible_bell_count = audible_bell_count;
         self.visual_bell_count = visual_bell_count;
+        self.errors = errors;
     }
 
     // ESC g
@@ -1429,6 +1445,9 @@ impl Screen {
 
 impl vte::Perform for Screen {
     fn print(&mut self, c: char) {
+        if c == '\u{fffd}' || ('\u{80}'..'\u{a0}').contains(&c) {
+            self.errors = self.errors.saturating_add(1);
+        }
         self.text(c);
     }
 
@@ -1441,7 +1460,11 @@ impl vte::Perform for Screen {
             11 => self.vt(),
             12 => self.ff(),
             13 => self.cr(),
+            // we don't implement shift in/out alternate character sets, but
+            // it shouldn't count as an "error"
+            14 | 15 => {}
             _ => {
+                self.errors = self.errors.saturating_add(1);
                 log::debug!("unhandled control character: {}", b);
             }
         }

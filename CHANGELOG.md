@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+
+* `Screen::errors` to track the number of parsing errors seen so far
+
 ## [0.14.0] - 2021-12-06
 
 ### Changed
