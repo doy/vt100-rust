@@ -84,6 +84,8 @@ pub fn compare_screens(
         Bytes(&expected.contents_diff(vt100::Parser::default().screen()))
     );
 
+    is!(Bytes(&got.contents_diff(got)), Bytes(b""));
+
     for row in 0..rows {
         for col in 0..cols {
             let expected_cell = expected.cell(row, col);

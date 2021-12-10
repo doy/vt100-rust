@@ -6,6 +6,11 @@
 
 * `Screen::errors` to track the number of parsing errors seen so far
 
+### Fixed
+
+* No longer generate spurious diffs in some cases where the cursor is past the
+  end of a row
+
 ## [0.14.0] - 2021-12-06
 
 ### Changed

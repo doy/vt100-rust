@@ -250,6 +250,7 @@ impl Grid {
     ) -> crate::attrs::Attrs {
         let mut prev_pos = prev.pos;
         let mut wrapping = false;
+        let mut prev_wrapping = false;
         for (i, (row, prev_row)) in
             self.visible_rows().zip(prev.visible_rows()).enumerate()
         {
@@ -261,12 +262,14 @@ impl Grid {
                 self.size.cols,
                 i,
                 wrapping,
+                prev_wrapping,
                 prev_pos,
                 prev_attrs,
             );
             prev_pos = new_pos;
             prev_attrs = new_attrs;
             wrapping = row.wrapped();
+            prev_wrapping = prev_row.wrapped();
         }
 
         self.write_cursor_position_formatted(

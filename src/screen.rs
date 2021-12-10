@@ -368,6 +368,7 @@ impl Screen {
                     width,
                     i,
                     false,
+                    false,
                     crate::grid::Pos { row: i, col: start },
                     crate::attrs::Attrs::default(),
                 );

@@ -286,6 +286,7 @@ impl Row {
         width: u16,
         row: u16,
         wrapping: bool,
+        prev_wrapping: bool,
         mut prev_pos: crate::grid::Pos,
         mut prev_attrs: crate::attrs::Attrs,
     ) -> (crate::grid::Pos, crate::attrs::Attrs) {
@@ -294,6 +295,7 @@ impl Row {
         let first_cell = self.get(start).unwrap();
         let prev_first_cell = prev.get(start).unwrap();
         if wrapping
+            && !prev_wrapping
             && first_cell == prev_first_cell
             && prev_pos.row + 1 == row
             && prev_pos.col
