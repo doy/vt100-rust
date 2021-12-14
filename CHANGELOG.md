@@ -10,6 +10,7 @@
 
 * No longer generate spurious diffs in some cases where the cursor is past the
   end of a row
+* Fix restoring the cursor position when scrolled back
 
 ## [0.14.0] - 2021-12-06
 

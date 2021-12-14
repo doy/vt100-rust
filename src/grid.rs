@@ -298,10 +298,10 @@ impl Grid {
                 row: self.pos.row,
                 col: self.size.cols - 1,
             };
-            if self.visible_cell(pos).unwrap().is_wide_continuation() {
+            if self.drawing_cell(pos).unwrap().is_wide_continuation() {
                 pos.col = self.size.cols - 2;
             }
-            let cell = self.visible_cell(pos).unwrap();
+            let cell = self.drawing_cell(pos).unwrap();
             if cell.has_contents() {
                 if let Some(prev_pos) = prev_pos {
                     crate::term::MoveFromTo::new(prev_pos, pos)
@@ -326,11 +326,11 @@ impl Grid {
                 for i in (0..orig_row).rev() {
                     pos.row = i;
                     pos.col = self.size.cols - 1;
-                    if self.visible_cell(pos).unwrap().is_wide_continuation()
+                    if self.drawing_cell(pos).unwrap().is_wide_continuation()
                     {
                         pos.col = self.size.cols - 2;
                     }
-                    let cell = self.visible_cell(pos).unwrap();
+                    let cell = self.drawing_cell(pos).unwrap();
                     if cell.has_contents() {
                         // not sure why this is triggering here, seems like a
                         // clippy bug
@@ -388,7 +388,7 @@ impl Grid {
                     contents.push(b' ');
                     // we know that the cell has no contents, but it still may
                     // have drawing attributes (background color, etc)
-                    let end_cell = self.visible_cell(pos).unwrap();
+                    let end_cell = self.drawing_cell(pos).unwrap();
                     end_cell
                         .attrs()
                         .write_escape_code_diff(contents, &prev_attrs);
