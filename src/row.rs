@@ -277,7 +277,6 @@ impl Row {
     // while it's true that most of the logic in this is identical to
     // write_contents_formatted, i can't figure out how to break out the
     // common parts without making things noticeably slower.
-    #[allow(clippy::too_many_lines)]
     pub fn write_contents_diff(
         &self,
         contents: &mut Vec<u8>,

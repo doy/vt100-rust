@@ -33,6 +33,7 @@ pub struct FixtureCell {
 }
 
 impl FixtureCell {
+    #[allow(dead_code)]
     pub fn from_cell(cell: &vt100::Cell) -> Self {
         Self {
             contents: cell.contents(),
@@ -149,7 +150,6 @@ where
     }
 }
 
-#[allow(clippy::trivially_copy_pass_by_ref)]
 fn serialize_color<S>(
     color: &vt100::Color,
     serializer: S,
@@ -182,7 +182,6 @@ where
     }
 }
 
-#[allow(clippy::trivially_copy_pass_by_ref)]
 fn serialize_mouse_protocol_mode<S>(
     mode: &vt100::MouseProtocolMode,
     serializer: S,
@@ -215,7 +214,6 @@ where
     }
 }
 
-#[allow(clippy::trivially_copy_pass_by_ref)]
 fn serialize_mouse_protocol_encoding<S>(
     encoding: &vt100::MouseProtocolEncoding,
     serializer: S,

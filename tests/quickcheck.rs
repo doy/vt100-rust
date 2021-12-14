@@ -24,7 +24,6 @@ impl quickcheck::Arbitrary for TerminalInput {
     }
 }
 
-#[allow(clippy::many_single_char_names)]
 fn choose_terminal_input_fragment<G: quickcheck::Gen>(g: &mut G) -> Vec<u8> {
     enum Fragment {
         Text,

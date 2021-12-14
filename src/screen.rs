@@ -826,10 +826,7 @@ impl Screen {
     }
 }
 
-// unclear why putting this attribute on the individual methods doesn't work
-#[allow(clippy::unused_self)]
 impl Screen {
-    #[allow(clippy::too_many_lines)]
     fn text(&mut self, c: char) {
         let pos = self.grid().pos();
         let size = self.grid().size();
@@ -1161,6 +1158,7 @@ impl Screen {
     }
 
     // CSI h
+    #[allow(clippy::unused_self)]
     fn sm(&mut self, params: &vte::Params) {
         // nothing, i think?
         if log::log_enabled!(log::Level::Debug) {
@@ -1211,6 +1209,7 @@ impl Screen {
     }
 
     // CSI l
+    #[allow(clippy::unused_self)]
     fn rm(&mut self, params: &vte::Params) {
         // nothing, i think?
         if log::log_enabled!(log::Level::Debug) {

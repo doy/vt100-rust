@@ -10,7 +10,6 @@ pub struct Cell {
     attrs: crate::attrs::Attrs,
 }
 
-#[allow(clippy::collapsible_if)]
 impl PartialEq<Self> for Cell {
     fn eq(&self, other: &Self) -> bool {
         if self.len != other.len {

@@ -10,7 +10,6 @@ fn origin_mode() {
     helpers::fixture("origin_mode");
 }
 
-#[allow(clippy::cognitive_complexity)]
 #[test]
 fn scrollback() {
     let mut parser = vt100::Parser::new(24, 80, 10);

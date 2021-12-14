@@ -125,7 +125,6 @@ pub fn compare_screens(
     true
 }
 
-#[allow(dead_code)]
 pub fn contents_formatted_reproduces_state(input: &[u8]) -> bool {
     let mut parser = vt100::Parser::default();
     parser.process(input);

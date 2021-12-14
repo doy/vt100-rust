@@ -332,9 +332,6 @@ impl Grid {
                     }
                     let cell = self.drawing_cell(pos).unwrap();
                     if cell.has_contents() {
-                        // not sure why this is triggering here, seems like a
-                        // clippy bug
-                        #[allow(clippy::option_if_let_else)]
                         if let Some(prev_pos) = prev_pos {
                             if prev_pos.row != i
                                 || prev_pos.col < self.size.cols
