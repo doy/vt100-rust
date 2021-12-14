@@ -76,7 +76,7 @@ impl Grid {
 
         self.size = size;
         for row in &mut self.rows {
-            row.resize(size.cols as usize, crate::cell::Cell::default());
+            row.resize(size.cols, crate::cell::Cell::default());
         }
         self.rows.resize(size.rows as usize, self.new_row());
 
@@ -438,7 +438,7 @@ impl Grid {
         let pos = self.pos;
         let row = self.current_row_mut();
         for col in pos.col..size.cols {
-            row.erase(col as usize, attrs);
+            row.erase(col, attrs);
         }
     }
 
@@ -447,7 +447,7 @@ impl Grid {
         let pos = self.pos;
         let row = self.current_row_mut();
         for col in 0..=pos.col.min(size.cols - 1) {
-            row.erase(col as usize, attrs);
+            row.erase(col, attrs);
         }
     }
 
@@ -461,12 +461,12 @@ impl Grid {
             if wide {
                 row.get_mut(pos.col).unwrap().set_wide_continuation(false);
             }
-            row.insert(pos.col as usize, crate::cell::Cell::default());
+            row.insert(pos.col, crate::cell::Cell::default());
             if wide {
                 row.get_mut(pos.col).unwrap().set_wide_continuation(true);
             }
         }
-        row.truncate(size.cols as usize);
+        row.truncate(size.cols);
     }
 
     pub fn delete_cells(&mut self, count: u16) {
@@ -474,9 +474,9 @@ impl Grid {
         let pos = self.pos;
         let row = self.current_row_mut();
         for _ in 0..(count.min(size.cols - pos.col)) {
-            row.remove(pos.col as usize);
+            row.remove(pos.col);
         }
-        row.resize(size.cols as usize, crate::cell::Cell::default());
+        row.resize(size.cols, crate::cell::Cell::default());
     }
 
     pub fn erase_cells(&mut self, count: u16, attrs: crate::attrs::Attrs) {
@@ -484,7 +484,7 @@ impl Grid {
         let pos = self.pos;
         let row = self.current_row_mut();
         for col in pos.col..((pos.col.saturating_add(count)).min(size.cols)) {
-            row.erase(col as usize, attrs);
+            row.erase(col, attrs);
         }
     }
 

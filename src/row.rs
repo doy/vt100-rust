@@ -37,37 +37,37 @@ impl Row {
         self.cells.get_mut(col as usize)
     }
 
-    pub fn insert(&mut self, i: usize, cell: crate::cell::Cell) {
-        self.cells.insert(i, cell);
+    pub fn insert(&mut self, i: u16, cell: crate::cell::Cell) {
+        self.cells.insert(i as usize, cell);
         self.wrapped = false;
     }
 
-    pub fn remove(&mut self, i: usize) {
-        self.clear_wide(i.try_into().unwrap());
-        self.cells.remove(i);
+    pub fn remove(&mut self, i: u16) {
+        self.clear_wide(i);
+        self.cells.remove(i as usize);
         self.wrapped = false;
     }
 
-    pub fn erase(&mut self, i: usize, attrs: crate::attrs::Attrs) {
-        let wide = self.cells.get_mut(i).unwrap().is_wide();
-        self.clear_wide(i.try_into().unwrap());
-        self.cells.get_mut(i).unwrap().clear(attrs);
-        if i == self.cols() as usize - if wide { 2 } else { 1 } {
+    pub fn erase(&mut self, i: u16, attrs: crate::attrs::Attrs) {
+        let wide = self.cells.get_mut(i as usize).unwrap().is_wide();
+        self.clear_wide(i);
+        self.cells.get_mut(i as usize).unwrap().clear(attrs);
+        if i == self.cols() - if wide { 2 } else { 1 } {
             self.wrapped = false;
         }
     }
 
-    pub fn truncate(&mut self, len: usize) {
-        self.cells.truncate(len);
+    pub fn truncate(&mut self, len: u16) {
+        self.cells.truncate(len as usize);
         self.wrapped = false;
-        let last_cell = self.cells.get_mut(len - 1).unwrap();
+        let last_cell = self.cells.get_mut(len as usize - 1).unwrap();
         if last_cell.is_wide() {
             last_cell.clear(*last_cell.attrs());
         }
     }
 
-    pub fn resize(&mut self, len: usize, cell: crate::cell::Cell) {
-        self.cells.resize(len, cell);
+    pub fn resize(&mut self, len: u16, cell: crate::cell::Cell) {
+        self.cells.resize(len as usize, cell);
         self.wrapped = false;
     }
 
