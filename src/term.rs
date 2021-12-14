@@ -86,9 +86,13 @@ impl BufWrite for MoveTo {
             buf.extend_from_slice(b"\x1b[H");
         } else {
             buf.extend_from_slice(b"\x1b[");
-            itoa::write(&mut *buf, self.row + 1).unwrap();
+            itoa::write(&mut *buf, self.row + 1)
+                // write to a vec can never fail
+                .unwrap_or_else(|_| unreachable!());
             buf.push(b';');
-            itoa::write(&mut *buf, self.col + 1).unwrap();
+            itoa::write(&mut *buf, self.col + 1)
+                // write to a vec can never fail
+                .unwrap_or_else(|_| unreachable!());
             buf.push(b'H');
         }
     }
@@ -288,7 +292,8 @@ impl BufWrite for MoveRight {
             1 => buf.extend_from_slice(b"\x1b[C"),
             n => {
                 buf.extend_from_slice(b"\x1b[");
-                itoa::write(&mut *buf, n).unwrap();
+                // write to a vec can never fail
+                itoa::write(&mut *buf, n).unwrap_or_else(|_| unreachable!());
                 buf.push(b'C');
             }
         }
@@ -320,7 +325,8 @@ impl BufWrite for EraseChar {
             1 => buf.extend_from_slice(b"\x1b[X"),
             n => {
                 buf.extend_from_slice(b"\x1b[");
-                itoa::write(&mut *buf, n).unwrap();
+                // write to a vec can never fail
+                itoa::write(&mut *buf, n).unwrap_or_else(|_| unreachable!());
                 buf.push(b'X');
             }
         }

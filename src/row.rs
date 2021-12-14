@@ -15,7 +15,11 @@ impl Row {
     }
 
     fn cols(&self) -> u16 {
-        self.cells.len().try_into().unwrap()
+        self.cells
+            .len()
+            .try_into()
+            // we limit the number of cols to a u16 (see Size)
+            .unwrap_or_else(|_| unreachable!())
     }
 
     pub fn clear(&mut self, attrs: crate::attrs::Attrs) {
@@ -113,7 +117,8 @@ impl Row {
             }
             prev_was_wide = cell.is_wide();
 
-            let col: u16 = col.try_into().unwrap();
+            // we limit the number of cols to a u16 (see Size)
+            let col: u16 = col.try_into().unwrap_or_else(|_| unreachable!());
             if cell.has_contents() {
                 for _ in 0..(col - prev_col) {
                     contents.push(' ');
@@ -180,10 +185,9 @@ impl Row {
             }
             prev_was_wide = cell.is_wide();
 
-            let pos = crate::grid::Pos {
-                row,
-                col: col.try_into().unwrap(),
-            };
+            // we limit the number of cols to a u16 (see Size)
+            let col: u16 = col.try_into().unwrap_or_else(|_| unreachable!());
+            let pos = crate::grid::Pos { row, col };
 
             if let Some((prev_col, attrs)) = erase {
                 if cell.has_contents() || cell.attrs() != attrs {
@@ -338,10 +342,9 @@ impl Row {
             }
             prev_was_wide = cell.is_wide();
 
-            let pos = crate::grid::Pos {
-                row,
-                col: col.try_into().unwrap(),
-            };
+            // we limit the number of cols to a u16 (see Size)
+            let col: u16 = col.try_into().unwrap_or_else(|_| unreachable!());
+            let pos = crate::grid::Pos { row, col };
 
             if let Some((prev_col, attrs)) = erase {
                 if cell.has_contents() || cell.attrs() != attrs {

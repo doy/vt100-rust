@@ -19,7 +19,9 @@ impl PartialEq<Self> for Cell {
             return false;
         }
         let len = self.len();
-        self.contents[..len] == other.contents[..len]
+        // self.len() always returns a valid value
+        self.contents.get(..len).unwrap_or_else(|| unreachable!())
+            == other.contents.get(..len).unwrap_or_else(|| unreachable!())
     }
 }
 
@@ -40,15 +42,19 @@ impl Cell {
     }
 
     pub(crate) fn append(&mut self, c: char) {
-        if self.len() >= CODEPOINTS_IN_CELL {
+        let len = self.len();
+        if len >= CODEPOINTS_IN_CELL {
             return;
         }
-        if self.len() == 0 {
-            self.contents[self.len()] = ' ';
+        if len == 0 {
+            // 0 is always less than 6
+            *self.contents.get_mut(0).unwrap_or_else(|| unreachable!()) = ' ';
             self.len += 1;
         }
 
-        self.contents[self.len()] = c;
+        let len = self.len();
+        // we already checked that len < CODEPOINTS_IN_CELL
+        *self.contents.get_mut(len).unwrap_or_else(|| unreachable!()) = c;
         self.len += 1;
     }
 
