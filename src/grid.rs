@@ -135,39 +135,40 @@ impl Grid {
         self.rows.iter_mut()
     }
 
-    pub fn visible_row(&self, pos: Pos) -> Option<&crate::row::Row> {
-        self.visible_rows().nth(pos.row as usize)
+    pub fn visible_row(&self, row: u16) -> Option<&crate::row::Row> {
+        self.visible_rows().nth(row as usize)
     }
 
-    pub fn drawing_row(&self, pos: Pos) -> Option<&crate::row::Row> {
-        self.drawing_rows().nth(pos.row as usize)
+    pub fn drawing_row(&self, row: u16) -> Option<&crate::row::Row> {
+        self.drawing_rows().nth(row as usize)
     }
 
     pub fn drawing_row_mut(
         &mut self,
-        pos: Pos,
+        row: u16,
     ) -> Option<&mut crate::row::Row> {
-        self.drawing_rows_mut().nth(pos.row as usize)
+        self.drawing_rows_mut().nth(row as usize)
     }
 
     pub fn current_row_mut(&mut self) -> &mut crate::row::Row {
-        self.drawing_row_mut(self.pos)
+        self.drawing_row_mut(self.pos.row)
             .expect("cursor not pointing to a cell")
     }
 
     pub fn visible_cell(&self, pos: Pos) -> Option<&crate::cell::Cell> {
-        self.visible_row(pos).and_then(|r| r.get(pos.col))
+        self.visible_row(pos.row).and_then(|r| r.get(pos.col))
     }
 
     pub fn drawing_cell(&self, pos: Pos) -> Option<&crate::cell::Cell> {
-        self.drawing_row(pos).and_then(|r| r.get(pos.col))
+        self.drawing_row(pos.row).and_then(|r| r.get(pos.col))
     }
 
     pub fn drawing_cell_mut(
         &mut self,
         pos: Pos,
     ) -> Option<&mut crate::cell::Cell> {
-        self.drawing_row_mut(pos).and_then(|r| r.get_mut(pos.col))
+        self.drawing_row_mut(pos.row)
+            .and_then(|r| r.get_mut(pos.col))
     }
 
     pub fn current_cell(&self) -> &crate::cell::Cell {
@@ -630,7 +631,7 @@ impl Grid {
             let scrolled = self.row_inc_scroll(1);
             prev_pos.row -= scrolled;
             let new_pos = self.pos;
-            self.drawing_row_mut(prev_pos)
+            self.drawing_row_mut(prev_pos.row)
                 .unwrap()
                 .wrap(wrap && prev_pos.row + 1 == new_pos.row);
         }

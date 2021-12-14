@@ -597,7 +597,7 @@ impl Screen {
     #[must_use]
     pub fn row_wrapped(&self, row: u16) -> bool {
         self.grid()
-            .visible_row(crate::grid::Pos { row, col: 0 })
+            .visible_row(row)
             .map_or(false, crate::row::Row::wrapped)
     }
 
@@ -747,32 +747,6 @@ impl Screen {
         }
     }
 
-    fn drawing_row(&self, pos: crate::grid::Pos) -> Option<&crate::row::Row> {
-        self.grid().drawing_row(pos)
-    }
-
-    fn drawing_cell(
-        &self,
-        pos: crate::grid::Pos,
-    ) -> Option<&crate::cell::Cell> {
-        self.grid().drawing_cell(pos)
-    }
-
-    fn drawing_cell_mut(
-        &mut self,
-        pos: crate::grid::Pos,
-    ) -> Option<&mut crate::cell::Cell> {
-        self.grid_mut().drawing_cell_mut(pos)
-    }
-
-    fn current_cell(&self) -> &crate::cell::Cell {
-        self.grid().current_cell()
-    }
-
-    fn current_cell_mut(&mut self) -> &mut crate::cell::Cell {
-        self.grid_mut().current_cell_mut()
-    }
-
     fn enter_alternate_grid(&mut self) {
         self.grid_mut().set_scrollback(0);
         self.set_mode(MODE_ALTERNATE_SCREEN);
@@ -850,6 +824,7 @@ impl Screen {
         let mut wrap = false;
         if pos.col > size.cols - width {
             let last_cell = self
+                .grid()
                 .drawing_cell(crate::grid::Pos {
                     row: pos.row,
                     col: size.cols - 1,
@@ -865,6 +840,7 @@ impl Screen {
         if width == 0 {
             if pos.col > 0 {
                 let mut prev_cell = self
+                    .grid_mut()
                     .drawing_cell_mut(crate::grid::Pos {
                         row: pos.row,
                         col: pos.col - 1,
@@ -872,6 +848,7 @@ impl Screen {
                     .unwrap();
                 if prev_cell.is_wide_continuation() {
                     prev_cell = self
+                        .grid_mut()
                         .drawing_cell_mut(crate::grid::Pos {
                             row: pos.row,
                             col: pos.col - 2,
@@ -880,14 +857,10 @@ impl Screen {
                 }
                 prev_cell.append(c);
             } else if pos.row > 0 {
-                let prev_row = self
-                    .drawing_row(crate::grid::Pos {
-                        row: pos.row - 1,
-                        col: 0,
-                    })
-                    .unwrap();
+                let prev_row = self.grid().drawing_row(pos.row - 1).unwrap();
                 if prev_row.wrapped() {
                     let mut prev_cell = self
+                        .grid_mut()
                         .drawing_cell_mut(crate::grid::Pos {
                             row: pos.row - 1,
                             col: size.cols - 1,
@@ -895,6 +868,7 @@ impl Screen {
                         .unwrap();
                     if prev_cell.is_wide_continuation() {
                         prev_cell = self
+                            .grid_mut()
                             .drawing_cell_mut(crate::grid::Pos {
                                 row: pos.row - 1,
                                 col: size.cols - 2,
@@ -915,11 +889,13 @@ impl Screen {
             };
 
             if self
+                .grid()
                 .drawing_cell(drawing_pos)
                 .unwrap()
                 .is_wide_continuation()
             {
                 let prev_cell = self
+                    .grid_mut()
                     .drawing_cell_mut(crate::grid::Pos {
                         row: drawing_pos.row,
                         col: drawing_pos.col - 1,
@@ -928,8 +904,9 @@ impl Screen {
                 prev_cell.clear(attrs);
             }
 
-            if self.drawing_cell(drawing_pos).unwrap().is_wide() {
+            if self.grid().drawing_cell(drawing_pos).unwrap().is_wide() {
                 let next_cell = self
+                    .grid_mut()
                     .drawing_cell_mut(crate::grid::Pos {
                         row: drawing_pos.row,
                         col: drawing_pos.col + 1,
@@ -938,27 +915,29 @@ impl Screen {
                 next_cell.set(' ', attrs);
             }
 
-            let cell = self.current_cell_mut();
+            let cell = self.grid_mut().current_cell_mut();
             cell.set(c, attrs);
             self.grid_mut().col_inc(1);
             if width > 1 {
                 let pos = self.grid().pos();
-                if self.current_cell().is_wide() {
+                if self.grid().current_cell().is_wide() {
                     let next_next_pos = crate::grid::Pos {
                         row: pos.row,
                         col: pos.col + 1,
                     };
-                    let next_next_cell =
-                        self.drawing_cell_mut(next_next_pos).unwrap();
+                    let next_next_cell = self
+                        .grid_mut()
+                        .drawing_cell_mut(next_next_pos)
+                        .unwrap();
                     next_next_cell.clear(attrs);
                     if next_next_pos.col == size.cols - 1 {
                         self.grid_mut()
-                            .drawing_row_mut(next_next_pos)
+                            .drawing_row_mut(pos.row)
                             .unwrap()
                             .wrap(false);
                     }
                 }
-                let next_cell = self.current_cell_mut();
+                let next_cell = self.grid_mut().current_cell_mut();
                 next_cell.clear(crate::attrs::Attrs::default());
                 next_cell.set_wide_continuation(true);
                 self.grid_mut().col_inc(1);
