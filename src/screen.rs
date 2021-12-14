@@ -194,10 +194,10 @@ impl Screen {
                     .grid()
                     .visible_rows()
                     .enumerate()
-                    .skip(start_row as usize)
-                    .take(end_row as usize - start_row as usize + 1)
+                    .skip(usize::from(start_row))
+                    .take(usize::from(end_row) - usize::from(start_row) + 1)
                 {
-                    if i == start_row as usize {
+                    if i == usize::from(start_row) {
                         row.write_contents(
                             &mut contents,
                             start_col,
@@ -207,7 +207,7 @@ impl Screen {
                         if !row.wrapped() {
                             contents.push('\n');
                         }
-                    } else if i == end_row as usize {
+                    } else if i == usize::from(end_row) {
                         row.write_contents(&mut contents, 0, end_col, false);
                     } else {
                         row.write_contents(&mut contents, 0, cols, false);
@@ -221,7 +221,7 @@ impl Screen {
             std::cmp::Ordering::Equal => {
                 if start_col < end_col {
                     self.rows(start_col, end_col - start_col)
-                        .nth(start_row as usize)
+                        .nth(usize::from(start_row))
                         .unwrap_or_else(String::new)
                 } else {
                     String::new()
@@ -811,7 +811,7 @@ impl Screen {
         let attrs = self.attrs;
 
         let width = c.width();
-        if width.is_none() && (c as u32) < 256 {
+        if width.is_none() && (u32::from(c)) < 256 {
             // don't even try to draw control characters
             return;
         }

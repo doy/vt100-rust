@@ -38,7 +38,7 @@ impl Grid {
                 std::iter::repeat_with(|| {
                     crate::row::Row::new(self.size.cols)
                 })
-                .take(self.size.rows as usize),
+                .take(usize::from(self.size.rows)),
             );
         }
     }
@@ -78,7 +78,7 @@ impl Grid {
         for row in &mut self.rows {
             row.resize(size.cols, crate::cell::Cell::default());
         }
-        self.rows.resize(size.rows as usize, self.new_row());
+        self.rows.resize(usize::from(size.rows), self.new_row());
 
         if self.scroll_bottom >= size.rows {
             self.scroll_bottom = size.rows - 1;
@@ -136,18 +136,18 @@ impl Grid {
     }
 
     pub fn visible_row(&self, row: u16) -> Option<&crate::row::Row> {
-        self.visible_rows().nth(row as usize)
+        self.visible_rows().nth(usize::from(row))
     }
 
     pub fn drawing_row(&self, row: u16) -> Option<&crate::row::Row> {
-        self.drawing_rows().nth(row as usize)
+        self.drawing_rows().nth(usize::from(row))
     }
 
     pub fn drawing_row_mut(
         &mut self,
         row: u16,
     ) -> Option<&mut crate::row::Row> {
-        self.drawing_rows_mut().nth(row as usize)
+        self.drawing_rows_mut().nth(usize::from(row))
     }
 
     pub fn current_row_mut(&mut self) -> &mut crate::row::Row {
@@ -385,7 +385,7 @@ impl Grid {
                             );
                         }
                         contents.extend(
-                            "\n".repeat((self.pos.row - i) as usize)
+                            "\n".repeat(usize::from(self.pos.row - i))
                                 .as_bytes(),
                         );
                         found = true;
@@ -445,7 +445,7 @@ impl Grid {
 
     pub fn erase_all_forward(&mut self, attrs: crate::attrs::Attrs) {
         let pos = self.pos;
-        for row in self.drawing_rows_mut().skip(pos.row as usize + 1) {
+        for row in self.drawing_rows_mut().skip(usize::from(pos.row) + 1) {
             row.clear(attrs);
         }
 
@@ -454,7 +454,7 @@ impl Grid {
 
     pub fn erase_all_backward(&mut self, attrs: crate::attrs::Attrs) {
         let pos = self.pos;
-        for row in self.drawing_rows_mut().take(pos.row as usize) {
+        for row in self.drawing_rows_mut().take(usize::from(pos.row)) {
             row.clear(attrs);
         }
 
@@ -528,10 +528,10 @@ impl Grid {
 
     pub fn insert_lines(&mut self, count: u16) {
         for _ in 0..count {
-            self.rows.remove(self.scroll_bottom as usize);
-            self.rows.insert(self.pos.row as usize, self.new_row());
+            self.rows.remove(usize::from(self.scroll_bottom));
+            self.rows.insert(usize::from(self.pos.row), self.new_row());
             self.rows
-                .get_mut(self.scroll_bottom as usize)
+                .get_mut(usize::from(self.scroll_bottom))
                 // self.scroll_bottom is maintained to always be a valid row
                 .unwrap_or_else(|| unreachable!())
                 .wrap(false);
@@ -541,16 +541,16 @@ impl Grid {
     pub fn delete_lines(&mut self, count: u16) {
         for _ in 0..(count.min(self.size.rows - self.pos.row)) {
             self.rows
-                .insert(self.scroll_bottom as usize + 1, self.new_row());
-            self.rows.remove(self.pos.row as usize);
+                .insert(usize::from(self.scroll_bottom) + 1, self.new_row());
+            self.rows.remove(usize::from(self.pos.row));
         }
     }
 
     pub fn scroll_up(&mut self, count: u16) {
         for _ in 0..(count.min(self.size.rows - self.scroll_top)) {
             self.rows
-                .insert(self.scroll_bottom as usize + 1, self.new_row());
-            let removed = self.rows.remove(self.scroll_top as usize);
+                .insert(usize::from(self.scroll_bottom) + 1, self.new_row());
+            let removed = self.rows.remove(usize::from(self.scroll_top));
             if self.scrollback_len > 0 && !self.scroll_region_active() {
                 self.scrollback.push_back(removed);
                 while self.scrollback.len() > self.scrollback_len {
@@ -566,10 +566,11 @@ impl Grid {
 
     pub fn scroll_down(&mut self, count: u16) {
         for _ in 0..count {
-            self.rows.remove(self.scroll_bottom as usize);
-            self.rows.insert(self.scroll_top as usize, self.new_row());
+            self.rows.remove(usize::from(self.scroll_bottom));
             self.rows
-                .get_mut(self.scroll_bottom as usize)
+                .insert(usize::from(self.scroll_top), self.new_row());
+            self.rows
+                .get_mut(usize::from(self.scroll_bottom))
                 // self.scroll_bottom is maintained to always be a valid row
                 .unwrap_or_else(|| unreachable!())
                 .wrap(false);

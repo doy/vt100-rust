@@ -28,7 +28,7 @@ impl PartialEq<Self> for Cell {
 impl Cell {
     #[inline]
     fn len(&self) -> usize {
-        (self.len & 0x0f) as usize
+        usize::from(self.len & 0x0f)
     }
 
     pub(crate) fn set(&mut self, c: char, a: crate::attrs::Attrs) {

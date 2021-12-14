@@ -9,7 +9,7 @@ pub struct Row {
 impl Row {
     pub fn new(cols: u16) -> Self {
         Self {
-            cells: vec![crate::cell::Cell::default(); cols as usize],
+            cells: vec![crate::cell::Cell::default(); usize::from(cols)],
             wrapped: false,
         }
     }
@@ -34,44 +34,44 @@ impl Row {
     }
 
     pub fn get(&self, col: u16) -> Option<&crate::cell::Cell> {
-        self.cells.get(col as usize)
+        self.cells.get(usize::from(col))
     }
 
     pub fn get_mut(&mut self, col: u16) -> Option<&mut crate::cell::Cell> {
-        self.cells.get_mut(col as usize)
+        self.cells.get_mut(usize::from(col))
     }
 
     pub fn insert(&mut self, i: u16, cell: crate::cell::Cell) {
-        self.cells.insert(i as usize, cell);
+        self.cells.insert(usize::from(i), cell);
         self.wrapped = false;
     }
 
     pub fn remove(&mut self, i: u16) {
         self.clear_wide(i);
-        self.cells.remove(i as usize);
+        self.cells.remove(usize::from(i));
         self.wrapped = false;
     }
 
     pub fn erase(&mut self, i: u16, attrs: crate::attrs::Attrs) {
-        let wide = self.cells.get_mut(i as usize).unwrap().is_wide();
+        let wide = self.cells.get_mut(usize::from(i)).unwrap().is_wide();
         self.clear_wide(i);
-        self.cells.get_mut(i as usize).unwrap().clear(attrs);
+        self.cells.get_mut(usize::from(i)).unwrap().clear(attrs);
         if i == self.cols() - if wide { 2 } else { 1 } {
             self.wrapped = false;
         }
     }
 
     pub fn truncate(&mut self, len: u16) {
-        self.cells.truncate(len as usize);
+        self.cells.truncate(usize::from(len));
         self.wrapped = false;
-        let last_cell = self.cells.get_mut(len as usize - 1).unwrap();
+        let last_cell = self.cells.get_mut(usize::from(len) - 1).unwrap();
         if last_cell.is_wide() {
             last_cell.clear(*last_cell.attrs());
         }
     }
 
     pub fn resize(&mut self, len: u16, cell: crate::cell::Cell) {
-        self.cells.resize(len as usize, cell);
+        self.cells.resize(usize::from(len), cell);
         self.wrapped = false;
     }
 
@@ -108,8 +108,8 @@ impl Row {
         for (col, cell) in self
             .cells()
             .enumerate()
-            .skip(start as usize)
-            .take(width as usize)
+            .skip(usize::from(start))
+            .take(usize::from(width))
         {
             if prev_was_wide {
                 prev_was_wide = false;
@@ -176,8 +176,8 @@ impl Row {
         for (col, cell) in self
             .cells()
             .enumerate()
-            .skip(start as usize)
-            .take(width as usize)
+            .skip(usize::from(start))
+            .take(usize::from(width))
         {
             if prev_was_wide {
                 prev_was_wide = false;
@@ -198,7 +198,8 @@ impl Row {
                     {
                         if new_pos.col > 0 {
                             contents.extend(
-                                " ".repeat(new_pos.col as usize).as_bytes(),
+                                " ".repeat(usize::from(new_pos.col))
+                                    .as_bytes(),
                             );
                         } else {
                             contents.extend(b" ");
@@ -257,8 +258,9 @@ impl Row {
                 && prev_pos.col >= self.cols()
             {
                 if new_pos.col > 0 {
-                    contents
-                        .extend(" ".repeat(new_pos.col as usize).as_bytes());
+                    contents.extend(
+                        " ".repeat(usize::from(new_pos.col)).as_bytes(),
+                    );
                 } else {
                     contents.extend(b" ");
                     crate::term::Backspace::default().write_buf(contents);
@@ -333,8 +335,8 @@ impl Row {
             .cells()
             .zip(prev.cells())
             .enumerate()
-            .skip(start as usize)
-            .take(width as usize)
+            .skip(usize::from(start))
+            .take(usize::from(width))
         {
             if prev_was_wide {
                 prev_was_wide = false;
@@ -355,7 +357,8 @@ impl Row {
                     {
                         if new_pos.col > 0 {
                             contents.extend(
-                                " ".repeat(new_pos.col as usize).as_bytes(),
+                                " ".repeat(usize::from(new_pos.col))
+                                    .as_bytes(),
                             );
                         } else {
                             contents.extend(b" ");
@@ -413,8 +416,9 @@ impl Row {
                 && prev_pos.col >= self.cols()
             {
                 if new_pos.col > 0 {
-                    contents
-                        .extend(" ".repeat(new_pos.col as usize).as_bytes());
+                    contents.extend(
+                        " ".repeat(usize::from(new_pos.col)).as_bytes(),
+                    );
                 } else {
                     contents.extend(b" ");
                     crate::term::Backspace::default().write_buf(contents);

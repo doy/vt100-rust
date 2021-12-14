@@ -39,6 +39,7 @@
 #![warn(clippy::unwrap_used)]
 #![warn(clippy::expect_used)]
 #![warn(clippy::indexing_slicing)]
+#![warn(clippy::as_conversions)]
 #![allow(clippy::cognitive_complexity)]
 #![allow(clippy::missing_const_for_fn)]
 #![allow(clippy::missing_panics_doc)]
