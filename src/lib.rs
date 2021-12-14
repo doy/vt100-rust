@@ -42,7 +42,7 @@
 #![warn(clippy::as_conversions)]
 #![allow(clippy::cognitive_complexity)]
 #![allow(clippy::missing_const_for_fn)]
-#![allow(clippy::missing_panics_doc)]
+#![allow(clippy::struct_excessive_bools)]
 #![allow(clippy::too_many_arguments)]
 #![allow(clippy::too_many_lines)]
 
