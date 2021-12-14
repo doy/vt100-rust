@@ -322,9 +322,8 @@ impl Grid {
                 // earlier row, we can just write a few newlines, otherwise we
                 // also need to do the same as above to get ourselves to after
                 // the end of a row.
-                let orig_row = pos.row;
                 let mut found = false;
-                for i in (0..orig_row).rev() {
+                for i in (0..self.pos.row).rev() {
                     pos.row = i;
                     pos.col = self.size.cols - 1;
                     if self.drawing_cell(pos).unwrap().is_wide_continuation()
@@ -362,7 +361,8 @@ impl Grid {
                             );
                         }
                         contents.extend(
-                            "\n".repeat((orig_row - i) as usize).as_bytes(),
+                            "\n".repeat((self.pos.row - i) as usize)
+                                .as_bytes(),
                         );
                         found = true;
                         break;
@@ -376,7 +376,10 @@ impl Grid {
                 // would have caught that above, so it should be safe to
                 // overwrite it.
                 if !found {
-                    pos.row = orig_row;
+                    pos = Pos {
+                        row: self.pos.row,
+                        col: self.size.cols - 1,
+                    };
                     if let Some(prev_pos) = prev_pos {
                         crate::term::MoveFromTo::new(prev_pos, pos)
                             .write_buf(contents);
