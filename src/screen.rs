@@ -879,37 +879,28 @@ impl Screen {
                 }
             }
         } else {
-            let drawing_pos = if pos.col < size.cols {
-                pos
-            } else {
-                crate::grid::Pos {
-                    row: pos.row + 1,
-                    col: 0,
-                }
-            };
-
             if self
                 .grid()
-                .drawing_cell(drawing_pos)
+                .drawing_cell(pos)
                 .unwrap()
                 .is_wide_continuation()
             {
                 let prev_cell = self
                     .grid_mut()
                     .drawing_cell_mut(crate::grid::Pos {
-                        row: drawing_pos.row,
-                        col: drawing_pos.col - 1,
+                        row: pos.row,
+                        col: pos.col - 1,
                     })
                     .unwrap();
                 prev_cell.clear(attrs);
             }
 
-            if self.grid().drawing_cell(drawing_pos).unwrap().is_wide() {
+            if self.grid().drawing_cell(pos).unwrap().is_wide() {
                 let next_cell = self
                     .grid_mut()
                     .drawing_cell_mut(crate::grid::Pos {
-                        row: drawing_pos.row,
-                        col: drawing_pos.col + 1,
+                        row: pos.row,
+                        col: pos.col + 1,
                     })
                     .unwrap();
                 next_cell.set(' ', attrs);
