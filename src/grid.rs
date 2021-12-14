@@ -171,16 +171,6 @@ impl Grid {
             .and_then(|r| r.get_mut(pos.col))
     }
 
-    pub fn current_cell(&self) -> &crate::cell::Cell {
-        self.drawing_cell(self.pos)
-            .expect("cursor not pointing to a cell")
-    }
-
-    pub fn current_cell_mut(&mut self) -> &mut crate::cell::Cell {
-        self.drawing_cell_mut(self.pos)
-            .expect("cursor not pointing to a cell")
-    }
-
     pub fn scrollback_len(&self) -> usize {
         self.scrollback_len
     }
@@ -458,8 +448,8 @@ impl Grid {
     pub fn insert_cells(&mut self, count: u16) {
         let size = self.size;
         let pos = self.pos;
-        let wide =
-            pos.col < size.cols && self.current_cell().is_wide_continuation();
+        let wide = pos.col < size.cols
+            && self.drawing_cell(pos).unwrap().is_wide_continuation();
         let row = self.current_row_mut();
         for _ in 0..count {
             if wide {

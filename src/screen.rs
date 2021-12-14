@@ -906,12 +906,12 @@ impl Screen {
                 next_cell.set(' ', attrs);
             }
 
-            let cell = self.grid_mut().current_cell_mut();
+            let cell = self.grid_mut().drawing_cell_mut(pos).unwrap();
             cell.set(c, attrs);
             self.grid_mut().col_inc(1);
             if width > 1 {
                 let pos = self.grid().pos();
-                if self.grid().current_cell().is_wide() {
+                if self.grid().drawing_cell(pos).unwrap().is_wide() {
                     let next_next_pos = crate::grid::Pos {
                         row: pos.row,
                         col: pos.col + 1,
@@ -928,7 +928,8 @@ impl Screen {
                             .wrap(false);
                     }
                 }
-                let next_cell = self.grid_mut().current_cell_mut();
+                let next_cell =
+                    self.grid_mut().drawing_cell_mut(pos).unwrap();
                 next_cell.clear(crate::attrs::Attrs::default());
                 next_cell.set_wide_continuation(true);
                 self.grid_mut().col_inc(1);
