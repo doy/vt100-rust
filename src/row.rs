@@ -19,7 +19,7 @@ impl Row {
             .len()
             .try_into()
             // we limit the number of cols to a u16 (see Size)
-            .unwrap_or_else(|_| unreachable!())
+            .unwrap()
     }
 
     pub fn clear(&mut self, attrs: crate::attrs::Attrs) {
@@ -53,9 +53,9 @@ impl Row {
     }
 
     pub fn erase(&mut self, i: u16, attrs: crate::attrs::Attrs) {
-        let wide = self.cells.get_mut(usize::from(i)).unwrap().is_wide();
+        let wide = self.cells[usize::from(i)].is_wide();
         self.clear_wide(i);
-        self.cells.get_mut(usize::from(i)).unwrap().clear(attrs);
+        self.cells[usize::from(i)].clear(attrs);
         if i == self.cols() - if wide { 2 } else { 1 } {
             self.wrapped = false;
         }
@@ -64,7 +64,7 @@ impl Row {
     pub fn truncate(&mut self, len: u16) {
         self.cells.truncate(usize::from(len));
         self.wrapped = false;
-        let last_cell = self.cells.get_mut(usize::from(len) - 1).unwrap();
+        let last_cell = &mut self.cells[usize::from(len) - 1];
         if last_cell.is_wide() {
             last_cell.clear(*last_cell.attrs());
         }
@@ -118,7 +118,7 @@ impl Row {
             prev_was_wide = cell.is_wide();
 
             // we limit the number of cols to a u16 (see Size)
-            let col: u16 = col.try_into().unwrap_or_else(|_| unreachable!());
+            let col: u16 = col.try_into().unwrap();
             if cell.has_contents() {
                 for _ in 0..(col - prev_col) {
                     contents.push(' ');
@@ -186,7 +186,7 @@ impl Row {
             prev_was_wide = cell.is_wide();
 
             // we limit the number of cols to a u16 (see Size)
-            let col: u16 = col.try_into().unwrap_or_else(|_| unreachable!());
+            let col: u16 = col.try_into().unwrap();
             let pos = crate::grid::Pos { row, col };
 
             if let Some((prev_col, attrs)) = erase {
@@ -345,7 +345,7 @@ impl Row {
             prev_was_wide = cell.is_wide();
 
             // we limit the number of cols to a u16 (see Size)
-            let col: u16 = col.try_into().unwrap_or_else(|_| unreachable!());
+            let col: u16 = col.try_into().unwrap();
             let pos = crate::grid::Pos { row, col };
 
             if let Some((prev_col, attrs)) = erase {

@@ -285,6 +285,8 @@ impl Screen {
     /// You are responsible for positioning the cursor before printing each
     /// row, and the final cursor position after displaying each row is
     /// unspecified.
+    // the unwraps in this method shouldn't be reachable
+    #[allow(clippy::missing_panics_doc)]
     pub fn rows_formatted(
         &self,
         start: u16,
@@ -294,7 +296,7 @@ impl Screen {
         self.grid().visible_rows().enumerate().map(move |(i, row)| {
             // number of rows in a grid is stored in a u16 (see Size), so
             // visible_rows can never return enough rows to overflow here
-            let i = i.try_into().unwrap_or_else(|_| unreachable!());
+            let i = i.try_into().unwrap();
             let mut contents = vec![];
             row.write_contents_formatted(
                 &mut contents,
@@ -350,6 +352,8 @@ impl Screen {
     /// You are responsible for positioning the cursor before printing each
     /// row, and the final cursor position after displaying each row is
     /// unspecified.
+    // the unwraps in this method shouldn't be reachable
+    #[allow(clippy::missing_panics_doc)]
     pub fn rows_diff<'a>(
         &'a self,
         prev: &'a Self,
@@ -363,7 +367,7 @@ impl Screen {
             .map(move |(i, (row, prev_row))| {
                 // number of rows in a grid is stored in a u16 (see Size), so
                 // visible_rows can never return enough rows to overflow here
-                let i = i.try_into().unwrap_or_else(|_| unreachable!());
+                let i = i.try_into().unwrap();
                 let mut contents = vec![];
                 row.write_contents_diff(
                     &mut contents,
@@ -819,7 +823,7 @@ impl Screen {
             .unwrap_or(1)
             .try_into()
             // width() can only return 0, 1, or 2
-            .unwrap_or_else(|_| unreachable!());
+            .unwrap();
 
         // it doesn't make any sense to wrap if the last column in a row
         // didn't already have contents. don't try to handle the case where a
@@ -840,7 +844,7 @@ impl Screen {
                 // pos.row is valid, since it comes directly from
                 // self.grid().pos() which we assume to always have a valid
                 // row value. size.cols - 1 is also always a valid column.
-                .unwrap_or_else(|| unreachable!());
+                .unwrap();
             if last_cell.has_contents() || last_cell.is_wide_continuation() {
                 wrap = true;
             }
@@ -860,7 +864,7 @@ impl Screen {
                     // self.grid().pos() which we assume to always have a
                     // valid row value. pos.col - 1 is valid because we just
                     // checked for pos.col > 0.
-                    .unwrap_or_else(|| unreachable!());
+                    .unwrap();
                 if prev_cell.is_wide_continuation() {
                     prev_cell = self
                         .grid_mut()
@@ -874,7 +878,7 @@ impl Screen {
                         // because the cell at pos.col - 1 is a wide
                         // continuation character, which means there must be
                         // the first half of the wide character before it.
-                        .unwrap_or_else(|| unreachable!());
+                        .unwrap();
                 }
                 prev_cell.append(c);
             } else if pos.row > 0 {
@@ -885,7 +889,7 @@ impl Screen {
                     // self.grid().pos() which we assume to always have a
                     // valid row value. pos.row - 1 is valid because we just
                     // checked for pos.row > 0.
-                    .unwrap_or_else(|| unreachable!());
+                    .unwrap();
                 if prev_row.wrapped() {
                     let mut prev_cell = self
                         .grid_mut()
@@ -898,7 +902,7 @@ impl Screen {
                         // valid row value. pos.row - 1 is valid because we
                         // just checked for pos.row > 0. col of size.cols - 1
                         // is always valid.
-                        .unwrap_or_else(|| unreachable!());
+                        .unwrap();
                     if prev_cell.is_wide_continuation() {
                         prev_cell = self
                             .grid_mut()
@@ -914,7 +918,7 @@ impl Screen {
                             // size.cols - 1 is a wide continuation character,
                             // so it must have the first half of the wide
                             // character before it.
-                            .unwrap_or_else(|| unreachable!());
+                            .unwrap();
                     }
                     prev_cell.append(c);
                 }
@@ -927,7 +931,7 @@ impl Screen {
                 // always have a valid row value. pos.col is valid because we
                 // called col_wrap() immediately before this, which ensures
                 // that self.grid().pos().col has a valid value.
-                .unwrap_or_else(|| unreachable!())
+                .unwrap()
                 .is_wide_continuation()
             {
                 let prev_cell = self
@@ -943,7 +947,7 @@ impl Screen {
                     // pos.col - 1 is valid because the cell at pos.col is a
                     // wide continuation character, so it must have the first
                     // half of the wide character before it.
-                    .unwrap_or_else(|| unreachable!());
+                    .unwrap();
                 prev_cell.clear(attrs);
             }
 
@@ -954,7 +958,7 @@ impl Screen {
                 // always have a valid row value. pos.col is valid because we
                 // called col_wrap() immediately before this, which ensures
                 // that self.grid().pos().col has a valid value.
-                .unwrap_or_else(|| unreachable!())
+                .unwrap()
                 .is_wide()
             {
                 let next_cell = self
@@ -970,7 +974,7 @@ impl Screen {
                     // pos.col + 1 is valid because the cell at pos.col is a
                     // wide character, so it must have the second half of the
                     // wide character after it.
-                    .unwrap_or_else(|| unreachable!());
+                    .unwrap();
                 next_cell.set(' ', attrs);
             }
 
@@ -981,7 +985,7 @@ impl Screen {
                 // always have a valid row value. pos.col is valid because we
                 // called col_wrap() immediately before this, which ensures
                 // that self.grid().pos().col has a valid value.
-                .unwrap_or_else(|| unreachable!());
+                .unwrap();
             cell.set(c, attrs);
             self.grid_mut().col_inc(1);
             if width > 1 {
@@ -996,7 +1000,7 @@ impl Screen {
                     // even though we just called col_inc, because this branch
                     // only happens if width > 1, and col_wrap takes width
                     // into account.
-                    .unwrap_or_else(|| unreachable!())
+                    .unwrap()
                     .is_wide()
                 {
                     let next_next_pos = crate::grid::Pos {
@@ -1016,13 +1020,13 @@ impl Screen {
                         // pos.col + 1 is valid because the cell at pos.col is
                         // wide, and so it must have the second half of the
                         // wide character after it.
-                        .unwrap_or_else(|| unreachable!());
+                        .unwrap();
                     next_next_cell.clear(attrs);
                     if next_next_pos.col == size.cols - 1 {
                         self.grid_mut()
                             .drawing_row_mut(pos.row)
                             // we assume self.grid().pos().row is always valid
-                            .unwrap_or_else(|| unreachable!())
+                            .unwrap()
                             .wrap(false);
                     }
                 }
@@ -1036,7 +1040,7 @@ impl Screen {
                     // even though we just called col_inc, because this branch
                     // only happens if width > 1, and col_wrap takes width
                     // into account.
-                    .unwrap_or_else(|| unreachable!());
+                    .unwrap();
                 next_cell.clear(crate::attrs::Attrs::default());
                 next_cell.set_wide_continuation(true);
                 self.grid_mut().col_inc(1);
@@ -1279,7 +1283,7 @@ impl Screen {
                                 "{}",
                                 // we just checked that ns.len() == 1, so 0
                                 // must be valid
-                                ns.get(0).unwrap_or_else(|| unreachable!())
+                                ns[0]
                             )
                         } else {
                             format!("{:?}", ns)
@@ -1338,7 +1342,7 @@ impl Screen {
                                 "{}",
                                 // we just checked that ns.len() == 1, so 0
                                 // must be valid
-                                ns.get(0).unwrap_or_else(|| unreachable!())
+                                ns[0]
                             )
                         } else {
                             format!("{:?}", ns)
@@ -1435,8 +1439,7 @@ impl Screen {
                                     "{}",
                                     // we just checked that ns.len() == 1, so
                                     // 0 must be valid
-                                    ns.get(0)
-                                        .unwrap_or_else(|| unreachable!())
+                                    ns[0]
                                 )
                             } else {
                                 format!("{:?}", ns)
@@ -1482,8 +1485,7 @@ impl Screen {
                                     "{}",
                                     // we just checked that ns.len() == 1, so
                                     // 0 must be valid
-                                    ns.get(0)
-                                        .unwrap_or_else(|| unreachable!())
+                                    ns[0]
                                 )
                             } else {
                                 format!("{:?}", ns)
@@ -1511,7 +1513,7 @@ impl Screen {
                                 "{}",
                                 // we just checked that ns.len() == 1, so 0
                                 // must be valid
-                                ns.get(0).unwrap_or_else(|| unreachable!())
+                                ns[0]
                             )
                         } else {
                             format!("{:?}", ns)
@@ -1749,7 +1751,7 @@ fn u16_to_u8(i: u16) -> Option<u8> {
         None
     } else {
         // safe because we just ensured that the value fits in a u8
-        Some(i.try_into().unwrap_or_else(|_| unreachable!()))
+        Some(i.try_into().unwrap())
     }
 }
 

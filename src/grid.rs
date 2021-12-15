@@ -153,7 +153,7 @@ impl Grid {
     pub fn current_row_mut(&mut self) -> &mut crate::row::Row {
         self.drawing_row_mut(self.pos.row)
             // we assume self.pos.row is always valid
-            .unwrap_or_else(|| unreachable!())
+            .unwrap()
     }
 
     pub fn visible_cell(&self, pos: Pos) -> Option<&crate::cell::Cell> {
@@ -212,7 +212,7 @@ impl Grid {
         for (i, row) in self.visible_rows().enumerate() {
             // we limit the number of cols to a u16 (see Size), so
             // visible_rows() can never return more rows than will fit
-            let i = i.try_into().unwrap_or_else(|_| unreachable!());
+            let i = i.try_into().unwrap();
             let (new_pos, new_attrs) = row.write_contents_formatted(
                 contents,
                 0,
@@ -250,7 +250,7 @@ impl Grid {
         {
             // we limit the number of cols to a u16 (see Size), so
             // visible_rows() can never return more rows than will fit
-            let i = i.try_into().unwrap_or_else(|_| unreachable!());
+            let i = i.try_into().unwrap();
             let (new_pos, new_attrs) = row.write_contents_diff(
                 contents,
                 prev_row,
@@ -298,7 +298,7 @@ impl Grid {
                 .drawing_cell(pos)
                 // we assume self.pos.row is always valid, and self.size.cols
                 // - 1 is always a valid column
-                .unwrap_or_else(|| unreachable!())
+                .unwrap()
                 .is_wide_continuation()
             {
                 pos.col = self.size.cols - 2;
@@ -310,7 +310,7 @@ impl Grid {
                 // self.size.cols - 1 is a wide continuation character, which
                 // means that the first half of the wide character must be
                 // before it
-                self.drawing_cell(pos).unwrap_or_else(|| unreachable!());
+                self.drawing_cell(pos).unwrap();
             if cell.has_contents() {
                 if let Some(prev_pos) = prev_pos {
                     crate::term::MoveFromTo::new(prev_pos, pos)
@@ -339,7 +339,7 @@ impl Grid {
                         // i is always less than self.pos.row, which we assume
                         // to be always valid, so it must also be valid.
                         // self.size.cols - 1 is always a valid col.
-                        .unwrap_or_else(|| unreachable!())
+                        .unwrap()
                         .is_wide_continuation()
                     {
                         pos.col = self.size.cols - 2;
@@ -354,7 +354,7 @@ impl Grid {
                         // - 1 is a wide continuation character, meaning that
                         // the first half of the wide character must be before
                         // it
-                        .unwrap_or_else(|| unreachable!());
+                        .unwrap();
                     if cell.has_contents() {
                         if let Some(prev_pos) = prev_pos {
                             if prev_pos.row != i
@@ -417,7 +417,7 @@ impl Grid {
                         .drawing_cell(pos)
                         // we assume self.pos.row is always valid, and
                         // self.size.cols - 1 is always a valid column
-                        .unwrap_or_else(|| unreachable!());
+                        .unwrap();
                     end_cell
                         .attrs()
                         .write_escape_code_diff(contents, &prev_attrs);
@@ -492,7 +492,7 @@ impl Grid {
                 // we assume self.pos.row is always valid, and we know we are
                 // not off the end of a row because we just checked pos.col <
                 // size.cols
-                .unwrap_or_else(|| unreachable!())
+                .unwrap()
                 .is_wide_continuation();
         let row = self.current_row_mut();
         for _ in 0..count {
@@ -530,11 +530,8 @@ impl Grid {
         for _ in 0..count {
             self.rows.remove(usize::from(self.scroll_bottom));
             self.rows.insert(usize::from(self.pos.row), self.new_row());
-            self.rows
-                .get_mut(usize::from(self.scroll_bottom))
-                // self.scroll_bottom is maintained to always be a valid row
-                .unwrap_or_else(|| unreachable!())
-                .wrap(false);
+            // self.scroll_bottom is maintained to always be a valid row
+            self.rows[usize::from(self.scroll_bottom)].wrap(false);
         }
     }
 
@@ -569,11 +566,8 @@ impl Grid {
             self.rows.remove(usize::from(self.scroll_bottom));
             self.rows
                 .insert(usize::from(self.scroll_top), self.new_row());
-            self.rows
-                .get_mut(usize::from(self.scroll_bottom))
-                // self.scroll_bottom is maintained to always be a valid row
-                .unwrap_or_else(|| unreachable!())
-                .wrap(false);
+            // self.scroll_bottom is maintained to always be a valid row
+            self.rows[usize::from(self.scroll_bottom)].wrap(false);
         }
     }
 
@@ -681,7 +675,7 @@ impl Grid {
                 // we assume self.pos.row is always valid, and so prev_pos.row
                 // must be valid because it is always less than or equal to
                 // self.pos.row
-                .unwrap_or_else(|| unreachable!())
+                .unwrap()
                 .wrap(wrap && prev_pos.row + 1 == new_pos.row);
         }
     }

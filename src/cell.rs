@@ -20,8 +20,8 @@ impl PartialEq<Self> for Cell {
         }
         let len = self.len();
         // self.len() always returns a valid value
-        self.contents.get(..len).unwrap_or_else(|| unreachable!())
-            == other.contents.get(..len).unwrap_or_else(|| unreachable!())
+        self.contents.get(..len).unwrap()
+            == other.contents.get(..len).unwrap()
     }
 }
 
@@ -48,13 +48,13 @@ impl Cell {
         }
         if len == 0 {
             // 0 is always less than 6
-            *self.contents.get_mut(0).unwrap_or_else(|| unreachable!()) = ' ';
+            *self.contents.get_mut(0).unwrap() = ' ';
             self.len += 1;
         }
 
         let len = self.len();
         // we already checked that len < CODEPOINTS_IN_CELL
-        *self.contents.get_mut(len).unwrap_or_else(|| unreachable!()) = c;
+        *self.contents.get_mut(len).unwrap() = c;
         self.len += 1;
     }
 
