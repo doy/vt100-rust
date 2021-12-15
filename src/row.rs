@@ -84,11 +84,11 @@ impl Row {
     }
 
     pub fn clear_wide(&mut self, col: u16) {
-        let cell = self.get(col).unwrap();
+        let cell = &self.cells[usize::from(col)];
         let other = if cell.is_wide() {
-            self.get_mut(col + 1).unwrap()
+            &mut self.cells[usize::from(col + 1)]
         } else if cell.is_wide_continuation() {
-            self.get_mut(col - 1).unwrap()
+            &mut self.cells[usize::from(col - 1)]
         } else {
             return;
         };
@@ -159,7 +159,7 @@ impl Row {
         };
         let mut prev_attrs = prev_attrs.unwrap_or_default();
 
-        let first_cell = self.get(start).unwrap();
+        let first_cell = &self.cells[usize::from(start)];
         if wrapping && first_cell == &default_cell {
             let default_attrs = default_cell.attrs();
             if &prev_attrs != default_attrs {
@@ -297,8 +297,8 @@ impl Row {
     ) -> (crate::grid::Pos, crate::attrs::Attrs) {
         let mut prev_was_wide = false;
 
-        let first_cell = self.get(start).unwrap();
-        let prev_first_cell = prev.get(start).unwrap();
+        let first_cell = &self.cells[usize::from(start)];
+        let prev_first_cell = &prev.cells[usize::from(start)];
         if wrapping
             && !prev_wrapping
             && first_cell == prev_first_cell
@@ -442,9 +442,7 @@ impl Row {
         // drawing the next line can just start writing and be wrapped.
         if (!self.wrapped && prev.wrapped) || (!prev.wrapped && self.wrapped)
         {
-            let end_pos = if self
-                .get(self.cols() - 1)
-                .unwrap()
+            let end_pos = if self.cells[usize::from(self.cols() - 1)]
                 .is_wide_continuation()
             {
                 crate::grid::Pos {
@@ -463,7 +461,7 @@ impl Row {
             if !self.wrapped {
                 crate::term::EraseChar::new(1).write_buf(contents);
             }
-            let end_cell = self.get(end_pos.col).unwrap();
+            let end_cell = &self.cells[usize::from(end_pos.col)];
             if end_cell.has_contents() {
                 let attrs = end_cell.attrs();
                 if &prev_attrs != attrs {
