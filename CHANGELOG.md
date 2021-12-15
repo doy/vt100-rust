@@ -12,6 +12,10 @@
   end of a row
 * Fix restoring the cursor position when scrolled back
 
+### Changed
+
+* Various internal refactorings
+
 ## [0.14.0] - 2021-12-06
 
 ### Changed
