@@ -86,13 +86,9 @@ impl BufWrite for MoveTo {
             buf.extend_from_slice(b"\x1b[H");
         } else {
             buf.extend_from_slice(b"\x1b[");
-            itoa::write(&mut *buf, self.row + 1)
-                // write to a vec can never fail
-                .unwrap();
+            extend_itoa(buf, self.row + 1);
             buf.push(b';');
-            itoa::write(&mut *buf, self.col + 1)
-                // write to a vec can never fail
-                .unwrap();
+            extend_itoa(buf, self.col + 1);
             buf.push(b'H');
         }
     }
@@ -175,7 +171,7 @@ impl BufWrite for Attrs {
                 } else {
                     buf.push(b';');
                 }
-                itoa::write(&mut *buf, $i).unwrap();
+                extend_itoa(buf, $i);
             };
         }
 
@@ -292,8 +288,7 @@ impl BufWrite for MoveRight {
             1 => buf.extend_from_slice(b"\x1b[C"),
             n => {
                 buf.extend_from_slice(b"\x1b[");
-                // write to a vec can never fail
-                itoa::write(&mut *buf, n).unwrap();
+                extend_itoa(buf, n);
                 buf.push(b'C');
             }
         }
@@ -325,8 +320,7 @@ impl BufWrite for EraseChar {
             1 => buf.extend_from_slice(b"\x1b[X"),
             n => {
                 buf.extend_from_slice(b"\x1b[");
-                // write to a vec can never fail
-                itoa::write(&mut *buf, n).unwrap();
+                extend_itoa(buf, n);
                 buf.push(b'X');
             }
         }
@@ -612,4 +606,9 @@ impl BufWrite for MouseProtocolEncoding {
             }
         }
     }
+}
+
+fn extend_itoa<I: itoa::Integer>(buf: &mut Vec<u8>, i: I) {
+    let mut itoa_buf = itoa::Buffer::new();
+    buf.extend_from_slice(itoa_buf.format(i).as_bytes());
 }
