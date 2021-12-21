@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.15.1] - 2021-12-21
+
+### Changed
+
+* Removed a lot of unnecessary test data from the packaged crate, making
+  downloads faster
+
 ## [0.15.0] - 2021-12-15
 
 ### Added
