@@ -11,6 +11,7 @@ readme = "README.md"
 keywords = ["terminal", "vt100"]
 categories = ["command-line-interface", "encoding"]
 license = "MIT"
+include = ["src/**/*", "LICENSE", "README.md", "CHANGELOG.md"]
 
 [dependencies]
 itoa = "1.0.1"
