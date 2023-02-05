@@ -1,6 +1,6 @@
 [package]
 name = "vt100"
-version = "0.15.1"
+version = "0.15.2"
 authors = ["Jesse Luehrs <doy@tozt.net>"]
 edition = "2021"
 

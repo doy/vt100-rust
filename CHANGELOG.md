@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.15.2] - 2023-02-05
+
+### Changed
+
+* Bumped dependencies
+
 ## [0.15.1] - 2021-12-21
 
 ### Changed
