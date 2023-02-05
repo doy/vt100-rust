@@ -7,7 +7,7 @@ fn get_file_contents(name: &str) -> Vec<u8> {
     buf
 }
 
-fn write_to_parser(chunks: &mut Vec<Vec<u8>>) -> (String, Vec<u8>) {
+fn write_to_parser(chunks: &mut [Vec<u8>]) -> (String, Vec<u8>) {
     let mut parser = vt100::Parser::new(37, 193, 0);
     for chunk in chunks.iter_mut() {
         parser.process(chunk);
@@ -21,7 +21,7 @@ fn write_to_parser(chunks: &mut Vec<Vec<u8>>) -> (String, Vec<u8>) {
 fn test_splits(filename: &str, limit: Option<usize>) {
     let bytes = get_file_contents(filename);
     let len = bytes.len();
-    let expected = write_to_parser(&mut vec![bytes.clone()]);
+    let expected = write_to_parser(&mut [bytes.clone()]);
     for i in 0..(len - 1) {
         if let Some(limit) = limit {
             if i > limit {
@@ -34,9 +34,7 @@ fn test_splits(filename: &str, limit: Option<usize>) {
         let got = write_to_parser(&mut chunks);
         assert!(
             got == expected,
-            "failed to render {} when split at byte {}",
-            filename,
-            i
+            "failed to render {filename} when split at byte {i}"
         );
     }
 }

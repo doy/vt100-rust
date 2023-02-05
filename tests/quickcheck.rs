@@ -13,8 +13,7 @@ impl quickcheck::Arbitrary for TerminalInput {
         };
         TerminalInput(
             (0..size)
-                .map(|_| choose_terminal_input_fragment(g))
-                .flatten()
+                .flat_map(|_| choose_terminal_input_fragment(g))
                 .collect(),
         )
     }
@@ -59,7 +58,7 @@ fn choose_terminal_input_fragment<G: quickcheck::Gen>(g: &mut G) -> Vec<u8> {
             let c: Result<char, _> = std::convert::TryFrom::try_from(u);
             let c = match c {
                 Ok(c) => c,
-                Err(e) => panic!("failed to create char from {}: {}", u, e),
+                Err(e) => panic!("failed to create char from {u}: {e}"),
             };
             let mut b = [0; 4];
             let s = c.encode_utf8(&mut b);

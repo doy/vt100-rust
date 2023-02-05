@@ -90,7 +90,7 @@ fn read_byte() -> Option<u8> {
             }
         }
         Err(e) => {
-            eprintln!("{}", e);
+            eprintln!("{e}");
             return None;
         }
     }

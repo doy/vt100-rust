@@ -96,7 +96,7 @@ impl FixtureScreen {
                 let cell = screen.cell(row, col).unwrap();
                 if cell != &vt100::Cell::default() {
                     cells.insert(
-                        format!("{},{}", row, col),
+                        format!("{row},{col}"),
                         FixtureCell::from_cell(cell),
                     );
                 }
@@ -159,8 +159,8 @@ where
 {
     let s = match color {
         vt100::Color::Default => unreachable!(),
-        vt100::Color::Idx(n) => format!("{}", n),
-        vt100::Color::Rgb(r, g, b) => format!("#{:02x}{:02x}{:02x}", r, g, b),
+        vt100::Color::Idx(n) => format!("{n}"),
+        vt100::Color::Rgb(r, g, b) => format!("#{r:02x}{g:02x}{b:02x}"),
     };
     serializer.serialize_str(&s)
 }
@@ -231,8 +231,7 @@ where
 
 fn load_input(name: &str, i: usize) -> Option<Vec<u8>> {
     let mut file = std::fs::File::open(format!(
-        "tests/data/fixtures/{}/{}.typescript",
-        name, i
+        "tests/data/fixtures/{name}/{i}.typescript"
     ))
     .ok()?;
     let mut input = vec![];
@@ -241,11 +240,9 @@ fn load_input(name: &str, i: usize) -> Option<Vec<u8>> {
 }
 
 fn load_screen(name: &str, i: usize) -> Option<FixtureScreen> {
-    let mut file = std::fs::File::open(format!(
-        "tests/data/fixtures/{}/{}.json",
-        name, i
-    ))
-    .ok()?;
+    let mut file =
+        std::fs::File::open(format!("tests/data/fixtures/{name}/{i}.json"))
+            .ok()?;
     Some(FixtureScreen::load(&mut file))
 }
 
@@ -281,7 +278,7 @@ fn assert_produces(input: &[u8], expected: &FixtureScreen) {
         for col in 0..cols {
             let expected_cell = expected
                 .cells
-                .get(&format!("{},{}", row, col))
+                .get(&format!("{row},{col}"))
                 .cloned()
                 .unwrap_or_default();
             let got_cell = parser.screen().cell(row, col).unwrap();

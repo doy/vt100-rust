@@ -556,7 +556,7 @@ fn diff_crawl(i: usize) {
     let screens: Vec<_> = (1..=i)
         .map(|i| {
             let mut file =
-                std::fs::File::open(format!("tests/data/crawl/crawl{}", i))
+                std::fs::File::open(format!("tests/data/crawl/crawl{i}"))
                     .unwrap();
             let mut frame = vec![];
             file.read_to_end(&mut frame).unwrap();

@@ -222,7 +222,7 @@ impl Screen {
                 if start_col < end_col {
                     self.rows(start_col, end_col - start_col)
                         .nth(usize::from(start_row))
-                        .unwrap_or_else(String::new)
+                        .unwrap_or_default()
                 } else {
                     String::new()
                 }
@@ -1175,7 +1175,7 @@ impl Screen {
             1 => self.grid_mut().erase_all_backward(attrs),
             2 => self.grid_mut().erase_all(attrs),
             n => {
-                log::debug!("unhandled ED mode: {}", n);
+                log::debug!("unhandled ED mode: {n}");
             }
         }
     }
@@ -1193,7 +1193,7 @@ impl Screen {
             1 => self.grid_mut().erase_row_backward(attrs),
             2 => self.grid_mut().erase_row(attrs),
             n => {
-                log::debug!("unhandled EL mode: {}", n);
+                log::debug!("unhandled EL mode: {n}");
             }
         }
     }
@@ -1286,9 +1286,9 @@ impl Screen {
                                 ns[0]
                             )
                         } else {
-                            format!("{:?}", ns)
+                            format!("{ns:?}")
                         };
-                        log::debug!("unhandled DECSET mode: {}", n);
+                        log::debug!("unhandled DECSET mode: {n}");
                     }
                 }
             }
@@ -1345,9 +1345,9 @@ impl Screen {
                                 ns[0]
                             )
                         } else {
-                            format!("{:?}", ns)
+                            format!("{ns:?}")
                         };
-                        log::debug!("unhandled DECRST mode: {}", n);
+                        log::debug!("unhandled DECRST mode: {n}");
                     }
                 }
             }
@@ -1442,9 +1442,9 @@ impl Screen {
                                     ns[0]
                                 )
                             } else {
-                                format!("{:?}", ns)
+                                format!("{ns:?}")
                             };
-                            log::debug!("unhandled SGR mode: 38 {}", n);
+                            log::debug!("unhandled SGR mode: 38 {n}");
                         }
                         return;
                     }
@@ -1488,9 +1488,9 @@ impl Screen {
                                     ns[0]
                                 )
                             } else {
-                                format!("{:?}", ns)
+                                format!("{ns:?}")
                             };
-                            log::debug!("unhandled SGR mode: 48 {}", n);
+                            log::debug!("unhandled SGR mode: 48 {n}");
                         }
                         return;
                     }
@@ -1516,9 +1516,9 @@ impl Screen {
                                 ns[0]
                             )
                         } else {
-                            format!("{:?}", ns)
+                            format!("{ns:?}")
                         };
-                        log::debug!("unhandled SGR mode: {}", n);
+                        log::debug!("unhandled SGR mode: {n}");
                     }
                 }
             }
@@ -1572,14 +1572,14 @@ impl vte::Perform for Screen {
             14 | 15 => {}
             _ => {
                 self.errors = self.errors.saturating_add(1);
-                log::debug!("unhandled control character: {}", b);
+                log::debug!("unhandled control character: {b}");
             }
         }
     }
 
     fn esc_dispatch(&mut self, intermediates: &[u8], _ignore: bool, b: u8) {
-        match intermediates.get(0) {
-            None => match b {
+        intermediates.first().map_or_else(
+            || match b {
                 b'7' => self.decsc(),
                 b'8' => self.decrc(),
                 b'=' => self.deckpam(),
@@ -1588,13 +1588,13 @@ impl vte::Perform for Screen {
                 b'c' => self.ris(),
                 b'g' => self.vb(),
                 _ => {
-                    log::debug!("unhandled escape code: ESC {}", b);
+                    log::debug!("unhandled escape code: ESC {b}");
                 }
             },
-            Some(i) => {
-                log::debug!("unhandled escape code: ESC {} {}", i, b);
-            }
-        }
+            |i| {
+                log::debug!("unhandled escape code: ESC {i} {b}");
+            },
+        );
     }
 
     fn csi_dispatch(
@@ -1604,7 +1604,7 @@ impl vte::Perform for Screen {
         _ignore: bool,
         c: char,
     ) {
-        match intermediates.get(0) {
+        match intermediates.first() {
             None => match c {
                 '@' => self.ich(canonicalize_params_1(params, 1)),
                 'A' => self.cuu(canonicalize_params_1(params, 1)),
@@ -1691,25 +1691,29 @@ impl vte::Perform for Screen {
         action: char,
     ) {
         if log::log_enabled!(log::Level::Debug) {
-            match intermediates.get(0) {
-                None => log::debug!(
-                    "unhandled dcs sequence: DCS {} {}",
-                    param_str(params),
-                    action,
-                ),
-                Some(i) => log::debug!(
-                    "unhandled dcs sequence: DCS {} {} {}",
-                    i,
-                    param_str(params),
-                    action,
-                ),
-            }
+            intermediates.first().map_or_else(
+                || {
+                    log::debug!(
+                        "unhandled dcs sequence: DCS {} {}",
+                        param_str(params),
+                        action,
+                    );
+                },
+                |i| {
+                    log::debug!(
+                        "unhandled dcs sequence: DCS {} {} {}",
+                        i,
+                        param_str(params),
+                        action,
+                    );
+                },
+            );
         }
     }
 }
 
 fn canonicalize_params_1(params: &vte::Params, default: u16) -> u16 {
-    let first = params.iter().next().map_or(0, |x| *x.get(0).unwrap_or(&0));
+    let first = params.iter().next().map_or(0, |x| *x.first().unwrap_or(&0));
     if first == 0 {
         default
     } else {
@@ -1723,10 +1727,10 @@ fn canonicalize_params_2(
     default2: u16,
 ) -> (u16, u16) {
     let mut iter = params.iter();
-    let first = iter.next().map_or(0, |x| *x.get(0).unwrap_or(&0));
+    let first = iter.next().map_or(0, |x| *x.first().unwrap_or(&0));
     let first = if first == 0 { default1 } else { first };
 
-    let second = iter.next().map_or(0, |x| *x.get(0).unwrap_or(&0));
+    let second = iter.next().map_or(0, |x| *x.first().unwrap_or(&0));
     let second = if second == 0 { default2 } else { second };
 
     (first, second)
@@ -1737,10 +1741,10 @@ fn canonicalize_params_decstbm(
     size: crate::grid::Size,
 ) -> (u16, u16) {
     let mut iter = params.iter();
-    let top = iter.next().map_or(0, |x| *x.get(0).unwrap_or(&0));
+    let top = iter.next().map_or(0, |x| *x.first().unwrap_or(&0));
     let top = if top == 0 { 1 } else { top };
 
-    let bottom = iter.next().map_or(0, |x| *x.get(0).unwrap_or(&0));
+    let bottom = iter.next().map_or(0, |x| *x.first().unwrap_or(&0));
     let bottom = if bottom == 0 { size.rows } else { bottom };
 
     (top, bottom)
@@ -1772,7 +1776,7 @@ fn param_str(params: &vte::Params) -> String {
 fn osc_param_str(params: &[&[u8]]) -> String {
     let strs: Vec<_> = params
         .iter()
-        .map(|b| format!("\"{}\"", std::string::String::from_utf8_lossy(*b)))
+        .map(|b| format!("\"{}\"", std::string::String::from_utf8_lossy(b)))
         .collect();
     strs.join(" ; ")
 }

@@ -6,10 +6,10 @@ mod helpers;
 
 fn main() {
     let name = std::env::args().nth(1).unwrap();
-    let _ = std::fs::remove_file(format!("fuzz/in/{}", name));
+    let _ = std::fs::remove_file(format!("fuzz/in/{name}"));
 
     let inputs =
-        std::fs::File::open(format!("tests/data/fixtures/{}.in", name))
+        std::fs::File::open(format!("tests/data/fixtures/{name}.in"))
             .unwrap();
     let inputs = std::io::BufReader::new(inputs);
 
@@ -20,6 +20,6 @@ fn main() {
         bytes.extend(input.iter());
     }
     let mut input_file =
-        std::fs::File::create(format!("fuzz/in/{}", name)).unwrap();
+        std::fs::File::create(format!("fuzz/in/{name}")).unwrap();
     input_file.write_all(&bytes).unwrap();
 }

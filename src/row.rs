@@ -147,16 +147,16 @@ impl Row {
         let mut prev_was_wide = false;
         let default_cell = crate::cell::Cell::default();
 
-        let mut prev_pos = if let Some(prev_pos) = prev_pos {
-            prev_pos
-        } else if wrapping {
-            crate::grid::Pos {
-                row: row - 1,
-                col: self.cols(),
+        let mut prev_pos = prev_pos.unwrap_or_else(|| {
+            if wrapping {
+                crate::grid::Pos {
+                    row: row - 1,
+                    col: self.cols(),
+                }
+            } else {
+                crate::grid::Pos { row, col: start }
             }
-        } else {
-            crate::grid::Pos { row, col: start }
-        };
+        });
         let mut prev_attrs = prev_attrs.unwrap_or_default();
 
         let first_cell = &self.cells[usize::from(start)];
@@ -228,8 +228,7 @@ impl Row {
                         if !wrapping
                             || prev_pos.row + 1 != pos.row
                             || prev_pos.col
-                                < self.cols()
-                                    - if cell.is_wide() { 1 } else { 0 }
+                                < self.cols() - u16::from(cell.is_wide())
                             || pos.col != 0
                         {
                             crate::term::MoveFromTo::new(prev_pos, pos)
@@ -304,7 +303,7 @@ impl Row {
             && first_cell == prev_first_cell
             && prev_pos.row + 1 == row
             && prev_pos.col
-                >= self.cols() - if prev_first_cell.is_wide() { 1 } else { 0 }
+                >= self.cols() - u16::from(prev_first_cell.is_wide())
         {
             let first_cell_attrs = first_cell.attrs();
             if &prev_attrs != first_cell_attrs {
@@ -387,8 +386,7 @@ impl Row {
                         if !wrapping
                             || prev_pos.row + 1 != pos.row
                             || prev_pos.col
-                                < self.cols()
-                                    - if cell.is_wide() { 1 } else { 0 }
+                                < self.cols() - u16::from(cell.is_wide())
                             || pos.col != 0
                         {
                             crate::term::MoveFromTo::new(prev_pos, pos)

@@ -9,7 +9,7 @@ impl vte::Perform for Log {
     }
 
     fn execute(&mut self, byte: u8) {
-        println!("[execute] {:02x}", byte);
+        println!("[execute] {byte:02x}");
     }
 
     fn hook(
@@ -26,7 +26,7 @@ impl vte::Perform for Log {
     }
 
     fn put(&mut self, byte: u8) {
-        println!("[put] {:02x}", byte);
+        println!("[put] {byte:02x}");
     }
 
     fn unhook(&mut self) {
@@ -35,8 +35,7 @@ impl vte::Perform for Log {
 
     fn osc_dispatch(&mut self, params: &[&[u8]], bell_terminated: bool) {
         println!(
-            "[osc_dispatch] params={:?} bell_terminated={}",
-            params, bell_terminated
+            "[osc_dispatch] params={params:?} bell_terminated={bell_terminated}"
         );
     }
 
@@ -56,8 +55,7 @@ impl vte::Perform for Log {
 
     fn esc_dispatch(&mut self, intermediates: &[u8], ignore: bool, byte: u8) {
         println!(
-            "[esc_dispatch] intermediates={:?}, ignore={:?}, byte={:02x}",
-            intermediates, ignore, byte
+            "[esc_dispatch] intermediates={intermediates:?}, ignore={ignore:?}, byte={byte:02x}"
         );
     }
 }
@@ -77,7 +75,7 @@ fn main() {
                 }
             }
             Err(err) => {
-                eprintln!("err: {}", err);
+                eprintln!("err: {err}");
                 std::process::exit(1);
             }
         }

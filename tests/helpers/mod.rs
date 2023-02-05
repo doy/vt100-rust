@@ -46,7 +46,7 @@ impl<'a> std::fmt::Debug for Bytes<'a> {
                 13 => f.write_str("\\r")?,
                 92 => f.write_str("\\\\")?,
                 32..=126 => f.write_str(&char::from(*c).to_string())?,
-                _ => f.write_fmt(format_args!("\\x{:02x}", c))?,
+                _ => f.write_fmt(format_args!("\\x{c:02x}"))?,
             }
         }
         f.write_str("\"")?;
@@ -267,7 +267,7 @@ pub fn format_bytes(bytes: &[u8]) -> String {
             13 => v.extend(b"\\r"),
             27 => v.extend(b"\\e"),
             c if c < 32 || c == 127 => {
-                v.extend(format!("\\x{:02x}", c).as_bytes())
+                v.extend(format!("\\x{c:02x}").as_bytes())
             }
             b => v.push(b),
         }

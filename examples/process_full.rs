@@ -3,7 +3,7 @@ use std::io::{Read as _, Write as _};
 fn read_frames() -> impl Iterator<Item = Vec<u8>> {
     (1..=7625).map(|i| {
         let mut file =
-            std::fs::File::open(format!("tests/data/crawl/crawl{}", i))
+            std::fs::File::open(format!("tests/data/crawl/crawl{i}"))
                 .unwrap();
         let mut frame = vec![];
         file.read_to_end(&mut frame).unwrap();
@@ -32,5 +32,5 @@ fn main() {
             break;
         }
     }
-    eprintln!("{} iterations", i);
+    eprintln!("{i} iterations");
 }
