@@ -1530,6 +1530,18 @@ impl Screen {
         self.grid_mut().set_scroll_region(top - 1, bottom - 1);
     }
 
+    // CSI t
+    fn window_manipulation(&mut self, (mode, a, b): (u16, u16, u16)) {
+        match mode {
+            8 => self.set_size(a, b),
+            n => {
+                if log::log_enabled!(log::Level::Debug) {
+                    log::debug!("unhandled window manipulation mode: {n}");
+                }
+            }
+        }
+    }
+
     // osc codes
 
     fn osc0(&mut self, s: &[u8]) {
@@ -1629,6 +1641,7 @@ impl vte::Perform for Screen {
                     params,
                     self.grid().size(),
                 )),
+                't' => self.window_manipulation(canonicalize_params_3(params, 1, 0, 0)),
                 _ => {
                     if log::log_enabled!(log::Level::Debug) {
                         log::debug!(
@@ -1734,6 +1747,25 @@ fn canonicalize_params_2(
     let second = if second == 0 { default2 } else { second };
 
     (first, second)
+}
+
+fn canonicalize_params_3(
+    params: &vte::Params,
+    default1: u16,
+    default2: u16,
+    default3: u16,
+) -> (u16, u16, u16) {
+    let mut iter = params.iter();
+    let first = iter.next().map_or(0, |x| *x.first().unwrap_or(&0));
+    let first = if first == 0 { default1 } else { first };
+
+    let second = iter.next().map_or(0, |x| *x.first().unwrap_or(&0));
+    let second = if second == 0 { default2 } else { second };
+
+    let third = iter.next().map_or(0, |x| *x.first().unwrap_or(&0));
+    let third = if third == 0 { default3 } else { third };
+
+    (first, second, third)
 }
 
 fn canonicalize_params_decstbm(
