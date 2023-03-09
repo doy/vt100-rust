@@ -15,6 +15,7 @@
 * `Screen::bells_diff`, `Screen::audible_bell_count`,
   `Screen::visual_bell_count`, and `Screen::errors` have been removed in favor
   of the new callback api described above.
+* `Cell` no longer implements `Default`.
 
 ### Changed
 

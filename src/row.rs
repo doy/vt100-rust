@@ -9,7 +9,7 @@ pub struct Row {
 impl Row {
     pub fn new(cols: u16) -> Self {
         Self {
-            cells: vec![crate::Cell::default(); usize::from(cols)],
+            cells: vec![crate::Cell::new(); usize::from(cols)],
             wrapped: false,
         }
     }
@@ -145,7 +145,7 @@ impl Row {
         prev_attrs: Option<crate::attrs::Attrs>,
     ) -> (crate::grid::Pos, crate::attrs::Attrs) {
         let mut prev_was_wide = false;
-        let default_cell = crate::Cell::default();
+        let default_cell = crate::Cell::new();
 
         let mut prev_pos = prev_pos.unwrap_or_else(|| {
             if wrapping {

@@ -3,7 +3,7 @@ use unicode_width::UnicodeWidthChar as _;
 const CODEPOINTS_IN_CELL: usize = 6;
 
 /// Represents a single terminal cell.
-#[derive(Clone, Debug, Default, Eq)]
+#[derive(Clone, Debug, Eq)]
 pub struct Cell {
     contents: [char; CODEPOINTS_IN_CELL],
     len: u8,
@@ -25,6 +25,14 @@ impl PartialEq<Self> for Cell {
 }
 
 impl Cell {
+    pub(crate) fn new() -> Self {
+        Self {
+            contents: Default::default(),
+            len: 0,
+            attrs: crate::attrs::Attrs::default(),
+        }
+    }
+
     #[inline]
     fn len(&self) -> usize {
         usize::from(self.len & 0x0f)

@@ -89,12 +89,14 @@ impl FixtureScreen {
 
     #[allow(dead_code)]
     pub fn from_screen(screen: &vt100::Screen) -> Self {
+        let empty_screen = vt100::Parser::default().screen().clone();
+        let empty_cell = empty_screen.cell(0, 0).unwrap();
         let mut cells = std::collections::BTreeMap::new();
         let (rows, cols) = screen.size();
         for row in 0..rows {
             for col in 0..cols {
                 let cell = screen.cell(row, col).unwrap();
-                if cell != &vt100::Cell::default() {
+                if cell != empty_cell {
                     cells.insert(
                         format!("{row},{col}"),
                         FixtureCell::from_cell(cell),

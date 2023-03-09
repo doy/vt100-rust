@@ -76,7 +76,7 @@ impl Grid {
 
         self.size = size;
         for row in &mut self.rows {
-            row.resize(size.cols, crate::Cell::default());
+            row.resize(size.cols, crate::Cell::new());
         }
         self.rows.resize(usize::from(size.rows), self.new_row());
 
@@ -496,7 +496,7 @@ impl Grid {
             if wide {
                 row.get_mut(pos.col).unwrap().set_wide_continuation(false);
             }
-            row.insert(pos.col, crate::Cell::default());
+            row.insert(pos.col, crate::Cell::new());
             if wide {
                 row.get_mut(pos.col).unwrap().set_wide_continuation(true);
             }
@@ -511,7 +511,7 @@ impl Grid {
         for _ in 0..(count.min(size.cols - pos.col)) {
             row.remove(pos.col);
         }
-        row.resize(size.cols, crate::Cell::default());
+        row.resize(size.cols, crate::Cell::new());
     }
 
     pub fn erase_cells(&mut self, count: u16, attrs: crate::attrs::Attrs) {
