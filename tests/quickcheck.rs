@@ -1,15 +1,26 @@
-use rand::Rng as _;
+use quickcheck::Arbitrary as _;
 
 mod helpers;
 
 #[derive(Clone, Debug)]
 struct TerminalInput(Vec<u8>);
 
+fn gen_range<T>(gen: &mut quickcheck::Gen, range: std::ops::Range<T>) -> T
+where
+    T: Copy,
+    T: quickcheck::Arbitrary,
+    T: std::ops::Add<Output = T>
+        + std::ops::Rem<Output = T>
+        + std::ops::Sub<Output = T>,
+{
+    T::arbitrary(gen) % (range.end - range.start) + range.start
+}
+
 impl quickcheck::Arbitrary for TerminalInput {
-    fn arbitrary<G: quickcheck::Gen>(g: &mut G) -> Self {
+    fn arbitrary(g: &mut quickcheck::Gen) -> Self {
         let size = {
             let s = g.size();
-            g.gen_range(0, s)
+            gen_range(g, 0..s)
         };
         TerminalInput(
             (0..size)
@@ -23,7 +34,8 @@ impl quickcheck::Arbitrary for TerminalInput {
     }
 }
 
-fn choose_terminal_input_fragment<G: quickcheck::Gen>(g: &mut G) -> Vec<u8> {
+fn choose_terminal_input_fragment(g: &mut quickcheck::Gen) -> Vec<u8> {
+    #[derive(Clone)]
     enum Fragment {
         Text,
         Control,
@@ -35,11 +47,9 @@ fn choose_terminal_input_fragment<G: quickcheck::Gen>(g: &mut G) -> Vec<u8> {
         Dcs,
     }
 
-    impl rand::distributions::Distribution<Fragment>
-        for rand::distributions::Standard
-    {
-        fn sample<R: rand::Rng + ?Sized>(&self, rng: &mut R) -> Fragment {
-            match rng.gen() {
+    impl quickcheck::Arbitrary for Fragment {
+        fn arbitrary(g: &mut quickcheck::Gen) -> Self {
+            match u8::arbitrary(g) {
                 0u8..=231 => Fragment::Text,
                 232..=239 => Fragment::Control,
                 240..=247 => Fragment::Escape,
@@ -48,9 +58,9 @@ fn choose_terminal_input_fragment<G: quickcheck::Gen>(g: &mut G) -> Vec<u8> {
         }
     }
 
-    match g.gen() {
+    match Fragment::arbitrary(g) {
         Fragment::Text => {
-            let mut u: u32 = g.gen_range(32, 2u32.pow(20) - 2048);
+            let mut u: u32 = gen_range(g, 32..(2u32.pow(20) - 2048));
             // surrogates aren't valid codepoints on their own
             if u >= 0xD800 {
                 u += 2048;
@@ -64,17 +74,17 @@ fn choose_terminal_input_fragment<G: quickcheck::Gen>(g: &mut G) -> Vec<u8> {
             let s = c.encode_utf8(&mut b);
             (*s).to_string().into_bytes()
         }
-        Fragment::Control => vec![g.gen_range(7, 14)],
+        Fragment::Control => vec![gen_range(g, 7..14)],
         Fragment::Escape => {
             let mut v = vec![0x1b];
-            let c = g.gen_range(b'0', b'~');
+            let c = gen_range(g, b'0'..b'~');
             v.push(c);
             v
         }
         Fragment::Csi => {
             let mut v = vec![0x1b, b'['];
             // TODO: params
-            let c = g.gen_range(b'@', b'~');
+            let c = gen_range(g, b'@'..b'~');
             v.push(c);
             v
         }
