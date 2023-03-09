@@ -20,31 +20,31 @@ fn scrollback() {
     parser.process(b"\r\n25\r\n26\r\n27\r\n28\r\n29\r\n30");
     assert_eq!(parser.screen().contents(), "7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30");
 
-    parser.set_scrollback(0);
+    parser.screen_mut().set_scrollback(0);
     assert_eq!(parser.screen().scrollback(), 0);
     assert_eq!(parser.screen().contents(), "7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30");
 
-    parser.set_scrollback(1);
+    parser.screen_mut().set_scrollback(1);
     assert_eq!(parser.screen().scrollback(), 1);
     assert_eq!(parser.screen().contents(), "6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29");
 
-    parser.set_scrollback(3);
+    parser.screen_mut().set_scrollback(3);
     assert_eq!(parser.screen().scrollback(), 3);
     assert_eq!(parser.screen().contents(), "4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27");
 
-    parser.set_scrollback(6);
+    parser.screen_mut().set_scrollback(6);
     assert_eq!(parser.screen().scrollback(), 6);
     assert_eq!(parser.screen().contents(), "1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24");
 
-    parser.set_scrollback(7);
+    parser.screen_mut().set_scrollback(7);
     assert_eq!(parser.screen().scrollback(), 6);
     assert_eq!(parser.screen().contents(), "1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24");
 
-    parser.set_scrollback(0);
+    parser.screen_mut().set_scrollback(0);
     assert_eq!(parser.screen().scrollback(), 0);
     assert_eq!(parser.screen().contents(), "7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30");
 
-    parser.set_scrollback(7);
+    parser.screen_mut().set_scrollback(7);
     assert_eq!(parser.screen().scrollback(), 6);
     assert_eq!(parser.screen().contents(), "1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24");
 
@@ -72,11 +72,11 @@ fn scrollback() {
     assert_eq!(parser.screen().scrollback(), 10);
     assert_eq!(parser.screen().contents(), "3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26");
 
-    parser.set_scrollback(12);
+    parser.screen_mut().set_scrollback(12);
     assert_eq!(parser.screen().scrollback(), 10);
     assert_eq!(parser.screen().contents(), "3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26");
 
-    parser.set_scrollback(0);
+    parser.screen_mut().set_scrollback(0);
     assert_eq!(parser.screen().scrollback(), 0);
     assert_eq!(parser.screen().contents(), "13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30\n31\n32\n33\n34\n35\n36");
 
@@ -84,7 +84,7 @@ fn scrollback() {
     assert_eq!(parser.screen().scrollback(), 0);
     assert_eq!(parser.screen().contents(), "15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30\n31\n32\n33\n34\n35\n36\n37\n38");
 
-    parser.set_scrollback(5);
+    parser.screen_mut().set_scrollback(5);
     assert_eq!(parser.screen().scrollback(), 5);
     assert_eq!(parser.screen().contents(), "10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30\n31\n32\n33");
 

@@ -1,5 +1,13 @@
 # Changelog
 
+## [Unreleased]
+
+### Changed
+
+* `Parser::set_size` and `Parser::set_scrollback` have been moved to methods
+  on `Screen`, and `Parser::screen_mut` was added to get a mutable reference
+  to the screen.
+
 ## [0.15.2] - 2023-02-05
 
 ### Changed

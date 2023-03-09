@@ -110,7 +110,8 @@ impl Screen {
         }
     }
 
-    pub(crate) fn set_size(&mut self, rows: u16, cols: u16) {
+    /// Resizes the terminal.
+    pub fn set_size(&mut self, rows: u16, cols: u16) {
         self.grid.set_size(crate::grid::Size { rows, cols });
         self.alternate_grid
             .set_size(crate::grid::Size { rows, cols });
@@ -125,6 +126,20 @@ impl Screen {
         (size.rows, size.cols)
     }
 
+    /// Scrolls to the given position in the scrollback.
+    ///
+    /// This position indicates the offset from the top of the screen, and
+    /// should be `0` to put the normal screen in view.
+    ///
+    /// This affects the return values of methods called on the screen: for
+    /// instance, `screen.cell(0, 0)` will return the top left corner of the
+    /// screen after taking the scrollback offset into account.
+    ///
+    /// The value given will be clamped to the actual size of the scrollback.
+    pub fn set_scrollback(&mut self, rows: usize) {
+        self.grid_mut().set_scrollback(rows);
+    }
+
     /// Returns the current position in the scrollback.
     ///
     /// This position indicates the offset from the top of the screen, and is
@@ -132,10 +147,6 @@ impl Screen {
     #[must_use]
     pub fn scrollback(&self) -> usize {
         self.grid().scrollback()
-    }
-
-    pub(crate) fn set_scrollback(&mut self, rows: usize) {
-        self.grid_mut().set_scrollback(rows);
     }
 
     /// Returns the text contents of the terminal.
