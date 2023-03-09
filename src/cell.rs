@@ -118,13 +118,13 @@ impl Cell {
 
     /// Returns the foreground color of the cell.
     #[must_use]
-    pub fn fgcolor(&self) -> crate::attrs::Color {
+    pub fn fgcolor(&self) -> crate::Color {
         self.attrs.fgcolor
     }
 
     /// Returns the background color of the cell.
     #[must_use]
-    pub fn bgcolor(&self) -> crate::attrs::Color {
+    pub fn bgcolor(&self) -> crate::Color {
         self.attrs.bgcolor
     }
 
