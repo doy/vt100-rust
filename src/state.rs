@@ -42,6 +42,20 @@ impl<'a, T: crate::callbacks::Callbacks> vte::Perform for State<'a, T> {
         ignore: bool,
         c: char,
     ) {
+        if intermediates.first().is_none() && c == 't' {
+            let mut iter = params.iter();
+            let op = iter.next().and_then(|x| x.first().copied());
+            if op == Some(8) {
+                let (screen_rows, screen_cols) = self.screen.size();
+                let rows = iter.next().map_or(screen_rows, |x| {
+                    *x.first().unwrap_or(&screen_rows)
+                });
+                let cols = iter.next().map_or(screen_cols, |x| {
+                    *x.first().unwrap_or(&screen_cols)
+                });
+                self.callbacks.resize(self.screen, (rows, cols));
+            }
+        }
         self.screen.csi_dispatch(params, intermediates, ignore, c);
     }
 

@@ -1447,6 +1447,19 @@ impl Screen {
         self.grid_mut().set_scroll_region(top - 1, bottom - 1);
     }
 
+    // CSI t
+    #[allow(clippy::unused_self)]
+    fn xtwinops(&self, params: &vte::Params) {
+        let mut iter = params.iter();
+        let op = iter.next().and_then(|x| x.first().copied());
+        match op {
+            Some(8) => {}
+            _ => {
+                log::debug!("unhandled XTWINOPS: {}", param_str(params));
+            }
+        }
+    }
+
     // osc codes
 
     fn osc0(&mut self, s: &[u8]) {
@@ -1544,6 +1557,7 @@ impl vte::Perform for Screen {
                     params,
                     self.grid().size(),
                 )),
+                't' => self.xtwinops(params),
                 _ => {
                     if log::log_enabled!(log::Level::Debug) {
                         log::debug!(

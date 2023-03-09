@@ -7,6 +7,8 @@
 * `Parser::process_cb`, which works the same as `Parser::process` except that
   it calls callbacks during parsing when it finds a terminal escape which is
   potentially useful but not something that affects the screen itself.
+* Support for xterm window resize request escape codes, via the new callback
+  mechanism.
 
 ### Removed
 
