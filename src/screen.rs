@@ -683,7 +683,7 @@ impl Screen {
         self.attrs.inverse()
     }
 
-    fn grid(&self) -> &crate::grid::Grid {
+    pub(crate) fn grid(&self) -> &crate::grid::Grid {
         if self.mode(MODE_ALTERNATE_SCREEN) {
             &self.alternate_grid
         } else {
@@ -753,7 +753,7 @@ impl Screen {
 }
 
 impl Screen {
-    fn text(&mut self, c: char) {
+    pub(crate) fn text(&mut self, c: char) {
         let pos = self.grid().pos();
         let size = self.grid().size();
         let attrs = self.attrs;
@@ -994,59 +994,59 @@ impl Screen {
 
     // control codes
 
-    fn bs(&mut self) {
+    pub(crate) fn bs(&mut self) {
         self.grid_mut().col_dec(1);
     }
 
-    fn tab(&mut self) {
+    pub(crate) fn tab(&mut self) {
         self.grid_mut().col_tab();
     }
 
-    fn lf(&mut self) {
+    pub(crate) fn lf(&mut self) {
         self.grid_mut().row_inc_scroll(1);
     }
 
-    fn vt(&mut self) {
+    pub(crate) fn vt(&mut self) {
         self.lf();
     }
 
-    fn ff(&mut self) {
+    pub(crate) fn ff(&mut self) {
         self.lf();
     }
 
-    fn cr(&mut self) {
+    pub(crate) fn cr(&mut self) {
         self.grid_mut().col_set(0);
     }
 
     // escape codes
 
     // ESC 7
-    fn decsc(&mut self) {
+    pub(crate) fn decsc(&mut self) {
         self.save_cursor();
     }
 
     // ESC 8
-    fn decrc(&mut self) {
+    pub(crate) fn decrc(&mut self) {
         self.restore_cursor();
     }
 
     // ESC =
-    fn deckpam(&mut self) {
+    pub(crate) fn deckpam(&mut self) {
         self.set_mode(MODE_APPLICATION_KEYPAD);
     }
 
     // ESC >
-    fn deckpnm(&mut self) {
+    pub(crate) fn deckpnm(&mut self) {
         self.clear_mode(MODE_APPLICATION_KEYPAD);
     }
 
     // ESC M
-    fn ri(&mut self) {
+    pub(crate) fn ri(&mut self) {
         self.grid_mut().row_dec_scroll(1);
     }
 
     // ESC c
-    fn ris(&mut self) {
+    pub(crate) fn ris(&mut self) {
         let title = self.title.clone();
         let icon_name = self.icon_name.clone();
 
@@ -1059,37 +1059,37 @@ impl Screen {
     // csi codes
 
     // CSI @
-    fn ich(&mut self, count: u16) {
+    pub(crate) fn ich(&mut self, count: u16) {
         self.grid_mut().insert_cells(count);
     }
 
     // CSI A
-    fn cuu(&mut self, offset: u16) {
+    pub(crate) fn cuu(&mut self, offset: u16) {
         self.grid_mut().row_dec_clamp(offset);
     }
 
     // CSI B
-    fn cud(&mut self, offset: u16) {
+    pub(crate) fn cud(&mut self, offset: u16) {
         self.grid_mut().row_inc_clamp(offset);
     }
 
     // CSI C
-    fn cuf(&mut self, offset: u16) {
+    pub(crate) fn cuf(&mut self, offset: u16) {
         self.grid_mut().col_inc_clamp(offset);
     }
 
     // CSI D
-    fn cub(&mut self, offset: u16) {
+    pub(crate) fn cub(&mut self, offset: u16) {
         self.grid_mut().col_dec(offset);
     }
 
     // CSI G
-    fn cha(&mut self, col: u16) {
+    pub(crate) fn cha(&mut self, col: u16) {
         self.grid_mut().col_set(col - 1);
     }
 
     // CSI H
-    fn cup(&mut self, (row, col): (u16, u16)) {
+    pub(crate) fn cup(&mut self, (row, col): (u16, u16)) {
         self.grid_mut().set_pos(crate::grid::Pos {
             row: row - 1,
             col: col - 1,
@@ -1097,7 +1097,7 @@ impl Screen {
     }
 
     // CSI J
-    fn ed(&mut self, mode: u16) {
+    pub(crate) fn ed(&mut self, mode: u16) {
         let attrs = self.attrs;
         match mode {
             0 => self.grid_mut().erase_all_forward(attrs),
@@ -1110,12 +1110,12 @@ impl Screen {
     }
 
     // CSI ? J
-    fn decsed(&mut self, mode: u16) {
+    pub(crate) fn decsed(&mut self, mode: u16) {
         self.ed(mode);
     }
 
     // CSI K
-    fn el(&mut self, mode: u16) {
+    pub(crate) fn el(&mut self, mode: u16) {
         let attrs = self.attrs;
         match mode {
             0 => self.grid_mut().erase_row_forward(attrs),
@@ -1128,57 +1128,60 @@ impl Screen {
     }
 
     // CSI ? K
-    fn decsel(&mut self, mode: u16) {
+    pub(crate) fn decsel(&mut self, mode: u16) {
         self.el(mode);
     }
 
     // CSI L
-    fn il(&mut self, count: u16) {
+    pub(crate) fn il(&mut self, count: u16) {
         self.grid_mut().insert_lines(count);
     }
 
     // CSI M
-    fn dl(&mut self, count: u16) {
+    pub(crate) fn dl(&mut self, count: u16) {
         self.grid_mut().delete_lines(count);
     }
 
     // CSI P
-    fn dch(&mut self, count: u16) {
+    pub(crate) fn dch(&mut self, count: u16) {
         self.grid_mut().delete_cells(count);
     }
 
     // CSI S
-    fn su(&mut self, count: u16) {
+    pub(crate) fn su(&mut self, count: u16) {
         self.grid_mut().scroll_up(count);
     }
 
     // CSI T
-    fn sd(&mut self, count: u16) {
+    pub(crate) fn sd(&mut self, count: u16) {
         self.grid_mut().scroll_down(count);
     }
 
     // CSI X
-    fn ech(&mut self, count: u16) {
+    pub(crate) fn ech(&mut self, count: u16) {
         let attrs = self.attrs;
         self.grid_mut().erase_cells(count, attrs);
     }
 
     // CSI d
-    fn vpa(&mut self, row: u16) {
+    pub(crate) fn vpa(&mut self, row: u16) {
         self.grid_mut().row_set(row - 1);
     }
 
     // CSI h
     #[allow(clippy::unused_self)]
-    fn sm(&mut self, params: &vte::Params) {
+    pub(crate) fn sm(&mut self, params: &vte::Params) {
         // nothing, i think?
         if log::log_enabled!(log::Level::Debug) {
-            log::debug!("unhandled SM mode: {}", param_str(params));
+            log::debug!(
+                "unhandled SM mode: {}",
+                crate::perform::param_str(params)
+            );
         }
     }
 
     // CSI ? h
-    fn decset(&mut self, params: &vte::Params) {
+    pub(crate) fn decset(&mut self, params: &vte::Params) {
         for param in params {
             match param {
                 &[1] => self.set_mode(MODE_APPLICATION_CURSOR),
@@ -1226,15 +1229,18 @@ impl Screen {
 
     // CSI l
     #[allow(clippy::unused_self)]
-    fn rm(&mut self, params: &vte::Params) {
+    pub(crate) fn rm(&mut self, params: &vte::Params) {
         // nothing, i think?
         if log::log_enabled!(log::Level::Debug) {
-            log::debug!("unhandled RM mode: {}", param_str(params));
+            log::debug!(
+                "unhandled RM mode: {}",
+                crate::perform::param_str(params)
+            );
         }
     }
 
     // CSI ? l
-    fn decrst(&mut self, params: &vte::Params) {
+    pub(crate) fn decrst(&mut self, params: &vte::Params) {
         for param in params {
             match param {
                 &[1] => self.clear_mode(MODE_APPLICATION_CURSOR),
@@ -1284,7 +1290,7 @@ impl Screen {
     }
 
     // CSI m
-    fn sgr(&mut self, params: &vte::Params) {
+    pub(crate) fn sgr(&mut self, params: &vte::Params) {
         // XXX really i want to just be able to pass in a default Params
         // instance with a 0 in it, but vte doesn't allow creating new Params
         // instances
@@ -1443,240 +1449,44 @@ impl Screen {
     }
 
     // CSI r
-    fn decstbm(&mut self, (top, bottom): (u16, u16)) {
+    pub(crate) fn decstbm(&mut self, (top, bottom): (u16, u16)) {
         self.grid_mut().set_scroll_region(top - 1, bottom - 1);
     }
 
     // CSI t
     #[allow(clippy::unused_self)]
-    fn xtwinops(&self, params: &vte::Params) {
+    pub(crate) fn xtwinops(&self, params: &vte::Params) {
         let mut iter = params.iter();
         let op = iter.next().and_then(|x| x.first().copied());
         match op {
             Some(8) => {}
             _ => {
-                log::debug!("unhandled XTWINOPS: {}", param_str(params));
+                log::debug!(
+                    "unhandled XTWINOPS: {}",
+                    crate::perform::param_str(params)
+                );
             }
         }
     }
 
     // osc codes
 
-    fn osc0(&mut self, s: &[u8]) {
+    pub(crate) fn osc0(&mut self, s: &[u8]) {
         self.osc1(s);
         self.osc2(s);
     }
 
-    fn osc1(&mut self, s: &[u8]) {
+    pub(crate) fn osc1(&mut self, s: &[u8]) {
         if let Ok(s) = std::str::from_utf8(s) {
             self.icon_name = s.to_string();
         }
     }
 
-    fn osc2(&mut self, s: &[u8]) {
+    pub(crate) fn osc2(&mut self, s: &[u8]) {
         if let Ok(s) = std::str::from_utf8(s) {
             self.title = s.to_string();
         }
     }
-}
-
-impl vte::Perform for Screen {
-    fn print(&mut self, c: char) {
-        if c == '\u{fffd}' || ('\u{80}'..'\u{a0}').contains(&c) {
-            log::debug!("unhandled text character: {c}");
-        }
-        self.text(c);
-    }
-
-    fn execute(&mut self, b: u8) {
-        match b {
-            8 => self.bs(),
-            9 => self.tab(),
-            10 => self.lf(),
-            11 => self.vt(),
-            12 => self.ff(),
-            13 => self.cr(),
-            // we don't implement shift in/out alternate character sets, but
-            // it shouldn't count as an "error"
-            7 | 14 | 15 => {}
-            _ => {
-                log::debug!("unhandled control character: {b}");
-            }
-        }
-    }
-
-    fn esc_dispatch(&mut self, intermediates: &[u8], _ignore: bool, b: u8) {
-        intermediates.first().map_or_else(
-            || match b {
-                b'7' => self.decsc(),
-                b'8' => self.decrc(),
-                b'=' => self.deckpam(),
-                b'>' => self.deckpnm(),
-                b'M' => self.ri(),
-                b'c' => self.ris(),
-                b'g' => {}
-                _ => {
-                    log::debug!("unhandled escape code: ESC {b}");
-                }
-            },
-            |i| {
-                log::debug!("unhandled escape code: ESC {i} {b}");
-            },
-        );
-    }
-
-    fn csi_dispatch(
-        &mut self,
-        params: &vte::Params,
-        intermediates: &[u8],
-        _ignore: bool,
-        c: char,
-    ) {
-        match intermediates.first() {
-            None => match c {
-                '@' => self.ich(canonicalize_params_1(params, 1)),
-                'A' => self.cuu(canonicalize_params_1(params, 1)),
-                'B' => self.cud(canonicalize_params_1(params, 1)),
-                'C' => self.cuf(canonicalize_params_1(params, 1)),
-                'D' => self.cub(canonicalize_params_1(params, 1)),
-                'G' => self.cha(canonicalize_params_1(params, 1)),
-                'H' => self.cup(canonicalize_params_2(params, 1, 1)),
-                'J' => self.ed(canonicalize_params_1(params, 0)),
-                'K' => self.el(canonicalize_params_1(params, 0)),
-                'L' => self.il(canonicalize_params_1(params, 1)),
-                'M' => self.dl(canonicalize_params_1(params, 1)),
-                'P' => self.dch(canonicalize_params_1(params, 1)),
-                'S' => self.su(canonicalize_params_1(params, 1)),
-                'T' => self.sd(canonicalize_params_1(params, 1)),
-                'X' => self.ech(canonicalize_params_1(params, 1)),
-                'd' => self.vpa(canonicalize_params_1(params, 1)),
-                'h' => self.sm(params),
-                'l' => self.rm(params),
-                'm' => self.sgr(params),
-                'r' => self.decstbm(canonicalize_params_decstbm(
-                    params,
-                    self.grid().size(),
-                )),
-                't' => self.xtwinops(params),
-                _ => {
-                    if log::log_enabled!(log::Level::Debug) {
-                        log::debug!(
-                            "unhandled csi sequence: CSI {} {}",
-                            param_str(params),
-                            c
-                        );
-                    }
-                }
-            },
-            Some(b'?') => match c {
-                'J' => self.decsed(canonicalize_params_1(params, 0)),
-                'K' => self.decsel(canonicalize_params_1(params, 0)),
-                'h' => self.decset(params),
-                'l' => self.decrst(params),
-                _ => {
-                    if log::log_enabled!(log::Level::Debug) {
-                        log::debug!(
-                            "unhandled csi sequence: CSI ? {} {}",
-                            param_str(params),
-                            c
-                        );
-                    }
-                }
-            },
-            Some(i) => {
-                if log::log_enabled!(log::Level::Debug) {
-                    log::debug!(
-                        "unhandled csi sequence: CSI {} {} {}",
-                        i,
-                        param_str(params),
-                        c
-                    );
-                }
-            }
-        }
-    }
-
-    fn osc_dispatch(&mut self, params: &[&[u8]], _bel_terminated: bool) {
-        match (params.get(0), params.get(1)) {
-            (Some(&b"0"), Some(s)) => self.osc0(s),
-            (Some(&b"1"), Some(s)) => self.osc1(s),
-            (Some(&b"2"), Some(s)) => self.osc2(s),
-            _ => {
-                if log::log_enabled!(log::Level::Debug) {
-                    log::debug!(
-                        "unhandled osc sequence: OSC {}",
-                        osc_param_str(params),
-                    );
-                }
-            }
-        }
-    }
-
-    fn hook(
-        &mut self,
-        params: &vte::Params,
-        intermediates: &[u8],
-        _ignore: bool,
-        action: char,
-    ) {
-        if log::log_enabled!(log::Level::Debug) {
-            intermediates.first().map_or_else(
-                || {
-                    log::debug!(
-                        "unhandled dcs sequence: DCS {} {}",
-                        param_str(params),
-                        action,
-                    );
-                },
-                |i| {
-                    log::debug!(
-                        "unhandled dcs sequence: DCS {} {} {}",
-                        i,
-                        param_str(params),
-                        action,
-                    );
-                },
-            );
-        }
-    }
-}
-
-fn canonicalize_params_1(params: &vte::Params, default: u16) -> u16 {
-    let first = params.iter().next().map_or(0, |x| *x.first().unwrap_or(&0));
-    if first == 0 {
-        default
-    } else {
-        first
-    }
-}
-
-fn canonicalize_params_2(
-    params: &vte::Params,
-    default1: u16,
-    default2: u16,
-) -> (u16, u16) {
-    let mut iter = params.iter();
-    let first = iter.next().map_or(0, |x| *x.first().unwrap_or(&0));
-    let first = if first == 0 { default1 } else { first };
-
-    let second = iter.next().map_or(0, |x| *x.first().unwrap_or(&0));
-    let second = if second == 0 { default2 } else { second };
-
-    (first, second)
-}
-
-fn canonicalize_params_decstbm(
-    params: &vte::Params,
-    size: crate::grid::Size,
-) -> (u16, u16) {
-    let mut iter = params.iter();
-    let top = iter.next().map_or(0, |x| *x.first().unwrap_or(&0));
-    let top = if top == 0 { 1 } else { top };
-
-    let bottom = iter.next().map_or(0, |x| *x.first().unwrap_or(&0));
-    let bottom = if bottom == 0 { size.rows } else { bottom };
-
-    (top, bottom)
 }
 
 fn u16_to_u8(i: u16) -> Option<u8> {
@@ -1686,26 +1496,4 @@ fn u16_to_u8(i: u16) -> Option<u8> {
         // safe because we just ensured that the value fits in a u8
         Some(i.try_into().unwrap())
     }
-}
-
-fn param_str(params: &vte::Params) -> String {
-    let strs: Vec<_> = params
-        .iter()
-        .map(|subparams| {
-            let subparam_strs: Vec<_> = subparams
-                .iter()
-                .map(std::string::ToString::to_string)
-                .collect();
-            subparam_strs.join(" : ")
-        })
-        .collect();
-    strs.join(" ; ")
-}
-
-fn osc_param_str(params: &[&[u8]]) -> String {
-    let strs: Vec<_> = params
-        .iter()
-        .map(|b| format!("\"{}\"", std::string::String::from_utf8_lossy(b)))
-        .collect();
-    strs.join(" ; ")
 }

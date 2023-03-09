@@ -51,6 +51,7 @@ mod callbacks;
 mod cell;
 mod grid;
 mod parser;
+mod perform;
 mod row;
 mod screen;
 mod state;

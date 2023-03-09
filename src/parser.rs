@@ -2,7 +2,7 @@
 /// the terminal contents.
 pub struct Parser {
     parser: vte::Parser,
-    screen: crate::Screen,
+    screen: crate::perform::WrappedScreen,
 }
 
 impl Parser {
@@ -12,10 +12,10 @@ impl Parser {
     pub fn new(rows: u16, cols: u16, scrollback_len: usize) -> Self {
         Self {
             parser: vte::Parser::new(),
-            screen: crate::Screen::new(
+            screen: crate::perform::WrappedScreen(crate::Screen::new(
                 crate::grid::Size { rows, cols },
                 scrollback_len,
-            ),
+            )),
         }
     }
 
@@ -45,14 +45,14 @@ impl Parser {
     /// state.
     #[must_use]
     pub fn screen(&self) -> &crate::Screen {
-        &self.screen
+        &self.screen.0
     }
 
     /// Returns a mutable reference to a `Screen` object containing the
     /// terminal state.
     #[must_use]
     pub fn screen_mut(&mut self) -> &mut crate::Screen {
-        &mut self.screen
+        &mut self.screen.0
     }
 }
 
