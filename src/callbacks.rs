@@ -11,6 +11,6 @@ pub trait Callbacks {
     /// (typically with `\e[8;<rows>;<cols>t`).
     fn resize(&mut self, _: &mut crate::Screen, _request: (u16, u16)) {}
     /// This callback is called when the terminal receives invalid input
-    /// (such as an invalid UTF-8 character or an used control character).
+    /// (such as an invalid UTF-8 character or an unused control character).
     fn error(&mut self, _: &mut crate::Screen) {}
 }
