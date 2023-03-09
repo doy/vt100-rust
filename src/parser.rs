@@ -27,6 +27,20 @@ impl Parser {
         }
     }
 
+    /// Processes the contents of the given byte string, and updates the
+    /// in-memory terminal state. Calls methods on the given `Callbacks`
+    /// object when relevant escape sequences are seen.
+    pub fn process_cb(
+        &mut self,
+        bytes: &[u8],
+        callbacks: &mut impl crate::callbacks::Callbacks,
+    ) {
+        let mut state = crate::state::State::new(&mut self.screen, callbacks);
+        for byte in bytes {
+            self.parser.advance(&mut state, *byte);
+        }
+    }
+
     /// Returns a reference to a `Screen` object containing the terminal
     /// state.
     #[must_use]

@@ -2,6 +2,18 @@
 
 ## [Unreleased]
 
+### Added
+
+* `Parser::process_cb`, which works the same as `Parser::process` except that
+  it calls callbacks during parsing when it finds a terminal escape which is
+  potentially useful but not something that affects the screen itself.
+
+### Removed
+
+* `Screen::bells_diff`, `Screen::audible_bell_count`,
+  `Screen::visual_bell_count`, and `Screen::errors` have been removed in favor
+  of the new callback api described above.
+
 ### Changed
 
 * `Parser::set_size` and `Parser::set_scrollback` have been moved to methods

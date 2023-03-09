@@ -17,39 +17,44 @@ fn ris() {
 
 #[test]
 fn vb() {
+    struct State {
+        vb: usize,
+    }
+
+    impl vt100::Callbacks for State {
+        fn visual_bell(&mut self, _: &mut vt100::Screen) {
+            self.vb += 1;
+        }
+    }
+
     let mut parser = vt100::Parser::default();
-    assert_eq!(parser.screen().visual_bell_count(), 0);
+    let mut state = State { vb: 0 };
+    assert_eq!(state.vb, 0);
 
     let screen = parser.screen().clone();
-    parser.process(b"\x1bg");
-    assert_eq!(parser.screen().visual_bell_count(), 1);
-    assert_eq!(parser.screen().visual_bell_count(), 1);
+    parser.process_cb(b"\x1bg", &mut state);
+    assert_eq!(state.vb, 1);
     assert_eq!(parser.screen().contents_diff(&screen), b"");
-    assert_eq!(parser.screen().bells_diff(&screen), b"\x1bg");
 
     let screen = parser.screen().clone();
-    parser.process(b"\x1bg");
-    assert_eq!(parser.screen().visual_bell_count(), 2);
+    parser.process_cb(b"\x1bg", &mut state);
+    assert_eq!(state.vb, 2);
     assert_eq!(parser.screen().contents_diff(&screen), b"");
-    assert_eq!(parser.screen().bells_diff(&screen), b"\x1bg");
 
     let screen = parser.screen().clone();
-    parser.process(b"\x1bg\x1bg\x1bg");
-    assert_eq!(parser.screen().visual_bell_count(), 5);
+    parser.process_cb(b"\x1bg\x1bg\x1bg", &mut state);
+    assert_eq!(state.vb, 5);
     assert_eq!(parser.screen().contents_diff(&screen), b"");
-    assert_eq!(parser.screen().bells_diff(&screen), b"\x1bg");
 
     let screen = parser.screen().clone();
-    parser.process(b"foo");
-    assert_eq!(parser.screen().visual_bell_count(), 5);
+    parser.process_cb(b"foo", &mut state);
+    assert_eq!(state.vb, 5);
     assert_eq!(parser.screen().contents_diff(&screen), b"foo");
-    assert_eq!(parser.screen().bells_diff(&screen), b"");
 
     let screen = parser.screen().clone();
-    parser.process(b"ba\x1bgr");
-    assert_eq!(parser.screen().visual_bell_count(), 6);
+    parser.process_cb(b"ba\x1bgr", &mut state);
+    assert_eq!(state.vb, 6);
     assert_eq!(parser.screen().contents_diff(&screen), b"bar");
-    assert_eq!(parser.screen().bells_diff(&screen), b"\x1bg");
 }
 
 #[test]

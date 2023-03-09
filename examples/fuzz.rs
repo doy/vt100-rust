@@ -3,10 +3,9 @@ use std::io::Read as _;
 #[path = "../tests/helpers/mod.rs"]
 mod helpers;
 
-fn check_full(vt_base: &vt100::Screen, empty: &vt100::Screen, idx: usize) {
+fn check_full(vt_base: &vt100::Screen, idx: usize) {
     let mut input = vec![];
     input.extend(vt_base.state_formatted());
-    input.extend(vt_base.bells_diff(empty));
     let mut vt_full = vt100::Parser::default();
     vt_full.process(&input);
     assert!(
@@ -24,7 +23,6 @@ fn check_diff_empty(
 ) {
     let mut input = vec![];
     input.extend(vt_base.state_diff(empty));
-    input.extend(vt_base.bells_diff(empty));
     let mut vt_diff_empty = vt100::Parser::default();
     vt_diff_empty.process(&input);
     assert!(
@@ -39,12 +37,10 @@ fn check_diff(
     vt_base: &vt100::Screen,
     vt_diff: &mut vt100::Parser,
     prev: &vt100::Screen,
-    empty: &vt100::Screen,
     idx: usize,
 ) {
     let mut input = vec![];
     input.extend(vt_base.state_diff(prev));
-    input.extend(vt_base.bells_diff(empty));
     vt_diff.process(&input);
     assert!(
         helpers::compare_screens(vt_diff.screen(), vt_base),
@@ -54,7 +50,7 @@ fn check_diff(
     );
 }
 
-fn check_rows(vt_base: &vt100::Screen, empty: &vt100::Screen, idx: usize) {
+fn check_rows(vt_base: &vt100::Screen, idx: usize) {
     let mut input = vec![];
     let mut wrapped = false;
     for (idx, row) in vt_base.rows_formatted(0, 80).enumerate() {
@@ -70,7 +66,6 @@ fn check_rows(vt_base: &vt100::Screen, empty: &vt100::Screen, idx: usize) {
     input.extend(&vt_base.attributes_formatted());
     input.extend(&vt_base.input_mode_formatted());
     input.extend(&vt_base.title_formatted());
-    input.extend(&vt_base.bells_diff(empty));
     let mut vt_rows = vt100::Parser::default();
     vt_rows.process(&input);
     assert!(
@@ -106,16 +101,10 @@ fn main() {
     while let Some(byte) = read_byte() {
         vt_base.process(&[byte]);
 
-        check_full(vt_base.screen(), &empty_screen, idx);
+        check_full(vt_base.screen(), idx);
         check_diff_empty(vt_base.screen(), &empty_screen, idx);
-        check_diff(
-            vt_base.screen(),
-            &mut vt_diff,
-            &prev_screen,
-            &empty_screen,
-            idx,
-        );
-        check_rows(vt_base.screen(), &empty_screen, idx);
+        check_diff(vt_base.screen(), &mut vt_diff, &prev_screen, idx);
+        check_rows(vt_base.screen(), idx);
 
         prev_screen = vt_base.screen().clone();
         idx += 1;

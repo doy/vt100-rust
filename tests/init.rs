@@ -22,8 +22,6 @@ fn init() {
     assert_eq!(parser.screen().title(), "");
     assert_eq!(parser.screen().icon_name(), "");
 
-    assert_eq!(parser.screen().audible_bell_count(), 0);
-    assert_eq!(parser.screen().visual_bell_count(), 0);
     assert!(!parser.screen().application_keypad());
     assert!(!parser.screen().application_cursor());
     assert!(!parser.screen().hide_cursor());

@@ -1,0 +1,61 @@
+pub struct State<'a, T: crate::callbacks::Callbacks> {
+    screen: &'a mut crate::Screen,
+    callbacks: &'a mut T,
+}
+
+impl<'a, T: crate::callbacks::Callbacks> State<'a, T> {
+    pub fn new(screen: &'a mut crate::Screen, callbacks: &'a mut T) -> Self {
+        Self { screen, callbacks }
+    }
+}
+
+impl<'a, T: crate::callbacks::Callbacks> vte::Perform for State<'a, T> {
+    fn print(&mut self, c: char) {
+        if c == '\u{fffd}' || ('\u{80}'..'\u{a0}').contains(&c) {
+            self.callbacks.error(self.screen);
+        }
+        self.screen.print(c);
+    }
+
+    fn execute(&mut self, b: u8) {
+        match b {
+            7 => self.callbacks.audible_bell(self.screen),
+            8..=15 => {}
+            _ => {
+                self.callbacks.error(self.screen);
+            }
+        }
+        self.screen.execute(b);
+    }
+
+    fn esc_dispatch(&mut self, intermediates: &[u8], ignore: bool, b: u8) {
+        if intermediates.is_empty() && b == b'g' {
+            self.callbacks.visual_bell(self.screen);
+        }
+        self.screen.esc_dispatch(intermediates, ignore, b);
+    }
+
+    fn csi_dispatch(
+        &mut self,
+        params: &vte::Params,
+        intermediates: &[u8],
+        ignore: bool,
+        c: char,
+    ) {
+        self.screen.csi_dispatch(params, intermediates, ignore, c);
+    }
+
+    fn osc_dispatch(&mut self, params: &[&[u8]], bel_terminated: bool) {
+        self.screen.osc_dispatch(params, bel_terminated);
+    }
+
+    fn hook(
+        &mut self,
+        params: &vte::Params,
+        intermediates: &[u8],
+        ignore: bool,
+        action: char,
+    ) {
+        self.screen.hook(params, intermediates, ignore, action);
+    }
+}

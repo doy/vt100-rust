@@ -103,15 +103,6 @@ pub fn compare_screens(
     is!(got.title(), expected.title());
     is!(got.icon_name(), expected.icon_name());
 
-    is!(
-        got.audible_bell_count() > 0,
-        expected.audible_bell_count() > 0
-    );
-    is!(
-        got.visual_bell_count() > 0,
-        expected.visual_bell_count() > 0
-    );
-
     is!(got.application_keypad(), expected.application_keypad());
     is!(got.application_cursor(), expected.application_cursor());
     is!(got.hide_cursor(), expected.hide_cursor());
@@ -138,13 +129,10 @@ pub fn rows_formatted_reproduces_state(input: &[u8]) -> bool {
 }
 
 pub fn contents_formatted_reproduces_screen(screen: &vt100::Screen) -> bool {
-    let empty_screen = vt100::Parser::default().screen().clone();
-
     let mut new_input = screen.contents_formatted();
     new_input.extend(screen.input_mode_formatted());
     new_input.extend(screen.title_formatted());
     assert_eq!(new_input, screen.state_formatted());
-    new_input.extend(screen.bells_diff(&empty_screen));
     let mut new_parser = vt100::Parser::default();
     new_parser.process(&new_input);
     let got_screen = new_parser.screen().clone();
@@ -153,8 +141,6 @@ pub fn contents_formatted_reproduces_screen(screen: &vt100::Screen) -> bool {
 }
 
 pub fn rows_formatted_reproduces_screen(screen: &vt100::Screen) -> bool {
-    let empty_screen = vt100::Parser::default().screen().clone();
-
     let mut new_input = vec![];
     let mut wrapped = false;
     for (idx, row) in screen.rows_formatted(0, 80).enumerate() {
@@ -170,7 +156,6 @@ pub fn rows_formatted_reproduces_screen(screen: &vt100::Screen) -> bool {
     new_input.extend(screen.attributes_formatted());
     new_input.extend(screen.input_mode_formatted());
     new_input.extend(screen.title_formatted());
-    new_input.extend(screen.bells_diff(&empty_screen));
     let mut new_parser = vt100::Parser::default();
     new_parser.process(&new_input);
     let got_screen = new_parser.screen().clone();
@@ -210,14 +195,11 @@ pub fn contents_diff_reproduces_state_from_screens(
     let mut diff_input = screen.contents_diff(prev_screen);
     diff_input.extend(screen.input_mode_diff(prev_screen));
     diff_input.extend(screen.title_diff(prev_screen));
-    diff_input.extend(screen.bells_diff(prev_screen));
     assert_eq!(diff_input, screen.state_diff(prev_screen));
 
     let mut diff_prev_input = prev_screen.contents_formatted();
     diff_prev_input.extend(screen.input_mode_formatted());
     diff_prev_input.extend(screen.title_formatted());
-    diff_prev_input
-        .extend(screen.bells_diff(vt100::Parser::default().screen()));
 
     let mut new_parser = vt100::Parser::default();
     new_parser.process(&diff_prev_input);

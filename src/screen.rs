@@ -75,11 +75,6 @@ pub struct Screen {
     modes: u8,
     mouse_protocol_mode: MouseProtocolMode,
     mouse_protocol_encoding: MouseProtocolEncoding,
-
-    audible_bell_count: usize,
-    visual_bell_count: usize,
-
-    errors: usize,
 }
 
 impl Screen {
@@ -102,11 +97,6 @@ impl Screen {
             modes: 0,
             mouse_protocol_mode: MouseProtocolMode::default(),
             mouse_protocol_encoding: MouseProtocolEncoding::default(),
-
-            audible_bell_count: 0,
-            visual_bell_count: 0,
-
-            errors: 0,
         }
     }
 
@@ -256,15 +246,13 @@ impl Screen {
 
     /// Return escape codes sufficient to turn the terminal state of the
     /// screen `prev` into the current terminal state. This is a convenience
-    /// wrapper around `contents_diff`, `input_mode_diff`, `title_diff`, and
-    /// `bells_diff`.
+    /// wrapper around `contents_diff`, `input_mode_diff`, and `title_diff`
     #[must_use]
     pub fn state_diff(&self, prev: &Self) -> Vec<u8> {
         let mut contents = vec![];
         self.write_contents_diff(&mut contents, prev);
         self.write_input_mode_diff(&mut contents, prev);
         self.write_title_diff(&mut contents, prev);
-        self.write_bells_diff(&mut contents, prev);
         contents
     }
 
@@ -511,25 +499,6 @@ impl Screen {
         .write_buf(contents);
     }
 
-    /// Returns terminal escape sequences sufficient to cause audible and
-    /// visual bells to occur if they have been received since the terminal
-    /// described by `prev`.
-    #[must_use]
-    pub fn bells_diff(&self, prev: &Self) -> Vec<u8> {
-        let mut contents = vec![];
-        self.write_bells_diff(&mut contents, prev);
-        contents
-    }
-
-    fn write_bells_diff(&self, contents: &mut Vec<u8>, prev: &Self) {
-        if self.audible_bell_count != prev.audible_bell_count {
-            crate::term::AudibleBell::default().write_buf(contents);
-        }
-        if self.visual_bell_count != prev.visual_bell_count {
-            crate::term::VisualBell::default().write_buf(contents);
-        }
-    }
-
     /// Returns terminal escape sequences sufficient to set the current
     /// terminal's drawing attributes.
     ///
@@ -630,42 +599,6 @@ impl Screen {
     #[must_use]
     pub fn icon_name(&self) -> &str {
         &self.icon_name
-    }
-
-    /// Returns a value which changes every time an audible bell is received.
-    ///
-    /// Typically you would store this number after each call to `process`,
-    /// and trigger an audible bell whenever it changes.
-    ///
-    /// You shouldn't rely on the exact value returned here, since the exact
-    /// value will not be maintained by `contents_formatted` or
-    /// `contents_diff`.
-    #[must_use]
-    pub fn audible_bell_count(&self) -> usize {
-        self.audible_bell_count
-    }
-
-    /// Returns a value which changes every time an visual bell is received.
-    ///
-    /// Typically you would store this number after each call to `process`,
-    /// and trigger an visual bell whenever it changes.
-    ///
-    /// You shouldn't rely on the exact value returned here, since the exact
-    /// value will not be maintained by `contents_formatted` or
-    /// `contents_diff`.
-    #[must_use]
-    pub fn visual_bell_count(&self) -> usize {
-        self.visual_bell_count
-    }
-
-    /// Returns the number of parsing errors seen so far.
-    ///
-    /// Currently this only tracks invalid UTF-8 and control characters other
-    /// than `0x07`-`0x0f`. This can give an idea of whether the input stream
-    /// being fed to the parser is reasonable or not.
-    #[must_use]
-    pub fn errors(&self) -> usize {
-        self.errors
     }
 
     /// Returns whether the alternate screen is currently in use.
@@ -1061,10 +994,6 @@ impl Screen {
 
     // control codes
 
-    fn bel(&mut self) {
-        self.audible_bell_count += 1;
-    }
-
     fn bs(&mut self) {
         self.grid_mut().col_dec(1);
     }
@@ -1120,22 +1049,11 @@ impl Screen {
     fn ris(&mut self) {
         let title = self.title.clone();
         let icon_name = self.icon_name.clone();
-        let audible_bell_count = self.audible_bell_count;
-        let visual_bell_count = self.visual_bell_count;
-        let errors = self.errors;
 
         *self = Self::new(self.grid.size(), self.grid.scrollback_len());
 
         self.title = title;
         self.icon_name = icon_name;
-        self.audible_bell_count = audible_bell_count;
-        self.visual_bell_count = visual_bell_count;
-        self.errors = errors;
-    }
-
-    // ESC g
-    fn vb(&mut self) {
-        self.visual_bell_count += 1;
     }
 
     // csi codes
@@ -1552,14 +1470,13 @@ impl Screen {
 impl vte::Perform for Screen {
     fn print(&mut self, c: char) {
         if c == '\u{fffd}' || ('\u{80}'..'\u{a0}').contains(&c) {
-            self.errors = self.errors.saturating_add(1);
+            log::debug!("unhandled text character: {c}");
         }
         self.text(c);
     }
 
     fn execute(&mut self, b: u8) {
         match b {
-            7 => self.bel(),
             8 => self.bs(),
             9 => self.tab(),
             10 => self.lf(),
@@ -1568,9 +1485,8 @@ impl vte::Perform for Screen {
             13 => self.cr(),
             // we don't implement shift in/out alternate character sets, but
             // it shouldn't count as an "error"
-            14 | 15 => {}
+            7 | 14 | 15 => {}
             _ => {
-                self.errors = self.errors.saturating_add(1);
                 log::debug!("unhandled control character: {b}");
             }
         }
@@ -1585,7 +1501,7 @@ impl vte::Perform for Screen {
                 b'>' => self.deckpnm(),
                 b'M' => self.ri(),
                 b'c' => self.ris(),
-                b'g' => self.vb(),
+                b'g' => {}
                 _ => {
                     log::debug!("unhandled escape code: ESC {b}");
                 }
