@@ -35,9 +35,12 @@ impl Parser {
         bytes: &[u8],
         callbacks: &mut impl crate::callbacks::Callbacks,
     ) {
-        let mut state = crate::state::State::new(&mut self.screen, callbacks);
+        let mut screen = crate::perform::WrappedScreenWithCallbacks::new(
+            &mut self.screen,
+            callbacks,
+        );
         for byte in bytes {
-            self.parser.advance(&mut state, *byte);
+            self.parser.advance(&mut screen, *byte);
         }
     }
 
