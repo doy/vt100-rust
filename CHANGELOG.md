@@ -9,6 +9,7 @@
   potentially useful but not something that affects the screen itself.
 * Support for xterm window resize request escape codes, via the new callback
   mechanism.
+* Support for dim formatting.
 
 ### Removed
 
