@@ -1083,6 +1083,18 @@ impl Screen {
         self.grid_mut().col_dec(offset);
     }
 
+    // CSI E
+    pub(crate) fn cnl(&mut self, offset: u16) {
+        self.grid_mut().col_set(0);
+        self.grid_mut().row_inc_clamp(offset);
+    }
+
+    // CSI F
+    pub(crate) fn cpl(&mut self, offset: u16) {
+        self.grid_mut().col_set(0);
+        self.grid_mut().row_dec_clamp(offset);
+    }
+
     // CSI G
     pub(crate) fn cha(&mut self, col: u16) {
         self.grid_mut().col_set(col - 1);
