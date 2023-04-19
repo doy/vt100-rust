@@ -59,6 +59,8 @@ impl vte::Perform for WrappedScreen {
                 'B' => self.0.cud(canonicalize_params_1(params, 1)),
                 'C' => self.0.cuf(canonicalize_params_1(params, 1)),
                 'D' => self.0.cub(canonicalize_params_1(params, 1)),
+                'E' => self.0.cnl(canonicalize_params_1(params, 1)),
+                'F' => self.0.cpl(canonicalize_params_1(params, 1)),
                 'G' => self.0.cha(canonicalize_params_1(params, 1)),
                 'H' => self.0.cup(canonicalize_params_2(params, 1, 1)),
                 'J' => self.0.ed(canonicalize_params_1(params, 0)),

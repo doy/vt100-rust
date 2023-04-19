@@ -15,3 +15,7 @@
 \x1b[500B
 \x1b[500A
 \x1b[24;80H\x1b[1ma\x1b[A
+\x1b[5;5H\x1b[3F
+\x1b[5;5H\x1b[F
+\x1b[5;5H\x1b[3E
+\x1b[5;5H\x1b[E
