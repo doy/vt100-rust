@@ -200,8 +200,8 @@ impl Grid {
         &self,
         contents: &mut Vec<u8>,
     ) -> crate::attrs::Attrs {
-        crate::term::ClearAttrs::default().write_buf(contents);
-        crate::term::ClearScreen::default().write_buf(contents);
+        crate::term::ClearAttrs.write_buf(contents);
+        crate::term::ClearScreen.write_buf(contents);
 
         let mut prev_attrs = crate::attrs::Attrs::default();
         let mut prev_pos = Pos::default();
@@ -418,10 +418,10 @@ impl Grid {
                     end_cell
                         .attrs()
                         .write_escape_code_diff(contents, &prev_attrs);
-                    crate::term::SaveCursor::default().write_buf(contents);
-                    crate::term::Backspace::default().write_buf(contents);
+                    crate::term::SaveCursor.write_buf(contents);
+                    crate::term::Backspace.write_buf(contents);
                     crate::term::EraseChar::new(1).write_buf(contents);
-                    crate::term::RestoreCursor::default().write_buf(contents);
+                    crate::term::RestoreCursor.write_buf(contents);
                     prev_attrs
                         .write_escape_code_diff(contents, end_cell.attrs());
                 }

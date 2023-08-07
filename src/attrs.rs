@@ -86,7 +86,7 @@ impl Attrs {
         other: &Self,
     ) {
         if self != other && self == &Self::default() {
-            crate::term::ClearAttrs::default().write_buf(contents);
+            crate::term::ClearAttrs.write_buf(contents);
             return;
         }
 

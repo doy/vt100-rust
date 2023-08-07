@@ -523,7 +523,7 @@ impl Screen {
     }
 
     fn write_attributes_formatted(&self, contents: &mut Vec<u8>) {
-        crate::term::ClearAttrs::default().write_buf(contents);
+        crate::term::ClearAttrs.write_buf(contents);
         self.attrs.write_escape_code_diff(
             contents,
             &crate::attrs::Attrs::default(),

@@ -365,7 +365,7 @@ impl MoveFromTo {
 impl BufWrite for MoveFromTo {
     fn write_buf(&self, buf: &mut Vec<u8>) {
         if self.to.row == self.from.row + 1 && self.to.col == 0 {
-            crate::term::Crlf::default().write_buf(buf);
+            crate::term::Crlf.write_buf(buf);
         } else if self.from.row == self.to.row && self.from.col < self.to.col
         {
             crate::term::MoveRight::new(self.to.col - self.from.col)
