@@ -1,3 +1,5 @@
+use std::ops::RangeInclusive;
+
 mod helpers;
 
 #[test]
@@ -109,4 +111,26 @@ fn edge_of_screen() {
         parser.screen().contents_diff(&screen),
         b"\x1b[24;75H\x1b[31mfoobar\x1b[24;80H"
     );
+}
+
+#[test]
+fn scrollback_larger_than_rows() {
+    let mut parser = vt100::Parser::new(3, 20, 10);
+
+    parser.process(&gen_nums(1..=10, "\r\n").as_bytes());
+
+    // 1. Extra rows returned
+    parser.screen_mut().set_scrollback(4);
+    assert_eq!(parser.screen().contents(), gen_nums(4..=6, "\n"));
+
+    // 2. Subtraction overflow
+    parser.screen_mut().set_scrollback(10);
+    assert_eq!(parser.screen().contents(), gen_nums(1..=4, "\n"));
+}
+
+#[cfg(test)]
+fn gen_nums(range: RangeInclusive<u8>, join: &str) -> String {
+    range.map(|num| num.to_string())
+        .collect::<Vec<String>>()
+        .join(join)
 }
