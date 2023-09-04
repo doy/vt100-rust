@@ -113,6 +113,7 @@ pub struct Attrs {
     italic: Option<bool>,
     underline: Option<bool>,
     inverse: Option<bool>,
+    dim: Option<bool>,
 }
 
 impl Attrs {
@@ -145,6 +146,11 @@ impl Attrs {
         self.inverse = Some(inverse);
         self
     }
+
+    pub fn dim(mut self, dim: bool) -> Self {
+        self.dim = Some(dim);
+        self
+    }
 }
 
 impl BufWrite for Attrs {
@@ -157,6 +163,7 @@ impl BufWrite for Attrs {
             && self.italic.is_none()
             && self.underline.is_none()
             && self.inverse.is_none()
+            && self.dim.is_none()
         {
             return;
         }
@@ -256,6 +263,14 @@ impl BufWrite for Attrs {
                 write_param!(7);
             } else {
                 write_param!(27);
+            }
+        }
+
+        if let Some(dim) = self.dim {
+            if dim {
+                write_param!(2);
+            } else {
+                write_param!(22);
             }
         }
 
