@@ -110,3 +110,16 @@ fn edge_of_screen() {
         b"\x1b[24;75H\x1b[31mfoobar\x1b[24;80H"
     );
 }
+
+#[test]
+fn scrollback_larger_than_terminal() {
+    use std::io::Write;
+
+    let mut parser = vt100::Parser::new(3, 80, 10);
+    for i in 0..10 {
+        writeln!(parser, "line {}", i);
+    }
+
+    parser.set_scrollback(4);
+    let _ = parser.screen().contents();
+}
