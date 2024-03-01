@@ -312,7 +312,7 @@ impl Row {
             }
             let mut cell_contents = prev_first_cell.contents();
             let need_erase = if cell_contents.is_empty() {
-                cell_contents = " ".to_string();
+                cell_contents = " ";
                 true
             } else {
                 false
