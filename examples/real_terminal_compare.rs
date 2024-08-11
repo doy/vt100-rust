@@ -1,5 +1,4 @@
 use std::io::{Read as _, Write as _};
-use std::os::unix::io::AsRawFd as _;
 
 #[path = "../tests/helpers/mod.rs"]
 mod helpers;
@@ -10,8 +9,8 @@ fn main() {
     let mut stdin = std::io::stdin();
     let mut stdout = std::io::stdout();
 
-    let stdin_fd = std::io::stdin().as_raw_fd();
-    let mut termios = nix::sys::termios::tcgetattr(stdin_fd).unwrap();
+    let stdin_fd = std::io::stdin();
+    let mut termios = nix::sys::termios::tcgetattr(&stdin_fd).unwrap();
     nix::sys::termios::cfmakeraw(&mut termios);
     nix::sys::termios::tcsetattr(
         stdin_fd,
