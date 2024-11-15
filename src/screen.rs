@@ -107,6 +107,10 @@ impl Screen {
             .set_size(crate::grid::Size { rows, cols });
     }
 
+    pub fn scrollback_rows(&self) -> usize {
+        self.grid.row_count()
+    }
+
     /// Returns the current size of the terminal.
     ///
     /// The return value will be (rows, cols).
