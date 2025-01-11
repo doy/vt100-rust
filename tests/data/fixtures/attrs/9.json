@@ -1,10 +1,8 @@
 {
-  "contents": " oo",
+  "contents": "foo",
   "cells": {
     "0,0": {
-      "contents": "",
-      "underline": true,
-      "inverse": true
+      "contents": "f"
     },
     "0,1": {
       "contents": "o",
@@ -17,6 +15,6 @@
   },
   "cursor_position": [
     0,
-    0
+    2
   ]
 }

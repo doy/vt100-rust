@@ -1,17 +1,22 @@
 {
-  "contents": "                                                                              ab",
+  "contents": " oo",
   "cells": {
-    "0,78": {
-      "contents": "a",
-      "fgcolor": "1"
+    "0,0": {
+      "contents": "",
+      "underline": true,
+      "inverse": true
     },
-    "0,79": {
-      "contents": "b",
-      "fgcolor": "1"
+    "0,1": {
+      "contents": "o",
+      "underline": true,
+      "inverse": true
+    },
+    "0,2": {
+      "contents": "o"
     }
   },
   "cursor_position": [
     0,
-    80
+    0
   ]
 }

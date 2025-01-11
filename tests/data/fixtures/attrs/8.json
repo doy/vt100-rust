@@ -5,9 +5,7 @@
       "contents": "f"
     },
     "0,1": {
-      "contents": "o",
-      "underline": true,
-      "inverse": true
+      "contents": "o"
     },
     "0,2": {
       "contents": "o"
@@ -15,6 +13,6 @@
   },
   "cursor_position": [
     0,
-    2
+    3
   ]
 }

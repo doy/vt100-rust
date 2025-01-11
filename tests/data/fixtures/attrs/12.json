@@ -1,15 +1,13 @@
 {
-  "contents": "                                                                               ab",
+  "contents": "                                                                               a",
   "cells": {
     "0,79": {
-      "contents": "a"
-    },
-    "1,0": {
-      "contents": "b"
+      "contents": "a",
+      "bgcolor": "1"
     }
   },
   "cursor_position": [
     1,
-    1
+    80
   ]
 }

@@ -25,6 +25,8 @@ pub struct FixtureCell {
     #[serde(default, skip_serializing_if = "is_default")]
     bold: bool,
     #[serde(default, skip_serializing_if = "is_default")]
+    dim: bool,
+    #[serde(default, skip_serializing_if = "is_default")]
     italic: bool,
     #[serde(default, skip_serializing_if = "is_default")]
     underline: bool,
@@ -42,6 +44,7 @@ impl FixtureCell {
             fgcolor: cell.fgcolor(),
             bgcolor: cell.bgcolor(),
             bold: cell.bold(),
+            dim: cell.dim(),
             italic: cell.italic(),
             underline: cell.underline(),
             inverse: cell.inverse(),
@@ -293,6 +296,7 @@ fn assert_produces(input: &[u8], expected: &FixtureScreen) {
             assert_eq!(got_cell.fgcolor(), expected_cell.fgcolor);
             assert_eq!(got_cell.bgcolor(), expected_cell.bgcolor);
             assert_eq!(got_cell.bold(), expected_cell.bold);
+            assert_eq!(got_cell.dim(), expected_cell.dim);
             assert_eq!(got_cell.italic(), expected_cell.italic);
             assert_eq!(got_cell.underline(), expected_cell.underline);
             assert_eq!(got_cell.inverse(), expected_cell.inverse);
