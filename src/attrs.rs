@@ -19,11 +19,12 @@ impl Default for Color {
     }
 }
 
+const TEXT_MODE_INTENSITY: u8 = 0b0000_0011;
 const TEXT_MODE_BOLD: u8 = 0b0000_0001;
-const TEXT_MODE_ITALIC: u8 = 0b0000_0010;
-const TEXT_MODE_UNDERLINE: u8 = 0b0000_0100;
-const TEXT_MODE_INVERSE: u8 = 0b0000_1000;
-const TEXT_MODE_DIM: u8 = 0b0001_0000;
+const TEXT_MODE_DIM: u8 = 0b0000_0010;
+const TEXT_MODE_ITALIC: u8 = 0b0000_0100;
+const TEXT_MODE_UNDERLINE: u8 = 0b0000_1000;
+const TEXT_MODE_INVERSE: u8 = 0b0001_0000;
 
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug)]
 pub struct Attrs {
@@ -37,12 +38,26 @@ impl Attrs {
         self.mode & TEXT_MODE_BOLD != 0
     }
 
-    pub fn set_bold(&mut self, bold: bool) {
-        if bold {
-            self.mode |= TEXT_MODE_BOLD;
-        } else {
-            self.mode &= !TEXT_MODE_BOLD;
-        }
+    pub fn dim(&self) -> bool {
+        self.mode & TEXT_MODE_DIM != 0
+    }
+
+    fn intensity(&self) -> u8 {
+        self.mode & TEXT_MODE_INTENSITY
+    }
+
+    pub fn set_bold(&mut self) {
+        self.mode &= !TEXT_MODE_INTENSITY;
+        self.mode |= TEXT_MODE_BOLD;
+    }
+
+    pub fn set_dim(&mut self) {
+        self.mode &= !TEXT_MODE_INTENSITY;
+        self.mode |= TEXT_MODE_DIM;
+    }
+
+    pub fn set_normal_intensity(&mut self) {
+        self.mode &= !TEXT_MODE_INTENSITY;
     }
 
     pub fn italic(&self) -> bool {
@@ -81,18 +96,6 @@ impl Attrs {
         }
     }
 
-    pub fn dim(&self) -> bool {
-        self.mode & TEXT_MODE_DIM != 0
-    }
-
-    pub fn set_dim(&mut self, dim: bool) {
-        if dim {
-            self.mode |= TEXT_MODE_DIM;
-        } else {
-            self.mode &= !TEXT_MODE_DIM;
-        }
-    }
-
     pub fn write_escape_code_diff(
         &self,
         contents: &mut Vec<u8>,
@@ -115,10 +118,15 @@ impl Attrs {
         } else {
             attrs.bgcolor(self.bgcolor)
         };
-        let attrs = if self.bold() == other.bold() {
+        let attrs = if self.intensity() == other.intensity() {
             attrs
         } else {
-            attrs.bold(self.bold())
+            attrs.intensity(match self.intensity() {
+                0 => crate::term::Intensity::Normal,
+                TEXT_MODE_BOLD => crate::term::Intensity::Bold,
+                TEXT_MODE_DIM => crate::term::Intensity::Dim,
+                _ => unreachable!(),
+            })
         };
         let attrs = if self.italic() == other.italic() {
             attrs
@@ -134,11 +142,6 @@ impl Attrs {
             attrs
         } else {
             attrs.inverse(self.inverse())
-        };
-        let attrs = if self.dim() == other.dim() {
-            attrs
-        } else {
-            attrs.dim(self.dim())
         };
 
         attrs.write_buf(contents);

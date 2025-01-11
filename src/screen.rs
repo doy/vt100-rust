@@ -662,6 +662,13 @@ impl Screen {
         self.attrs.bold()
     }
 
+    /// Returns whether newly drawn text should be rendered with the dim text
+    /// attribute.
+    #[must_use]
+    pub fn dim(&self) -> bool {
+        self.attrs.dim()
+    }
+
     /// Returns whether newly drawn text should be rendered with the italic
     /// text attribute.
     #[must_use]
@@ -1347,15 +1354,12 @@ impl Screen {
         loop {
             match next_param!() {
                 &[0] => self.attrs = crate::attrs::Attrs::default(),
-                &[1] => self.attrs.set_bold(true),
-                &[2] => self.attrs.set_dim(true),
+                &[1] => self.attrs.set_bold(),
+                &[2] => self.attrs.set_dim(),
                 &[3] => self.attrs.set_italic(true),
                 &[4] => self.attrs.set_underline(true),
                 &[7] => self.attrs.set_inverse(true),
-                &[22] => {
-                    self.attrs.set_bold(false);
-                    self.attrs.set_dim(false);
-                }
+                &[22] => self.attrs.set_normal_intensity(),
                 &[23] => self.attrs.set_italic(false),
                 &[24] => self.attrs.set_underline(false),
                 &[27] => self.attrs.set_inverse(false),

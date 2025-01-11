@@ -143,6 +143,13 @@ impl Cell {
         self.attrs.bold()
     }
 
+    /// Returns whether the cell should be rendered with the dim text
+    /// attribute.
+    #[must_use]
+    pub fn dim(&self) -> bool {
+        self.attrs.dim()
+    }
+
     /// Returns whether the cell should be rendered with the italic text
     /// attribute.
     #[must_use]

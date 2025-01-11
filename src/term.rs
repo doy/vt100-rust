@@ -104,16 +104,22 @@ impl BufWrite for ClearAttrs {
     }
 }
 
+#[derive(Debug, Clone, Copy)]
+pub enum Intensity {
+    Normal,
+    Bold,
+    Dim,
+}
+
 #[derive(Default, Debug)]
 #[must_use = "this struct does nothing unless you call write_buf"]
 pub struct Attrs {
     fgcolor: Option<crate::Color>,
     bgcolor: Option<crate::Color>,
-    bold: Option<bool>,
+    intensity: Option<Intensity>,
     italic: Option<bool>,
     underline: Option<bool>,
     inverse: Option<bool>,
-    dim: Option<bool>,
 }
 
 impl Attrs {
@@ -127,8 +133,8 @@ impl Attrs {
         self
     }
 
-    pub fn bold(mut self, bold: bool) -> Self {
-        self.bold = Some(bold);
+    pub fn intensity(mut self, intensity: Intensity) -> Self {
+        self.intensity = Some(intensity);
         self
     }
 
@@ -146,11 +152,6 @@ impl Attrs {
         self.inverse = Some(inverse);
         self
     }
-
-    pub fn dim(mut self, dim: bool) -> Self {
-        self.dim = Some(dim);
-        self
-    }
 }
 
 impl BufWrite for Attrs {
@@ -159,11 +160,10 @@ impl BufWrite for Attrs {
     fn write_buf(&self, buf: &mut Vec<u8>) {
         if self.fgcolor.is_none()
             && self.bgcolor.is_none()
-            && self.bold.is_none()
+            && self.intensity.is_none()
             && self.italic.is_none()
             && self.underline.is_none()
             && self.inverse.is_none()
-            && self.dim.is_none()
         {
             return;
         }
@@ -172,14 +172,14 @@ impl BufWrite for Attrs {
         let mut first = true;
 
         macro_rules! write_param {
-            ($i:expr) => {
+            ($i:expr) => {{
                 if first {
                     first = false;
                 } else {
                     buf.push(b';');
                 }
                 extend_itoa(buf, $i);
-            };
+            }};
         }
 
         if let Some(fgcolor) = self.fgcolor {
@@ -234,11 +234,11 @@ impl BufWrite for Attrs {
             }
         }
 
-        if let Some(bold) = self.bold {
-            if bold {
-                write_param!(1);
-            } else {
-                write_param!(22);
+        if let Some(intensity) = self.intensity {
+            match intensity {
+                Intensity::Normal => write_param!(22),
+                Intensity::Bold => write_param!(1),
+                Intensity::Dim => write_param!(2),
             }
         }
 
@@ -263,14 +263,6 @@ impl BufWrite for Attrs {
                 write_param!(7);
             } else {
                 write_param!(27);
-            }
-        }
-
-        if let Some(dim) = self.dim {
-            if dim {
-                write_param!(2);
-            } else {
-                write_param!(22);
             }
         }
 
