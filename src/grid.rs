@@ -129,7 +129,11 @@ impl Grid {
             .take(rows_len)
             // same for rows_len - scrollback_offset (e.g. 3 - 9).
             // it'll panic with overflow. we have to saturate the subtraction.
-            .chain(self.rows.iter().take(rows_len.saturating_sub(self.scrollback_offset)))
+            .chain(
+                self.rows
+                    .iter()
+                    .take(rows_len.saturating_sub(self.scrollback_offset)),
+            )
     }
 
     pub fn drawing_rows(&self) -> impl Iterator<Item = &crate::row::Row> {
