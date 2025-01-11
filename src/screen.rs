@@ -506,6 +506,7 @@ impl Screen {
     /// * fgcolor
     /// * bgcolor
     /// * bold
+    /// * dim
     /// * italic
     /// * underline
     /// * inverse
