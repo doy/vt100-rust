@@ -1,3 +1,4 @@
+[graph]
 targets = [
     { triple = "x86_64-unknown-linux-musl" },
     { triple = "x86_64-unknown-linux-gnu" },
@@ -6,13 +7,13 @@ targets = [
 ]
 
 [advisories]
+version = 2
 yanked = "deny"
-unsound = "deny"
 
 [bans]
 multiple-versions = "deny"
 wildcards = "deny"
 
 [licenses]
-allow = ["MIT", "Apache-2.0", "Unicode-DFS-2016"]
-copyleft = "deny"
+version = 2
+allow = ["MIT", "Apache-2.0", "Unicode-3.0"]

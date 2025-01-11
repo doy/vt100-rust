@@ -1182,6 +1182,7 @@ impl Screen {
 
     // CSI h
     #[allow(clippy::unused_self)]
+    #[allow(clippy::needless_pass_by_ref_mut)]
     pub(crate) fn sm(&mut self, params: &vte::Params) {
         // nothing, i think?
         if log::log_enabled!(log::Level::Debug) {
@@ -1241,6 +1242,7 @@ impl Screen {
 
     // CSI l
     #[allow(clippy::unused_self)]
+    #[allow(clippy::needless_pass_by_ref_mut)]
     pub(crate) fn rm(&mut self, params: &vte::Params) {
         // nothing, i think?
         if log::log_enabled!(log::Level::Debug) {
@@ -1502,7 +1504,7 @@ impl Screen {
 }
 
 fn u16_to_u8(i: u16) -> Option<u8> {
-    if i > u16::from(u8::max_value()) {
+    if i > u16::from(u8::MAX) {
         None
     } else {
         // safe because we just ensured that the value fits in a u8

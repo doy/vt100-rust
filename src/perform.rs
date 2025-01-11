@@ -119,10 +119,10 @@ impl vte::Perform for WrappedScreen {
     }
 
     fn osc_dispatch(&mut self, params: &[&[u8]], _bel_terminated: bool) {
-        match (params.get(0), params.get(1)) {
-            (Some(&b"0"), Some(s)) => self.0.osc0(s),
-            (Some(&b"1"), Some(s)) => self.0.osc1(s),
-            (Some(&b"2"), Some(s)) => self.0.osc2(s),
+        match params {
+            [b"0", s, ..] => self.0.osc0(s),
+            [b"1", s, ..] => self.0.osc1(s),
+            [b"2", s, ..] => self.0.osc2(s),
             _ => {
                 if log::log_enabled!(log::Level::Debug) {
                     log::debug!(
@@ -237,8 +237,8 @@ impl<'a, T: crate::callbacks::Callbacks> WrappedScreenWithCallbacks<'a, T> {
     }
 }
 
-impl<'a, T: crate::callbacks::Callbacks> vte::Perform
-    for WrappedScreenWithCallbacks<'a, T>
+impl<T: crate::callbacks::Callbacks> vte::Perform
+    for WrappedScreenWithCallbacks<'_, T>
 {
     fn print(&mut self, c: char) {
         if c == '\u{fffd}' || ('\u{80}'..'\u{a0}').contains(&c) {
@@ -272,7 +272,7 @@ impl<'a, T: crate::callbacks::Callbacks> vte::Perform
         ignore: bool,
         c: char,
     ) {
-        if intermediates.first().is_none() && c == 't' {
+        if intermediates.is_empty() && c == 't' {
             let mut iter = params.iter();
             let op = iter.next().and_then(|x| x.first().copied());
             if op == Some(8) {

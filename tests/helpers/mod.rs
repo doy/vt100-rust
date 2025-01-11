@@ -1,5 +1,7 @@
 mod fixtures;
+#[allow(unused_imports)]
 pub use fixtures::fixture;
+#[allow(unused_imports)]
 pub use fixtures::FixtureScreen;
 
 pub static mut QUIET: bool = false;
@@ -34,7 +36,7 @@ macro_rules! ok {
 #[derive(Eq, PartialEq)]
 struct Bytes<'a>(&'a [u8]);
 
-impl<'a> std::fmt::Debug for Bytes<'a> {
+impl std::fmt::Debug for Bytes<'_> {
     fn fmt(
         &self,
         f: &mut std::fmt::Formatter<'_>,

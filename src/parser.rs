@@ -22,9 +22,7 @@ impl Parser {
     /// Processes the contents of the given byte string, and updates the
     /// in-memory terminal state.
     pub fn process(&mut self, bytes: &[u8]) {
-        for byte in bytes {
-            self.parser.advance(&mut self.screen, *byte);
-        }
+        self.parser.advance(&mut self.screen, bytes);
     }
 
     /// Processes the contents of the given byte string, and updates the
@@ -39,9 +37,7 @@ impl Parser {
             &mut self.screen,
             callbacks,
         );
-        for byte in bytes {
-            self.parser.advance(&mut screen, *byte);
-        }
+        self.parser.advance(&mut screen, bytes);
     }
 
     /// Returns a reference to a `Screen` object containing the terminal
