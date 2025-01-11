@@ -25,8 +25,7 @@ impl PartialEq<Self> for Cell {
         if self.attrs != other.attrs {
             return false;
         }
-        let num_bytes = self.num_bytes();
-        // self.num_bytes() always returns a valid value
+        let num_bytes = usize::from(self.num_bytes);
         self.contents[..num_bytes] == other.contents[..num_bytes]
     }
 }
@@ -44,11 +43,6 @@ impl Cell {
     #[inline]
     fn len(&self) -> usize {
         usize::from(self.len & 0x0f)
-    }
-
-    #[inline]
-    fn num_bytes(&self) -> usize {
-        usize::from(self.num_bytes & 0x0f)
     }
 
     pub(crate) fn set(&mut self, c: char, a: crate::attrs::Attrs) {
@@ -76,26 +70,15 @@ impl Cell {
             self.len += 1;
         }
 
-        let num_bytes = self.num_bytes();
         // we already checked that len < CODEPOINTS_IN_CELL
-        self.append_char(num_bytes, c);
+        self.append_char(usize::from(self.num_bytes), c);
     }
 
-    #[allow(clippy::cast_possible_truncation, clippy::as_conversions)]
-    #[inline]
     // Writes bytes representing c at start
     // Requires caller to verify start <= CODEPOINTS_IN_CELL * 4
     fn append_char(&mut self, start: usize, c: char) {
-        match c.len_utf8() {
-            1 => {
-                self.contents[start] = c as u8;
-                self.num_bytes += 1;
-            }
-            n => {
-                c.encode_utf8(&mut self.contents[start..]);
-                self.num_bytes += n as u8;
-            }
-        }
+        c.encode_utf8(&mut self.contents[start..]);
+        self.num_bytes += u8::try_from(c.len_utf8()).unwrap();
         self.len += 1;
     }
 
@@ -110,11 +93,12 @@ impl Cell {
     /// Can include multiple unicode characters if combining characters are
     /// used, but will contain at most one character with a non-zero character
     /// width.
+    // Since contents has been constructed by appending chars encoded as UTF-8 it will be valid UTF-8
+    #[allow(clippy::missing_panics_doc)]
     #[must_use]
     pub fn contents(&self) -> &str {
-        let num_bytes = self.num_bytes();
-        // Since contents has been constructed by appending chars encoded as UTF-8 it will be valid UTF-8
-        unsafe { std::str::from_utf8_unchecked(&self.contents[..num_bytes]) }
+        std::str::from_utf8(&self.contents[..usize::from(self.num_bytes)])
+            .unwrap()
     }
 
     /// Returns whether the cell contains any text data.

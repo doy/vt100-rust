@@ -125,7 +125,7 @@ impl Row {
                 }
                 prev_col += col - prev_col;
 
-                contents.push_str(&cell.contents());
+                contents.push_str(cell.contents());
                 prev_col += if cell.is_wide() { 2 } else { 1 };
             }
         }
