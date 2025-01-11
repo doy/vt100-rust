@@ -14,3 +14,5 @@ pub trait Callbacks {
     /// (such as an invalid UTF-8 character or an unused control character).
     fn error(&mut self, _: &mut crate::Screen) {}
 }
+
+impl Callbacks for () {}

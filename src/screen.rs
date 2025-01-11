@@ -1475,22 +1475,6 @@ impl Screen {
         self.grid_mut().set_scroll_region(top - 1, bottom - 1);
     }
 
-    // CSI t
-    #[allow(clippy::unused_self)]
-    pub(crate) fn xtwinops(&self, params: &vte::Params) {
-        let mut iter = params.iter();
-        let op = iter.next().and_then(|x| x.first().copied());
-        match op {
-            Some(8) => {}
-            _ => {
-                log::debug!(
-                    "unhandled XTWINOPS: {}",
-                    crate::perform::param_str(params)
-                );
-            }
-        }
-    }
-
     // osc codes
 
     pub(crate) fn osc0(&mut self, s: &[u8]) {

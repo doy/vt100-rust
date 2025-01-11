@@ -27,33 +27,33 @@ fn vb() {
         }
     }
 
-    let mut parser = vt100::Parser::default();
-    let mut state = State { vb: 0 };
-    assert_eq!(state.vb, 0);
+    let mut parser =
+        vt100::Parser::new_with_callbacks(24, 80, 0, State { vb: 0 });
+    assert_eq!(parser.callbacks().vb, 0);
 
     let screen = parser.screen().clone();
-    parser.process_cb(b"\x1bg", &mut state);
-    assert_eq!(state.vb, 1);
+    parser.process(b"\x1bg");
+    assert_eq!(parser.callbacks().vb, 1);
     assert_eq!(parser.screen().contents_diff(&screen), b"");
 
     let screen = parser.screen().clone();
-    parser.process_cb(b"\x1bg", &mut state);
-    assert_eq!(state.vb, 2);
+    parser.process(b"\x1bg");
+    assert_eq!(parser.callbacks().vb, 2);
     assert_eq!(parser.screen().contents_diff(&screen), b"");
 
     let screen = parser.screen().clone();
-    parser.process_cb(b"\x1bg\x1bg\x1bg", &mut state);
-    assert_eq!(state.vb, 5);
+    parser.process(b"\x1bg\x1bg\x1bg");
+    assert_eq!(parser.callbacks().vb, 5);
     assert_eq!(parser.screen().contents_diff(&screen), b"");
 
     let screen = parser.screen().clone();
-    parser.process_cb(b"foo", &mut state);
-    assert_eq!(state.vb, 5);
+    parser.process(b"foo");
+    assert_eq!(parser.callbacks().vb, 5);
     assert_eq!(parser.screen().contents_diff(&screen), b"foo");
 
     let screen = parser.screen().clone();
-    parser.process_cb(b"ba\x1bgr", &mut state);
-    assert_eq!(state.vb, 6);
+    parser.process(b"ba\x1bgr");
+    assert_eq!(parser.callbacks().vb, 6);
     assert_eq!(parser.screen().contents_diff(&screen), b"bar");
 }
 

@@ -12,33 +12,33 @@ fn bel() {
         }
     }
 
-    let mut parser = vt100::Parser::default();
-    let mut state = State { bel: 0 };
-    assert_eq!(state.bel, 0);
+    let mut parser =
+        vt100::Parser::new_with_callbacks(24, 80, 0, State { bel: 0 });
+    assert_eq!(parser.callbacks().bel, 0);
 
     let screen = parser.screen().clone();
-    parser.process_cb(b"\x07", &mut state);
-    assert_eq!(state.bel, 1);
+    parser.process(b"\x07");
+    assert_eq!(parser.callbacks().bel, 1);
     assert_eq!(parser.screen().contents_diff(&screen), b"");
 
     let screen = parser.screen().clone();
-    parser.process_cb(b"\x07", &mut state);
-    assert_eq!(state.bel, 2);
+    parser.process(b"\x07");
+    assert_eq!(parser.callbacks().bel, 2);
     assert_eq!(parser.screen().contents_diff(&screen), b"");
 
     let screen = parser.screen().clone();
-    parser.process_cb(b"\x07\x07\x07", &mut state);
-    assert_eq!(state.bel, 5);
+    parser.process(b"\x07\x07\x07");
+    assert_eq!(parser.callbacks().bel, 5);
     assert_eq!(parser.screen().contents_diff(&screen), b"");
 
     let screen = parser.screen().clone();
-    parser.process_cb(b"foo", &mut state);
-    assert_eq!(state.bel, 5);
+    parser.process(b"foo");
+    assert_eq!(parser.callbacks().bel, 5);
     assert_eq!(parser.screen().contents_diff(&screen), b"foo");
 
     let screen = parser.screen().clone();
-    parser.process_cb(b"ba\x07r", &mut state);
-    assert_eq!(state.bel, 6);
+    parser.process(b"ba\x07r");
+    assert_eq!(parser.callbacks().bel, 6);
     assert_eq!(parser.screen().contents_diff(&screen), b"bar");
 }
 

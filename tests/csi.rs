@@ -58,25 +58,24 @@ fn xtwinops() {
         }
     }
 
-    let mut vt = vt100::Parser::default();
+    let mut vt = vt100::Parser::new_with_callbacks(24, 80, 0, Callbacks);
     assert_eq!(vt.screen().size(), (24, 80));
-    vt.process_cb(b"\x1b[8;24;80t", &mut Callbacks);
+    vt.process(b"\x1b[8;24;80t");
     assert_eq!(vt.screen().size(), (24, 80));
-    vt.process_cb(b"\x1b[8t", &mut Callbacks);
+    vt.process(b"\x1b[8t");
     assert_eq!(vt.screen().size(), (24, 80));
-    vt.process_cb(b"\x1b[8;80;24t", &mut Callbacks);
+    vt.process(b"\x1b[8;80;24t");
     assert_eq!(vt.screen().size(), (80, 24));
-    vt.process_cb(b"\x1b[8;24t", &mut Callbacks);
+    vt.process(b"\x1b[8;24t");
     assert_eq!(vt.screen().size(), (24, 24));
 
-    let mut vt = vt100::Parser::default();
+    let mut vt = vt100::Parser::new_with_callbacks(24, 80, 0, Callbacks);
     assert_eq!(vt.screen().size(), (24, 80));
-    vt.process_cb(b"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", &mut Callbacks);
+    vt.process(b"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
     assert_eq!(vt.screen().rows(0, 80).next().unwrap(), "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
     assert_eq!(vt.screen().rows(0, 80).nth(1).unwrap(), "aaaaaaaaaa");
-    vt.process_cb(
+    vt.process(
         b"\x1b[H\x1b[8;24;15tbbbbbbbbbbbbbbbbbbbb\x1b[8;24;80tcccccccccccccccccccc",
-        &mut Callbacks,
     );
     assert_eq!(vt.screen().rows(0, 80).next().unwrap(), "bbbbbbbbbbbbbbb");
     assert_eq!(
