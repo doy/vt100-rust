@@ -1,5 +1,5 @@
-/// This trait is used with `Parser::process_cb` to handle extra escape
-/// sequences that don't have an impact on the terminal screen directly.
+/// This trait is used by the parser to handle extra escape sequences that
+/// don't have an impact on the terminal screen directly.
 pub trait Callbacks {
     /// This callback is called when the terminal requests an audible bell
     /// (typically with `^G`).
