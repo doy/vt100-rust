@@ -19,9 +19,6 @@ fn init() {
         b"\x1b[?25h\x1b[m\x1b[H\x1b[J"
     );
 
-    assert_eq!(parser.screen().title(), "");
-    assert_eq!(parser.screen().icon_name(), "");
-
     assert!(!parser.screen().application_keypad());
     assert!(!parser.screen().application_cursor());
     assert!(!parser.screen().hide_cursor());

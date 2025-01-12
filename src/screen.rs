@@ -59,9 +59,6 @@ pub struct Screen {
     attrs: crate::attrs::Attrs,
     saved_attrs: crate::attrs::Attrs,
 
-    title: String,
-    icon_name: String,
-
     modes: u8,
     mouse_protocol_mode: MouseProtocolMode,
     mouse_protocol_encoding: MouseProtocolEncoding,
@@ -80,9 +77,6 @@ impl Screen {
 
             attrs: crate::attrs::Attrs::default(),
             saved_attrs: crate::attrs::Attrs::default(),
-
-            title: String::default(),
-            icon_name: String::default(),
 
             modes: 0,
             mouse_protocol_mode: MouseProtocolMode::default(),
@@ -230,7 +224,6 @@ impl Screen {
         let mut contents = vec![];
         self.write_contents_formatted(&mut contents);
         self.write_input_mode_formatted(&mut contents);
-        self.write_title_formatted(&mut contents);
         contents
     }
 
@@ -242,7 +235,6 @@ impl Screen {
         let mut contents = vec![];
         self.write_contents_diff(&mut contents, prev);
         self.write_input_mode_diff(&mut contents, prev);
-        self.write_title_diff(&mut contents, prev);
         contents
     }
 
@@ -456,40 +448,6 @@ impl Screen {
     }
 
     /// Returns terminal escape sequences sufficient to set the current
-    /// terminal's window title.
-    #[must_use]
-    pub fn title_formatted(&self) -> Vec<u8> {
-        let mut contents = vec![];
-        self.write_title_formatted(&mut contents);
-        contents
-    }
-
-    fn write_title_formatted(&self, contents: &mut Vec<u8>) {
-        crate::term::ChangeTitle::new(&self.icon_name, &self.title, "", "")
-            .write_buf(contents);
-    }
-
-    /// Returns terminal escape sequences sufficient to change the previous
-    /// terminal's window title to the window title set in the current
-    /// terminal.
-    #[must_use]
-    pub fn title_diff(&self, prev: &Self) -> Vec<u8> {
-        let mut contents = vec![];
-        self.write_title_diff(&mut contents, prev);
-        contents
-    }
-
-    fn write_title_diff(&self, contents: &mut Vec<u8>, prev: &Self) {
-        crate::term::ChangeTitle::new(
-            &self.icon_name,
-            &self.title,
-            &prev.icon_name,
-            &prev.title,
-        )
-        .write_buf(contents);
-    }
-
-    /// Returns terminal escape sequences sufficient to set the current
     /// terminal's drawing attributes.
     ///
     /// Supported drawing attributes are:
@@ -578,18 +536,6 @@ impl Screen {
         self.grid()
             .visible_row(row)
             .map_or(false, crate::row::Row::wrapped)
-    }
-
-    /// Returns the terminal's window title.
-    #[must_use]
-    pub fn title(&self) -> &str {
-        &self.title
-    }
-
-    /// Returns the terminal's icon name.
-    #[must_use]
-    pub fn icon_name(&self) -> &str {
-        &self.icon_name
     }
 
     /// Returns whether the alternate screen is currently in use.
@@ -1045,13 +991,7 @@ impl Screen {
 
     // ESC c
     pub(crate) fn ris(&mut self) {
-        let title = self.title.clone();
-        let icon_name = self.icon_name.clone();
-
         *self = Self::new(self.grid.size(), self.grid.scrollback_len());
-
-        self.title = title;
-        self.icon_name = icon_name;
     }
 
     // csi codes
@@ -1464,25 +1404,6 @@ impl Screen {
     // CSI r
     pub(crate) fn decstbm(&mut self, (top, bottom): (u16, u16)) {
         self.grid_mut().set_scroll_region(top - 1, bottom - 1);
-    }
-
-    // osc codes
-
-    pub(crate) fn osc0(&mut self, s: &[u8]) {
-        self.osc1(s);
-        self.osc2(s);
-    }
-
-    pub(crate) fn osc1(&mut self, s: &[u8]) {
-        if let Ok(s) = std::str::from_utf8(s) {
-            self.icon_name = s.to_string();
-        }
-    }
-
-    pub(crate) fn osc2(&mut self, s: &[u8]) {
-        if let Ok(s) = std::str::from_utf8(s) {
-            self.title = s.to_string();
-        }
     }
 }
 

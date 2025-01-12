@@ -383,54 +383,6 @@ impl BufWrite for MoveFromTo {
     }
 }
 
-#[must_use = "this struct does nothing unless you call write_buf"]
-pub struct ChangeTitle<'a> {
-    icon_name: &'a str,
-    title: &'a str,
-    prev_icon_name: &'a str,
-    prev_title: &'a str,
-}
-
-impl<'a> ChangeTitle<'a> {
-    pub fn new(
-        icon_name: &'a str,
-        title: &'a str,
-        prev_icon_name: &'a str,
-        prev_title: &'a str,
-    ) -> Self {
-        Self {
-            icon_name,
-            title,
-            prev_icon_name,
-            prev_title,
-        }
-    }
-}
-
-impl BufWrite for ChangeTitle<'_> {
-    fn write_buf(&self, buf: &mut Vec<u8>) {
-        if self.icon_name == self.title
-            && (self.icon_name != self.prev_icon_name
-                || self.title != self.prev_title)
-        {
-            buf.extend_from_slice(b"\x1b]0;");
-            buf.extend_from_slice(self.icon_name.as_bytes());
-            buf.push(b'\x07');
-        } else {
-            if self.icon_name != self.prev_icon_name {
-                buf.extend_from_slice(b"\x1b]1;");
-                buf.extend_from_slice(self.icon_name.as_bytes());
-                buf.push(b'\x07');
-            }
-            if self.title != self.prev_title {
-                buf.extend_from_slice(b"\x1b]2;");
-                buf.extend_from_slice(self.title.as_bytes());
-                buf.push(b'\x07');
-            }
-        }
-    }
-}
-
 #[derive(Default, Debug)]
 #[must_use = "this struct does nothing unless you call write_buf"]
 pub struct ApplicationKeypad {

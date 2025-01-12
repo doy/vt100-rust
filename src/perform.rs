@@ -172,9 +172,16 @@ impl<Callbacks: crate::callbacks::Callbacks> vte::Perform
 
     fn osc_dispatch(&mut self, params: &[&[u8]], _bel_terminated: bool) {
         match params {
-            [b"0", s, ..] => self.screen.osc0(s),
-            [b"1", s, ..] => self.screen.osc1(s),
-            [b"2", s, ..] => self.screen.osc2(s),
+            [b"0", s, ..] => {
+                self.callbacks.set_window_icon_name(&mut self.screen, s);
+                self.callbacks.set_window_title(&mut self.screen, s);
+            }
+            [b"1", s, ..] => {
+                self.callbacks.set_window_icon_name(&mut self.screen, s);
+            }
+            [b"2", s, ..] => {
+                self.callbacks.set_window_title(&mut self.screen, s);
+            }
             _ => {
                 if log::log_enabled!(log::Level::Debug) {
                     log::debug!(

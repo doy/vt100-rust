@@ -102,9 +102,6 @@ pub fn compare_screens(
     ok!(got.cursor_position().1 <= cols);
     ok!(expected.cursor_position().1 <= cols);
 
-    is!(got.title(), expected.title());
-    is!(got.icon_name(), expected.icon_name());
-
     is!(got.application_keypad(), expected.application_keypad());
     is!(got.application_cursor(), expected.application_cursor());
     is!(got.hide_cursor(), expected.hide_cursor());
@@ -133,7 +130,6 @@ pub fn rows_formatted_reproduces_state(input: &[u8]) -> bool {
 pub fn contents_formatted_reproduces_screen(screen: &vt100::Screen) -> bool {
     let mut new_input = screen.contents_formatted();
     new_input.extend(screen.input_mode_formatted());
-    new_input.extend(screen.title_formatted());
     assert_eq!(new_input, screen.state_formatted());
     let mut new_parser = vt100::Parser::default();
     new_parser.process(&new_input);
@@ -157,7 +153,6 @@ pub fn rows_formatted_reproduces_screen(screen: &vt100::Screen) -> bool {
     new_input.extend(screen.cursor_state_formatted());
     new_input.extend(screen.attributes_formatted());
     new_input.extend(screen.input_mode_formatted());
-    new_input.extend(screen.title_formatted());
     let mut new_parser = vt100::Parser::default();
     new_parser.process(&new_input);
     let got_screen = new_parser.screen().clone();
@@ -196,12 +191,10 @@ pub fn contents_diff_reproduces_state_from_screens(
 ) -> bool {
     let mut diff_input = screen.contents_diff(prev_screen);
     diff_input.extend(screen.input_mode_diff(prev_screen));
-    diff_input.extend(screen.title_diff(prev_screen));
     assert_eq!(diff_input, screen.state_diff(prev_screen));
 
     let mut diff_prev_input = prev_screen.contents_formatted();
     diff_prev_input.extend(screen.input_mode_formatted());
-    diff_prev_input.extend(screen.title_formatted());
 
     let mut new_parser = vt100::Parser::default();
     new_parser.process(&diff_prev_input);

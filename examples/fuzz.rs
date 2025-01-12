@@ -65,7 +65,6 @@ fn check_rows(vt_base: &vt100::Screen, idx: usize) {
     input.extend(&vt_base.cursor_state_formatted());
     input.extend(&vt_base.attributes_formatted());
     input.extend(&vt_base.input_mode_formatted());
-    input.extend(&vt_base.title_formatted());
     let mut vt_rows = vt100::Parser::default();
     vt_rows.process(&input);
     assert!(

@@ -58,10 +58,6 @@ pub struct FixtureScreen {
     cells: std::collections::BTreeMap<String, FixtureCell>,
     cursor_position: (u16, u16),
     #[serde(default, skip_serializing_if = "is_default")]
-    title: String,
-    #[serde(default, skip_serializing_if = "is_default")]
-    icon_name: String,
-    #[serde(default, skip_serializing_if = "is_default")]
     application_keypad: bool,
     #[serde(default, skip_serializing_if = "is_default")]
     application_cursor: bool,
@@ -111,8 +107,6 @@ impl FixtureScreen {
             contents: screen.contents(),
             cells,
             cursor_position: screen.cursor_position(),
-            title: screen.title().to_string(),
-            icon_name: screen.icon_name().to_string(),
             application_keypad: screen.application_keypad(),
             application_cursor: screen.application_cursor(),
             hide_cursor: screen.hide_cursor(),
@@ -257,8 +251,6 @@ fn assert_produces(input: &[u8], expected: &FixtureScreen) {
 
     assert_eq!(parser.screen().contents(), expected.contents);
     assert_eq!(parser.screen().cursor_position(), expected.cursor_position);
-    assert_eq!(parser.screen().title(), expected.title);
-    assert_eq!(parser.screen().icon_name(), expected.icon_name);
     assert_eq!(
         parser.screen().application_keypad(),
         expected.application_keypad
