@@ -15,7 +15,6 @@ include = ["src/**/*", "LICENSE", "README.md", "CHANGELOG.md"]
 
 [dependencies]
 itoa = "1.0.14"
-log = "0.4.24"
 unicode-width = "0.2.0"
 vte = "0.14.0"
 

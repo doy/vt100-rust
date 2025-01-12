@@ -1047,39 +1047,51 @@ impl Screen {
     }
 
     // CSI J
-    pub(crate) fn ed(&mut self, mode: u16) {
+    pub(crate) fn ed(
+        &mut self,
+        mode: u16,
+        mut unhandled: impl FnMut(&mut Self),
+    ) {
         let attrs = self.attrs;
         match mode {
             0 => self.grid_mut().erase_all_forward(attrs),
             1 => self.grid_mut().erase_all_backward(attrs),
             2 => self.grid_mut().erase_all(attrs),
-            n => {
-                log::debug!("unhandled ED mode: {n}");
-            }
+            _ => unhandled(self),
         }
     }
 
     // CSI ? J
-    pub(crate) fn decsed(&mut self, mode: u16) {
-        self.ed(mode);
+    pub(crate) fn decsed(
+        &mut self,
+        mode: u16,
+        unhandled: impl FnMut(&mut Self),
+    ) {
+        self.ed(mode, unhandled);
     }
 
     // CSI K
-    pub(crate) fn el(&mut self, mode: u16) {
+    pub(crate) fn el(
+        &mut self,
+        mode: u16,
+        mut unhandled: impl FnMut(&mut Self),
+    ) {
         let attrs = self.attrs;
         match mode {
             0 => self.grid_mut().erase_row_forward(attrs),
             1 => self.grid_mut().erase_row_backward(attrs),
             2 => self.grid_mut().erase_row(attrs),
-            n => {
-                log::debug!("unhandled EL mode: {n}");
-            }
+            _ => unhandled(self),
         }
     }
 
     // CSI ? K
-    pub(crate) fn decsel(&mut self, mode: u16) {
-        self.el(mode);
+    pub(crate) fn decsel(
+        &mut self,
+        mode: u16,
+        unhandled: impl FnMut(&mut Self),
+    ) {
+        self.el(mode, unhandled);
     }
 
     // CSI L
@@ -1118,131 +1130,89 @@ impl Screen {
         self.grid_mut().row_set(row - 1);
     }
 
-    // CSI h
-    #[allow(clippy::unused_self)]
-    #[allow(clippy::needless_pass_by_ref_mut)]
-    pub(crate) fn sm(&mut self, params: &vte::Params) {
-        // nothing, i think?
-        if log::log_enabled!(log::Level::Debug) {
-            log::debug!(
-                "unhandled SM mode: {}",
-                crate::perform::param_str(params)
-            );
-        }
-    }
-
     // CSI ? h
-    pub(crate) fn decset(&mut self, params: &vte::Params) {
+    pub(crate) fn decset(
+        &mut self,
+        params: &vte::Params,
+        mut unhandled: impl FnMut(&mut Self),
+    ) {
         for param in params {
             match param {
-                &[1] => self.set_mode(MODE_APPLICATION_CURSOR),
-                &[6] => self.grid_mut().set_origin_mode(true),
-                &[9] => self.set_mouse_mode(MouseProtocolMode::Press),
-                &[25] => self.clear_mode(MODE_HIDE_CURSOR),
-                &[47] => self.enter_alternate_grid(),
-                &[1000] => {
+                [1] => self.set_mode(MODE_APPLICATION_CURSOR),
+                [6] => self.grid_mut().set_origin_mode(true),
+                [9] => self.set_mouse_mode(MouseProtocolMode::Press),
+                [25] => self.clear_mode(MODE_HIDE_CURSOR),
+                [47] => self.enter_alternate_grid(),
+                [1000] => {
                     self.set_mouse_mode(MouseProtocolMode::PressRelease);
                 }
-                &[1002] => {
+                [1002] => {
                     self.set_mouse_mode(MouseProtocolMode::ButtonMotion);
                 }
-                &[1003] => self.set_mouse_mode(MouseProtocolMode::AnyMotion),
-                &[1005] => {
+                [1003] => self.set_mouse_mode(MouseProtocolMode::AnyMotion),
+                [1005] => {
                     self.set_mouse_encoding(MouseProtocolEncoding::Utf8);
                 }
-                &[1006] => {
+                [1006] => {
                     self.set_mouse_encoding(MouseProtocolEncoding::Sgr);
                 }
-                &[1049] => {
+                [1049] => {
                     self.decsc();
                     self.alternate_grid.clear();
                     self.enter_alternate_grid();
                 }
-                &[2004] => self.set_mode(MODE_BRACKETED_PASTE),
-                ns => {
-                    if log::log_enabled!(log::Level::Debug) {
-                        let n = if ns.len() == 1 {
-                            format!(
-                                "{}",
-                                // we just checked that ns.len() == 1, so 0
-                                // must be valid
-                                ns[0]
-                            )
-                        } else {
-                            format!("{ns:?}")
-                        };
-                        log::debug!("unhandled DECSET mode: {n}");
-                    }
-                }
+                [2004] => self.set_mode(MODE_BRACKETED_PASTE),
+                _ => unhandled(self),
             }
         }
     }
 
-    // CSI l
-    #[allow(clippy::unused_self)]
-    #[allow(clippy::needless_pass_by_ref_mut)]
-    pub(crate) fn rm(&mut self, params: &vte::Params) {
-        // nothing, i think?
-        if log::log_enabled!(log::Level::Debug) {
-            log::debug!(
-                "unhandled RM mode: {}",
-                crate::perform::param_str(params)
-            );
-        }
-    }
-
     // CSI ? l
-    pub(crate) fn decrst(&mut self, params: &vte::Params) {
+    pub(crate) fn decrst(
+        &mut self,
+        params: &vte::Params,
+        mut unhandled: impl FnMut(&mut Self),
+    ) {
         for param in params {
             match param {
-                &[1] => self.clear_mode(MODE_APPLICATION_CURSOR),
-                &[6] => self.grid_mut().set_origin_mode(false),
-                &[9] => self.clear_mouse_mode(MouseProtocolMode::Press),
-                &[25] => self.set_mode(MODE_HIDE_CURSOR),
-                &[47] => {
+                [1] => self.clear_mode(MODE_APPLICATION_CURSOR),
+                [6] => self.grid_mut().set_origin_mode(false),
+                [9] => self.clear_mouse_mode(MouseProtocolMode::Press),
+                [25] => self.set_mode(MODE_HIDE_CURSOR),
+                [47] => {
                     self.exit_alternate_grid();
                 }
-                &[1000] => {
+                [1000] => {
                     self.clear_mouse_mode(MouseProtocolMode::PressRelease);
                 }
-                &[1002] => {
+                [1002] => {
                     self.clear_mouse_mode(MouseProtocolMode::ButtonMotion);
                 }
-                &[1003] => {
+                [1003] => {
                     self.clear_mouse_mode(MouseProtocolMode::AnyMotion);
                 }
-                &[1005] => {
+                [1005] => {
                     self.clear_mouse_encoding(MouseProtocolEncoding::Utf8);
                 }
-                &[1006] => {
+                [1006] => {
                     self.clear_mouse_encoding(MouseProtocolEncoding::Sgr);
                 }
-                &[1049] => {
+                [1049] => {
                     self.exit_alternate_grid();
                     self.decrc();
                 }
-                &[2004] => self.clear_mode(MODE_BRACKETED_PASTE),
-                ns => {
-                    if log::log_enabled!(log::Level::Debug) {
-                        let n = if ns.len() == 1 {
-                            format!(
-                                "{}",
-                                // we just checked that ns.len() == 1, so 0
-                                // must be valid
-                                ns[0]
-                            )
-                        } else {
-                            format!("{ns:?}")
-                        };
-                        log::debug!("unhandled DECRST mode: {n}");
-                    }
-                }
+                [2004] => self.clear_mode(MODE_BRACKETED_PASTE),
+                _ => unhandled(self),
             }
         }
     }
 
     // CSI m
-    pub(crate) fn sgr(&mut self, params: &vte::Params) {
+    pub(crate) fn sgr(
+        &mut self,
+        params: &vte::Params,
+        mut unhandled: impl FnMut(&mut Self),
+    ) {
         // XXX really i want to just be able to pass in a default Params
         // instance with a 0 in it, but vte doesn't allow creating new Params
         // instances
@@ -1284,119 +1254,81 @@ impl Screen {
 
         loop {
             match next_param!() {
-                &[0] => self.attrs = crate::attrs::Attrs::default(),
-                &[1] => self.attrs.set_bold(),
-                &[2] => self.attrs.set_dim(),
-                &[3] => self.attrs.set_italic(true),
-                &[4] => self.attrs.set_underline(true),
-                &[7] => self.attrs.set_inverse(true),
-                &[22] => self.attrs.set_normal_intensity(),
-                &[23] => self.attrs.set_italic(false),
-                &[24] => self.attrs.set_underline(false),
-                &[27] => self.attrs.set_inverse(false),
-                &[n] if (30..=37).contains(&n) => {
-                    self.attrs.fgcolor = crate::Color::Idx(to_u8!(n) - 30);
+                [0] => self.attrs = crate::attrs::Attrs::default(),
+                [1] => self.attrs.set_bold(),
+                [2] => self.attrs.set_dim(),
+                [3] => self.attrs.set_italic(true),
+                [4] => self.attrs.set_underline(true),
+                [7] => self.attrs.set_inverse(true),
+                [22] => self.attrs.set_normal_intensity(),
+                [23] => self.attrs.set_italic(false),
+                [24] => self.attrs.set_underline(false),
+                [27] => self.attrs.set_inverse(false),
+                [n] if (30..=37).contains(n) => {
+                    self.attrs.fgcolor = crate::Color::Idx(to_u8!(*n) - 30);
                 }
-                &[38, 2, r, g, b] => {
+                [38, 2, r, g, b] => {
                     self.attrs.fgcolor =
-                        crate::Color::Rgb(to_u8!(r), to_u8!(g), to_u8!(b));
+                        crate::Color::Rgb(to_u8!(*r), to_u8!(*g), to_u8!(*b));
                 }
-                &[38, 5, i] => {
-                    self.attrs.fgcolor = crate::Color::Idx(to_u8!(i));
+                [38, 5, i] => {
+                    self.attrs.fgcolor = crate::Color::Idx(to_u8!(*i));
                 }
-                &[38] => match next_param!() {
-                    &[2] => {
+                [38] => match next_param!() {
+                    [2] => {
                         let r = next_param_u8!();
                         let g = next_param_u8!();
                         let b = next_param_u8!();
                         self.attrs.fgcolor = crate::Color::Rgb(r, g, b);
                     }
-                    &[5] => {
+                    [5] => {
                         self.attrs.fgcolor =
                             crate::Color::Idx(next_param_u8!());
                     }
-                    ns => {
-                        if log::log_enabled!(log::Level::Debug) {
-                            let n = if ns.len() == 1 {
-                                format!(
-                                    "{}",
-                                    // we just checked that ns.len() == 1, so
-                                    // 0 must be valid
-                                    ns[0]
-                                )
-                            } else {
-                                format!("{ns:?}")
-                            };
-                            log::debug!("unhandled SGR mode: 38 {n}");
-                        }
+                    _ => {
+                        unhandled(self);
                         return;
                     }
                 },
-                &[39] => {
+                [39] => {
                     self.attrs.fgcolor = crate::Color::Default;
                 }
-                &[n] if (40..=47).contains(&n) => {
-                    self.attrs.bgcolor = crate::Color::Idx(to_u8!(n) - 40);
+                [n] if (40..=47).contains(n) => {
+                    self.attrs.bgcolor = crate::Color::Idx(to_u8!(*n) - 40);
                 }
-                &[48, 2, r, g, b] => {
+                [48, 2, r, g, b] => {
                     self.attrs.bgcolor =
-                        crate::Color::Rgb(to_u8!(r), to_u8!(g), to_u8!(b));
+                        crate::Color::Rgb(to_u8!(*r), to_u8!(*g), to_u8!(*b));
                 }
-                &[48, 5, i] => {
-                    self.attrs.bgcolor = crate::Color::Idx(to_u8!(i));
+                [48, 5, i] => {
+                    self.attrs.bgcolor = crate::Color::Idx(to_u8!(*i));
                 }
-                &[48] => match next_param!() {
-                    &[2] => {
+                [48] => match next_param!() {
+                    [2] => {
                         let r = next_param_u8!();
                         let g = next_param_u8!();
                         let b = next_param_u8!();
                         self.attrs.bgcolor = crate::Color::Rgb(r, g, b);
                     }
-                    &[5] => {
+                    [5] => {
                         self.attrs.bgcolor =
                             crate::Color::Idx(next_param_u8!());
                     }
-                    ns => {
-                        if log::log_enabled!(log::Level::Debug) {
-                            let n = if ns.len() == 1 {
-                                format!(
-                                    "{}",
-                                    // we just checked that ns.len() == 1, so
-                                    // 0 must be valid
-                                    ns[0]
-                                )
-                            } else {
-                                format!("{ns:?}")
-                            };
-                            log::debug!("unhandled SGR mode: 48 {n}");
-                        }
+                    _ => {
+                        unhandled(self);
                         return;
                     }
                 },
-                &[49] => {
+                [49] => {
                     self.attrs.bgcolor = crate::Color::Default;
                 }
-                &[n] if (90..=97).contains(&n) => {
-                    self.attrs.fgcolor = crate::Color::Idx(to_u8!(n) - 82);
+                [n] if (90..=97).contains(n) => {
+                    self.attrs.fgcolor = crate::Color::Idx(to_u8!(*n) - 82);
                 }
-                &[n] if (100..=107).contains(&n) => {
-                    self.attrs.bgcolor = crate::Color::Idx(to_u8!(n) - 92);
+                [n] if (100..=107).contains(n) => {
+                    self.attrs.bgcolor = crate::Color::Idx(to_u8!(*n) - 92);
                 }
-                ns => {
-                    if log::log_enabled!(log::Level::Debug) {
-                        let n = if ns.len() == 1 {
-                            format!(
-                                "{}",
-                                // we just checked that ns.len() == 1, so 0
-                                // must be valid
-                                ns[0]
-                            )
-                        } else {
-                            format!("{ns:?}")
-                        };
-                        log::debug!("unhandled SGR mode: {n}");
-                    }
-                }
+                _ => unhandled(self),
             }
         }
     }

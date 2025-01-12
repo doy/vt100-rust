@@ -31,10 +31,10 @@ impl<Callbacks: crate::callbacks::Callbacks> vte::Perform
 {
     fn print(&mut self, c: char) {
         if c == '\u{fffd}' || ('\u{80}'..'\u{a0}').contains(&c) {
-            self.callbacks.error(&mut self.screen);
-            log::debug!("unhandled text character: {c}");
+            self.callbacks.unhandled_char(&mut self.screen, c);
+        } else {
+            self.screen.text(c);
         }
-        self.screen.text(c);
     }
 
     fn execute(&mut self, b: u8) {
@@ -49,16 +49,20 @@ impl<Callbacks: crate::callbacks::Callbacks> vte::Perform
             // we don't implement shift in/out alternate character sets, but
             // it shouldn't count as an "error"
             14 | 15 => {}
-            _ => {
-                self.callbacks.error(&mut self.screen);
-                log::debug!("unhandled control character: {b}");
-            }
+            _ => self.callbacks.unhandled_control(&mut self.screen, b),
         }
     }
 
     fn esc_dispatch(&mut self, intermediates: &[u8], _ignore: bool, b: u8) {
-        intermediates.first().map_or_else(
-            || match b {
+        if let Some(i) = intermediates.first() {
+            self.callbacks.unhandled_escape(
+                &mut self.screen,
+                Some(*i),
+                intermediates.get(1).copied(),
+                b,
+            );
+        } else {
+            match b {
                 b'7' => self.screen.decsc(),
                 b'8' => self.screen.decrc(),
                 b'=' => self.screen.deckpam(),
@@ -67,13 +71,15 @@ impl<Callbacks: crate::callbacks::Callbacks> vte::Perform
                 b'c' => self.screen.ris(),
                 b'g' => self.callbacks.visual_bell(&mut self.screen),
                 _ => {
-                    log::debug!("unhandled escape code: ESC {b}");
+                    self.callbacks.unhandled_escape(
+                        &mut self.screen,
+                        None,
+                        None,
+                        b,
+                    );
                 }
-            },
-            |i| {
-                log::debug!("unhandled escape code: ESC {i} {b}");
-            },
-        );
+            }
+        }
     }
 
     fn csi_dispatch(
@@ -83,6 +89,15 @@ impl<Callbacks: crate::callbacks::Callbacks> vte::Perform
         _ignore: bool,
         c: char,
     ) {
+        let unhandled = |screen: &mut crate::screen::Screen| {
+            self.callbacks.unhandled_csi(
+                screen,
+                intermediates.first().copied(),
+                intermediates.get(1).copied(),
+                &params.iter().collect::<Vec<_>>(),
+                c,
+            );
+        };
         match intermediates.first() {
             None => match c {
                 '@' => self.screen.ich(canonicalize_params_1(params, 1)),
@@ -94,8 +109,12 @@ impl<Callbacks: crate::callbacks::Callbacks> vte::Perform
                 'F' => self.screen.cpl(canonicalize_params_1(params, 1)),
                 'G' => self.screen.cha(canonicalize_params_1(params, 1)),
                 'H' => self.screen.cup(canonicalize_params_2(params, 1, 1)),
-                'J' => self.screen.ed(canonicalize_params_1(params, 0)),
-                'K' => self.screen.el(canonicalize_params_1(params, 0)),
+                'J' => self
+                    .screen
+                    .ed(canonicalize_params_1(params, 0), unhandled),
+                'K' => self
+                    .screen
+                    .el(canonicalize_params_1(params, 0), unhandled),
                 'L' => self.screen.il(canonicalize_params_1(params, 1)),
                 'M' => self.screen.dl(canonicalize_params_1(params, 1)),
                 'P' => self.screen.dch(canonicalize_params_1(params, 1)),
@@ -103,9 +122,7 @@ impl<Callbacks: crate::callbacks::Callbacks> vte::Perform
                 'T' => self.screen.sd(canonicalize_params_1(params, 1)),
                 'X' => self.screen.ech(canonicalize_params_1(params, 1)),
                 'd' => self.screen.vpa(canonicalize_params_1(params, 1)),
-                'h' => self.screen.sm(params),
-                'l' => self.screen.rm(params),
-                'm' => self.screen.sgr(params),
+                'm' => self.screen.sgr(params, unhandled),
                 'r' => self.screen.decstbm(canonicalize_params_decstbm(
                     params,
                     self.screen.grid().size(),
@@ -126,98 +143,71 @@ impl<Callbacks: crate::callbacks::Callbacks> vte::Perform
                             });
                         self.callbacks.resize(&mut self.screen, (rows, cols));
                     } else {
-                        log::debug!(
-                            "unhandled XTWINOPS: {}",
-                            param_str(params)
+                        self.callbacks.unhandled_csi(
+                            &mut self.screen,
+                            None,
+                            None,
+                            &params.iter().collect::<Vec<_>>(),
+                            c,
                         );
                     }
                 }
                 _ => {
-                    if log::log_enabled!(log::Level::Debug) {
-                        log::debug!(
-                            "unhandled csi sequence: CSI {} {}",
-                            param_str(params),
-                            c
-                        );
-                    }
+                    self.callbacks.unhandled_csi(
+                        &mut self.screen,
+                        None,
+                        None,
+                        &params.iter().collect::<Vec<_>>(),
+                        c,
+                    );
                 }
             },
             Some(b'?') => match c {
-                'J' => self.screen.decsed(canonicalize_params_1(params, 0)),
-                'K' => self.screen.decsel(canonicalize_params_1(params, 0)),
-                'h' => self.screen.decset(params),
-                'l' => self.screen.decrst(params),
+                'J' => self
+                    .screen
+                    .decsed(canonicalize_params_1(params, 0), unhandled),
+                'K' => self
+                    .screen
+                    .decsel(canonicalize_params_1(params, 0), unhandled),
+                'h' => self.screen.decset(params, unhandled),
+                'l' => self.screen.decrst(params, unhandled),
                 _ => {
-                    if log::log_enabled!(log::Level::Debug) {
-                        log::debug!(
-                            "unhandled csi sequence: CSI ? {} {}",
-                            param_str(params),
-                            c
-                        );
-                    }
+                    self.callbacks.unhandled_csi(
+                        &mut self.screen,
+                        Some(b'?'),
+                        intermediates.get(1).copied(),
+                        &params.iter().collect::<Vec<_>>(),
+                        c,
+                    );
                 }
             },
             Some(i) => {
-                if log::log_enabled!(log::Level::Debug) {
-                    log::debug!(
-                        "unhandled csi sequence: CSI {} {} {}",
-                        i,
-                        param_str(params),
-                        c
-                    );
-                }
+                self.callbacks.unhandled_csi(
+                    &mut self.screen,
+                    Some(*i),
+                    intermediates.get(1).copied(),
+                    &params.iter().collect::<Vec<_>>(),
+                    c,
+                );
             }
         }
     }
 
     fn osc_dispatch(&mut self, params: &[&[u8]], _bel_terminated: bool) {
         match params {
-            [b"0", s, ..] => {
+            [b"0", s] => {
                 self.callbacks.set_window_icon_name(&mut self.screen, s);
                 self.callbacks.set_window_title(&mut self.screen, s);
             }
-            [b"1", s, ..] => {
+            [b"1", s] => {
                 self.callbacks.set_window_icon_name(&mut self.screen, s);
             }
-            [b"2", s, ..] => {
+            [b"2", s] => {
                 self.callbacks.set_window_title(&mut self.screen, s);
             }
             _ => {
-                if log::log_enabled!(log::Level::Debug) {
-                    log::debug!(
-                        "unhandled osc sequence: OSC {}",
-                        osc_param_str(params),
-                    );
-                }
+                self.callbacks.unhandled_osc(&mut self.screen, params);
             }
-        }
-    }
-
-    fn hook(
-        &mut self,
-        params: &vte::Params,
-        intermediates: &[u8],
-        _ignore: bool,
-        action: char,
-    ) {
-        if log::log_enabled!(log::Level::Debug) {
-            intermediates.first().map_or_else(
-                || {
-                    log::debug!(
-                        "unhandled dcs sequence: DCS {} {}",
-                        param_str(params),
-                        action,
-                    );
-                },
-                |i| {
-                    log::debug!(
-                        "unhandled dcs sequence: DCS {} {} {}",
-                        i,
-                        param_str(params),
-                        action,
-                    );
-                },
-            );
         }
     }
 }
@@ -258,26 +248,4 @@ fn canonicalize_params_decstbm(
     let bottom = if bottom == 0 { size.rows } else { bottom };
 
     (top, bottom)
-}
-
-pub fn param_str(params: &vte::Params) -> String {
-    let strs: Vec<_> = params
-        .iter()
-        .map(|subparams| {
-            let subparam_strs: Vec<_> = subparams
-                .iter()
-                .map(std::string::ToString::to_string)
-                .collect();
-            subparam_strs.join(" : ")
-        })
-        .collect();
-    strs.join(" ; ")
-}
-
-fn osc_param_str(params: &[&[u8]]) -> String {
-    let strs: Vec<_> = params
-        .iter()
-        .map(|b| format!("\"{}\"", std::string::String::from_utf8_lossy(b)))
-        .collect();
-    strs.join(" ; ")
 }

@@ -21,9 +21,28 @@ pub trait Callbacks {
     /// This callback is called when the terminal requests the window title
     /// to be set (typically with `\e]2;<title>\a`)
     fn set_window_title(&mut self, _: &mut crate::Screen, _title: &[u8]) {}
-    /// This callback is called when the terminal receives invalid input
-    /// (such as an invalid UTF-8 character or an unused control character).
-    fn error(&mut self, _: &mut crate::Screen) {}
+    /// This callback is called when the terminal receives an escape sequence
+    /// which is otherwise not implemented.
+    fn unhandled_char(&mut self, _: &mut crate::Screen, _c: char) {}
+    fn unhandled_control(&mut self, _: &mut crate::Screen, _b: u8) {}
+    fn unhandled_escape(
+        &mut self,
+        _: &mut crate::Screen,
+        _i1: Option<u8>,
+        _i2: Option<u8>,
+        _b: u8,
+    ) {
+    }
+    fn unhandled_csi(
+        &mut self,
+        _: &mut crate::Screen,
+        _i1: Option<u8>,
+        _i2: Option<u8>,
+        _params: &[&[u16]],
+        _c: char,
+    ) {
+    }
+    fn unhandled_osc(&mut self, _: &mut crate::Screen, _params: &[&[u8]]) {}
 }
 
 impl Callbacks for () {}
