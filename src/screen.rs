@@ -35,7 +35,7 @@ pub enum MouseProtocolMode {
     // DecLocator,
 }
 
-/// The encoding to use for the enabled `MouseProtocolMode`.
+/// The encoding to use for the enabled [`MouseProtocolMode`].
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Default)]
 pub enum MouseProtocolEncoding {
     /// Default single-printable-byte encoding.
@@ -218,7 +218,8 @@ impl Screen {
 
     /// Return escape codes sufficient to reproduce the entire contents of the
     /// current terminal state. This is a convenience wrapper around
-    /// `contents_formatted` and `input_mode_formatted`.
+    /// [`contents_formatted`](Self::contents_formatted) and
+    /// [`input_mode_formatted`](Self::input_mode_formatted).
     #[must_use]
     pub fn state_formatted(&self) -> Vec<u8> {
         let mut contents = vec![];
@@ -229,7 +230,8 @@ impl Screen {
 
     /// Return escape codes sufficient to turn the terminal state of the
     /// screen `prev` into the current terminal state. This is a convenience
-    /// wrapper around `contents_diff` and `input_mode_diff`.
+    /// wrapper around [`contents_diff`](Self::contents_diff) and
+    /// [`input_mode_diff`](Self::input_mode_diff).
     #[must_use]
     pub fn state_diff(&self, prev: &Self) -> Vec<u8> {
         let mut contents = vec![];
@@ -459,7 +461,8 @@ impl Screen {
     /// * underline
     /// * inverse
     ///
-    /// This is not typically necessary, since `contents_formatted` will leave
+    /// This is not typically necessary, since
+    /// [`contents_formatted`](Self::contents_formatted) will leave
     /// the current active drawing attributes in the correct state, but this
     /// can be useful in the case of drawing additional things on top of a
     /// terminal output, since you will need to restore the terminal state
@@ -491,7 +494,8 @@ impl Screen {
     /// Returns terminal escape sequences sufficient to set the current
     /// cursor state of the terminal.
     ///
-    /// This is not typically necessary, since `contents_formatted` will leave
+    /// This is not typically necessary, since
+    /// [`contents_formatted`](Self::contents_formatted) will leave
     /// the cursor in the correct state, but this can be useful in the case of
     /// drawing additional things on top of a terminal output, since you will
     /// need to restore the terminal state without the terminal contents
@@ -502,7 +506,8 @@ impl Screen {
     /// order to position the cursor correctly (for instance, in the case
     /// where the cursor is past the end of a row). Therefore, you should
     /// ensure to reset the active drawing attributes if necessary after
-    /// processing this data, for instance by using `attributes_formatted`.
+    /// processing this data, for instance by using
+    /// [`attributes_formatted`](Self::attributes_formatted).
     #[must_use]
     pub fn cursor_state_formatted(&self) -> Vec<u8> {
         let mut contents = vec![];
@@ -523,8 +528,8 @@ impl Screen {
         // straightforward.
     }
 
-    /// Returns the `Cell` object at the given location in the terminal, if it
-    /// exists.
+    /// Returns the [`Cell`](crate::Cell) object at the given location in the
+    /// terminal, if it exists.
     #[must_use]
     pub fn cell(&self, row: u16, col: u16) -> Option<&crate::Cell> {
         self.grid().visible_cell(crate::grid::Pos { row, col })
@@ -568,13 +573,13 @@ impl Screen {
         self.mode(MODE_BRACKETED_PASTE)
     }
 
-    /// Returns the currently active `MouseProtocolMode`
+    /// Returns the currently active [`MouseProtocolMode`].
     #[must_use]
     pub fn mouse_protocol_mode(&self) -> MouseProtocolMode {
         self.mouse_protocol_mode
     }
 
-    /// Returns the currently active `MouseProtocolEncoding`
+    /// Returns the currently active [`MouseProtocolEncoding`].
     #[must_use]
     pub fn mouse_protocol_encoding(&self) -> MouseProtocolEncoding {
         self.mouse_protocol_encoding

@@ -24,7 +24,8 @@ impl Parser {
 impl<CB: crate::callbacks::Callbacks> Parser<CB> {
     /// Creates a new terminal parser of the given size and with the given
     /// amount of scrollback. Terminal events will be reported via method
-    /// calls on the provided `Callbacks` implementation.
+    /// calls on the provided [`Callbacks`](crate::callbacks::Callbacks)
+    /// implementation.
     pub fn new_with_callbacks(
         rows: u16,
         cols: u16,
@@ -48,28 +49,29 @@ impl<CB: crate::callbacks::Callbacks> Parser<CB> {
         self.parser.advance(&mut self.screen, bytes);
     }
 
-    /// Returns a reference to a `Screen` object containing the terminal
-    /// state.
+    /// Returns a reference to a [`Screen`](crate::Screen) object containing
+    /// the terminal state.
     #[must_use]
     pub fn screen(&self) -> &crate::Screen {
         &self.screen.screen
     }
 
-    /// Returns a mutable reference to a `Screen` object containing the
-    /// terminal state.
+    /// Returns a mutable reference to a [`Screen`](crate::Screen) object
+    /// containing the terminal state.
     #[must_use]
     pub fn screen_mut(&mut self) -> &mut crate::Screen {
         &mut self.screen.screen
     }
 
-    /// Returns a reference to the `Callbacks` state object passed into the
-    /// constructor.
+    /// Returns a reference to the [`Callbacks`](crate::callbacks::Callbacks)
+    /// state object passed into the constructor.
     pub fn callbacks(&self) -> &CB {
         &self.screen.callbacks
     }
 
-    /// Returns a mutable reference to the `Callbacks` state object passed
-    /// into the constructor.
+    /// Returns a mutable reference to the
+    /// [`Callbacks`](crate::callbacks::Callbacks) state object passed into
+    /// the constructor.
     pub fn callbacks_mut(&mut self) -> &mut CB {
         &mut self.screen.callbacks
     }
