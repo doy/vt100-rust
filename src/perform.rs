@@ -1,6 +1,6 @@
-pub struct WrappedScreen<Callbacks: crate::callbacks::Callbacks = ()> {
+pub struct WrappedScreen<CB: crate::callbacks::Callbacks = ()> {
     pub screen: crate::screen::Screen,
-    pub callbacks: Callbacks,
+    pub callbacks: CB,
 }
 
 impl WrappedScreen<()> {
@@ -9,12 +9,12 @@ impl WrappedScreen<()> {
     }
 }
 
-impl<Callbacks: crate::callbacks::Callbacks> WrappedScreen<Callbacks> {
+impl<CB: crate::callbacks::Callbacks> WrappedScreen<CB> {
     pub fn new_with_callbacks(
         rows: u16,
         cols: u16,
         scrollback_len: usize,
-        callbacks: Callbacks,
+        callbacks: CB,
     ) -> Self {
         Self {
             screen: crate::screen::Screen::new(
@@ -26,9 +26,7 @@ impl<Callbacks: crate::callbacks::Callbacks> WrappedScreen<Callbacks> {
     }
 }
 
-impl<Callbacks: crate::callbacks::Callbacks> vte::Perform
-    for WrappedScreen<Callbacks>
-{
+impl<CB: crate::callbacks::Callbacks> vte::Perform for WrappedScreen<CB> {
     fn print(&mut self, c: char) {
         if c == '\u{fffd}' || ('\u{80}'..'\u{a0}').contains(&c) {
             self.callbacks.unhandled_char(&mut self.screen, c);
@@ -214,7 +212,11 @@ impl<Callbacks: crate::callbacks::Callbacks> vte::Perform
 
 fn canonicalize_params_1(params: &vte::Params, default: u16) -> u16 {
     let first = params.iter().next().map_or(0, |x| *x.first().unwrap_or(&0));
-    if first == 0 { default } else { first }
+    if first == 0 {
+        default
+    } else {
+        first
+    }
 }
 
 fn canonicalize_params_2(

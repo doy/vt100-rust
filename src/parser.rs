@@ -1,8 +1,8 @@
 /// A parser for terminal output which produces an in-memory representation of
 /// the terminal contents.
-pub struct Parser<Callbacks: crate::callbacks::Callbacks = ()> {
+pub struct Parser<CB: crate::callbacks::Callbacks = ()> {
     parser: vte::Parser,
-    screen: crate::perform::WrappedScreen<Callbacks>,
+    screen: crate::perform::WrappedScreen<CB>,
 }
 
 impl Parser {
@@ -21,7 +21,7 @@ impl Parser {
     }
 }
 
-impl<Callbacks: crate::callbacks::Callbacks> Parser<Callbacks> {
+impl<CB: crate::callbacks::Callbacks> Parser<CB> {
     /// Creates a new terminal parser of the given size and with the given
     /// amount of scrollback. Terminal events will be reported via method
     /// calls on the provided `Callbacks` implementation.
@@ -29,7 +29,7 @@ impl<Callbacks: crate::callbacks::Callbacks> Parser<Callbacks> {
         rows: u16,
         cols: u16,
         scrollback_len: usize,
-        callbacks: Callbacks,
+        callbacks: CB,
     ) -> Self {
         Self {
             parser: vte::Parser::new(),
@@ -64,13 +64,13 @@ impl<Callbacks: crate::callbacks::Callbacks> Parser<Callbacks> {
 
     /// Returns a reference to the `Callbacks` state object passed into the
     /// constructor.
-    pub fn callbacks(&self) -> &Callbacks {
+    pub fn callbacks(&self) -> &CB {
         &self.screen.callbacks
     }
 
     /// Returns a mutable reference to the `Callbacks` state object passed
     /// into the constructor.
-    pub fn callbacks_mut(&mut self) -> &mut Callbacks {
+    pub fn callbacks_mut(&mut self) -> &mut CB {
         &mut self.screen.callbacks
     }
 }
