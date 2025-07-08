@@ -24,7 +24,11 @@ pub trait Callbacks {
     /// This callback is called when the terminal receives an escape sequence
     /// which is otherwise not implemented.
     fn unhandled_char(&mut self, _: &mut crate::Screen, _c: char) {}
+    /// This callback is called when the terminal receives a control
+    /// character which is otherwise not implemented.
     fn unhandled_control(&mut self, _: &mut crate::Screen, _b: u8) {}
+    /// This callback is called when the terminal receives an escape sequence
+    /// which is otherwise not implemented.
     fn unhandled_escape(
         &mut self,
         _: &mut crate::Screen,
@@ -33,6 +37,8 @@ pub trait Callbacks {
         _b: u8,
     ) {
     }
+    /// This callback is called when the terminal receives a CSI sequence
+    /// (`\e[`) which is otherwise not implemented.
     fn unhandled_csi(
         &mut self,
         _: &mut crate::Screen,
@@ -42,6 +48,8 @@ pub trait Callbacks {
         _c: char,
     ) {
     }
+    /// This callback is called when the terminal receives a OSC sequence
+    /// (`\e]`) which is otherwise not implemented.
     fn unhandled_osc(&mut self, _: &mut crate::Screen, _params: &[&[u8]]) {}
 }
 

@@ -22,6 +22,9 @@ impl Parser {
 }
 
 impl<Callbacks: crate::callbacks::Callbacks> Parser<Callbacks> {
+    /// Creates a new terminal parser of the given size and with the given
+    /// amount of scrollback. Terminal events will be reported via method
+    /// calls on the provided `Callbacks` implementation.
     pub fn new_with_callbacks(
         rows: u16,
         cols: u16,
