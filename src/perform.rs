@@ -214,11 +214,7 @@ impl<Callbacks: crate::callbacks::Callbacks> vte::Perform
 
 fn canonicalize_params_1(params: &vte::Params, default: u16) -> u16 {
     let first = params.iter().next().map_or(0, |x| *x.first().unwrap_or(&0));
-    if first == 0 {
-        default
-    } else {
-        first
-    }
+    if first == 0 { default } else { first }
 }
 
 fn canonicalize_params_2(

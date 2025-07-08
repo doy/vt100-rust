@@ -5,7 +5,7 @@ mod helpers;
 #[derive(Clone, Debug)]
 struct TerminalInput(Vec<u8>);
 
-fn gen_range<T>(gen: &mut quickcheck::Gen, range: std::ops::Range<T>) -> T
+fn gen_range<T>(g: &mut quickcheck::Gen, range: std::ops::Range<T>) -> T
 where
     T: Copy,
     T: quickcheck::Arbitrary,
@@ -13,7 +13,7 @@ where
         + std::ops::Rem<Output = T>
         + std::ops::Sub<Output = T>,
 {
-    T::arbitrary(gen) % (range.end - range.start) + range.start
+    T::arbitrary(g) % (range.end - range.start) + range.start
 }
 
 impl quickcheck::Arbitrary for TerminalInput {
