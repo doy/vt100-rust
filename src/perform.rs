@@ -1,3 +1,7 @@
+const BASE64: &[u8] =
+    b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
+const CLIPBOARD_SELECTOR: &[u8] = b"cpqs01234567";
+
 pub struct WrappedScreen<CB: crate::callbacks::Callbacks = ()> {
     pub screen: crate::screen::Screen,
     pub callbacks: CB,
@@ -203,6 +207,30 @@ impl<CB: crate::callbacks::Callbacks> vte::Perform for WrappedScreen<CB> {
             [b"2", s] => {
                 self.callbacks.set_window_title(&mut self.screen, s);
             }
+            [b"52", ty, data] => {
+                match (
+                    ty.iter().all(|c| CLIPBOARD_SELECTOR.contains(c)),
+                    *data,
+                ) {
+                    (true, b"?") => {
+                        self.callbacks
+                            .paste_from_clipboard(&mut self.screen, ty);
+                    }
+                    (true, data)
+                        if data.iter().all(|c| BASE64.contains(c)) =>
+                    {
+                        self.callbacks.copy_to_clipboard(
+                            &mut self.screen,
+                            ty,
+                            data,
+                        );
+                    }
+                    _ => {
+                        self.callbacks
+                            .unhandled_osc(&mut self.screen, params);
+                    }
+                }
+            }
             _ => {
                 self.callbacks.unhandled_osc(&mut self.screen, params);
             }
@@ -212,11 +240,7 @@ impl<CB: crate::callbacks::Callbacks> vte::Perform for WrappedScreen<CB> {
 
 fn canonicalize_params_1(params: &vte::Params, default: u16) -> u16 {
     let first = params.iter().next().map_or(0, |x| *x.first().unwrap_or(&0));
-    if first == 0 {
-        default
-    } else {
-        first
-    }
+    if first == 0 { default } else { first }
 }
 
 fn canonicalize_params_2(

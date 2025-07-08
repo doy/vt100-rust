@@ -21,6 +21,19 @@ pub trait Callbacks {
     /// This callback is called when the terminal requests the window title
     /// to be set (typically with `\e]2;<title>\a`)
     fn set_window_title(&mut self, _: &mut crate::Screen, _title: &[u8]) {}
+    /// This callback is called when the terminal requests data to be copied
+    /// to the system clipboard (typically with `\e]52;<ty>;<data>\a`). Note
+    /// that `data` will be encoded as base64.
+    fn copy_to_clipboard(
+        &mut self,
+        _: &mut crate::Screen,
+        _ty: &[u8],
+        _data: &[u8],
+    ) {
+    }
+    /// This callback is called when the terminal requests data to be pasted
+    /// from the system clipboard (typically with `\e]52;<ty>;?\a`).
+    fn paste_from_clipboard(&mut self, _: &mut crate::Screen, _ty: &[u8]) {}
     /// This callback is called when the terminal receives an escape sequence
     /// which is otherwise not implemented.
     fn unhandled_char(&mut self, _: &mut crate::Screen, _c: char) {}

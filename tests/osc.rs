@@ -37,6 +37,48 @@ fn title_icon_name() {
 }
 
 #[test]
+fn clipboard() {
+    #[derive(Default)]
+    struct Clipboard {
+        clipboard: std::collections::HashMap<Vec<u8>, Vec<u8>>,
+        pasted: Vec<Vec<u8>>,
+    }
+    impl vt100::Callbacks for Clipboard {
+        fn copy_to_clipboard(
+            &mut self,
+            _: &mut vt100::Screen,
+            ty: &[u8],
+            data: &[u8],
+        ) {
+            self.clipboard.insert(ty.to_vec(), data.to_vec());
+        }
+
+        fn paste_from_clipboard(&mut self, _: &mut vt100::Screen, ty: &[u8]) {
+            self.pasted.push(ty.to_vec());
+        }
+
+        fn unhandled_osc(&mut self, _: &mut vt100::Screen, params: &[&[u8]]) {
+            panic!("unhandled osc: {params:?}");
+        }
+    }
+
+    let mut parser =
+        vt100::Parser::new_with_callbacks(24, 80, 0, Clipboard::default());
+    assert!(parser.callbacks().clipboard.is_empty());
+    assert!(parser.callbacks().pasted.is_empty());
+    parser.process(b"\x1b]52;c;?\x07");
+    assert!(parser.callbacks().clipboard.is_empty());
+    assert_eq!(&parser.callbacks().pasted, &[b"c"]);
+    parser.process(b"\x1b]52;c;abcdef==\x07");
+    assert_eq!(parser.callbacks().clipboard.len(), 1);
+    assert_eq!(
+        parser.callbacks().clipboard.get(&b"c"[..]),
+        Some(&b"abcdef==".to_vec())
+    );
+    assert_eq!(&parser.callbacks().pasted, &[b"c"]);
+}
+
+#[test]
 fn unknown_osc() {
     helpers::fixture("unknown_osc");
 }

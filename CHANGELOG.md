@@ -11,6 +11,7 @@
   mechanism.
 * Support for dim formatting. (Daniel Faust, #9)
 * Support for CNL/CPL escape codes. (Danny Weinberg, #10)
+* Support for OSC 52 (clipboard manipulation).
 
 ### Removed
 
