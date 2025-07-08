@@ -4,7 +4,7 @@ pub trait Callbacks {
     /// This callback is called when the terminal requests an audible bell
     /// (typically with `^G`).
     fn audible_bell(&mut self, _: &mut crate::Screen) {}
-    /// This callback is called when the terminal requests an visual bell
+    /// This callback is called when the terminal requests a visual bell
     /// (typically with `\eg`).
     fn visual_bell(&mut self, _: &mut crate::Screen) {}
     /// This callback is called when the terminal requests a resize
