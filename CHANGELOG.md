@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### Fixed
+
+* Fixed potential cursor out of bounds when using decrc after resizing. (#13)
+
 ## [0.16.1] - 2025-07-10
 
 ### Changed
