@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.16.1] - 2025-07-10
+
+### Changed
+
+* Reverted to the 2021 edition for now.
+
 ## [0.16.0] - 2025-07-08
 
 ### Added
