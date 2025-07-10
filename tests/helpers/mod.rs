@@ -1,8 +1,8 @@
 mod fixtures;
 #[allow(unused_imports)]
-pub use fixtures::FixtureScreen;
-#[allow(unused_imports)]
 pub use fixtures::fixture;
+#[allow(unused_imports)]
+pub use fixtures::FixtureScreen;
 
 pub static mut QUIET: bool = false;
 
