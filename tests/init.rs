@@ -31,4 +31,5 @@ fn init() {
         parser.screen().mouse_protocol_encoding(),
         vt100::MouseProtocolEncoding::Default
     );
+    assert_eq!(parser.screen().cursor_style(), vt100::CursorStyle::Default)
 }

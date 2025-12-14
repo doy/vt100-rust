@@ -79,6 +79,13 @@ pub struct FixtureScreen {
         skip_serializing_if = "is_default"
     )]
     mouse_protocol_encoding: vt100::MouseProtocolEncoding,
+    #[serde(
+        default,
+        deserialize_with = "deserialize_cursor_style",
+        serialize_with = "serialize_cursor_style",
+        skip_serializing_if = "is_default"
+    )]
+    cursor_style: vt100::CursorStyle,
 }
 
 impl FixtureScreen {
@@ -113,6 +120,7 @@ impl FixtureScreen {
             bracketed_paste: screen.bracketed_paste(),
             mouse_protocol_mode: screen.mouse_protocol_mode(),
             mouse_protocol_encoding: screen.mouse_protocol_encoding(),
+            cursor_style: screen.cursor_style(),
         }
     }
 }
@@ -228,6 +236,44 @@ where
     serializer.serialize_str(s)
 }
 
+fn deserialize_cursor_style<'a, D>(
+    deserializer: D,
+) -> std::result::Result<vt100::CursorStyle, D::Error>
+where
+    D: serde::de::Deserializer<'a>,
+{
+    let name = <String>::deserialize(deserializer)?;
+    match name.as_ref() {
+        "default" => Ok(vt100::CursorStyle::Default),
+        "blinkblock" => Ok(vt100::CursorStyle::BlinkBlock),
+        "steadyblock" => Ok(vt100::CursorStyle::SteadyBlock),
+        "blinkunderline" => Ok(vt100::CursorStyle::BlinkUnderline),
+        "steadyunderline" => Ok(vt100::CursorStyle::SteadyUnderline),
+        "blinkverticalbar" => Ok(vt100::CursorStyle::BlinkVerticalBar),
+        "steadyverticalbar" => Ok(vt100::CursorStyle::SteadyVerticalBar),
+        _ => unimplemented!(),
+    }
+}
+
+fn serialize_cursor_style<S>(
+    style: &vt100::CursorStyle,
+    serializer: S,
+) -> Result<S::Ok, S::Error>
+where
+    S: serde::Serializer,
+{
+    let s = match style {
+        vt100::CursorStyle::Default => "default",
+        vt100::CursorStyle::BlinkBlock => "blinkblock",
+        vt100::CursorStyle::SteadyBlock => "steadyblock",
+        vt100::CursorStyle::BlinkUnderline => "blinkunderline",
+        vt100::CursorStyle::SteadyUnderline => "steadyunderline",
+        vt100::CursorStyle::BlinkVerticalBar => "blinkverticalbar",
+        vt100::CursorStyle::SteadyVerticalBar => "steadyverticalbar",
+    };
+    serializer.serialize_str(s)
+}
+
 fn load_input(name: &str, i: usize) -> Option<Vec<u8>> {
     let mut file = std::fs::File::open(format!(
         "tests/data/fixtures/{name}/{i}.typescript"
@@ -269,6 +315,7 @@ fn assert_produces(input: &[u8], expected: &FixtureScreen) {
         parser.screen().mouse_protocol_encoding(),
         expected.mouse_protocol_encoding
     );
+    assert_eq!(parser.screen().cursor_style(), expected.cursor_style);
 
     let (rows, cols) = parser.screen().size();
     for row in 0..rows {
