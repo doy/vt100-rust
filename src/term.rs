@@ -545,6 +545,51 @@ impl BufWrite for MouseProtocolEncoding {
     }
 }
 
+#[derive(Default, Debug)]
+#[must_use = "this struct does nothing unless you call write_buf"]
+pub struct CursorStyle {
+    style: crate::CursorStyle,
+    prev: crate::CursorStyle,
+}
+
+impl CursorStyle {
+    pub fn new(style: crate::CursorStyle, prev: crate::CursorStyle) -> Self {
+        Self { style, prev }
+    }
+}
+
+impl BufWrite for CursorStyle {
+    fn write_buf(&self, buf: &mut Vec<u8>) {
+        if self.style == self.prev {
+            return;
+        }
+
+        match self.style {
+            crate::CursorStyle::Default => {
+                buf.extend_from_slice(b"\x1b[0 q");
+            }
+            crate::CursorStyle::BlinkBlock => {
+                buf.extend_from_slice(b"\x1b[1 q");
+            }
+            crate::CursorStyle::SteadyBlock => {
+                buf.extend_from_slice(b"\x1b[2 q");
+            }
+            crate::CursorStyle::BlinkUnderline => {
+                buf.extend_from_slice(b"\x1b[3 q");
+            }
+            crate::CursorStyle::SteadyUnderline => {
+                buf.extend_from_slice(b"\x1b[4 q");
+            }
+            crate::CursorStyle::BlinkVerticalBar => {
+                buf.extend_from_slice(b"\x1b[5 q");
+            }
+            crate::CursorStyle::SteadyVerticalBar => {
+                buf.extend_from_slice(b"\x1b[6 q");
+            }
+        }
+    }
+}
+
 fn extend_itoa<I: itoa::Integer>(buf: &mut Vec<u8>, i: I) {
     let mut itoa_buf = itoa::Buffer::new();
     buf.extend_from_slice(itoa_buf.format(i).as_bytes());

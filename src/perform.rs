@@ -164,6 +164,20 @@ impl<CB: crate::callbacks::Callbacks> vte::Perform for WrappedScreen<CB> {
                     );
                 }
             },
+            Some(b' ') => match c {
+                'q' => self
+                    .screen
+                    .decscusr(canonicalize_params_1(params, 0), unhandled),
+                _ => {
+                    self.callbacks.unhandled_csi(
+                        &mut self.screen,
+                        None,
+                        None,
+                        &params.iter().collect::<Vec<_>>(),
+                        c,
+                    );
+                }
+            },
             Some(b'?') => match c {
                 'J' => self
                     .screen

@@ -111,6 +111,7 @@ pub fn compare_screens(
         got.mouse_protocol_encoding(),
         expected.mouse_protocol_encoding()
     );
+    is!(got.cursor_style(), expected.cursor_style());
 
     true
 }
