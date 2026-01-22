@@ -86,3 +86,53 @@ fn xtwinops() {
         "bbbbbcccccccccccccccccccc"
     );
 }
+
+#[test]
+fn hpa() {
+    let mut vt = vt100::Parser::default();
+
+    // HPA (CSI `) is equivalent to CHA (CSI G) - Horizontal Position Absolute
+    vt.process(b"hello");
+    assert_eq!(vt.screen().cursor_position(), (0, 5));
+
+    // Move to column 10 (1-indexed, so position 9)
+    vt.process(b"\x1b[10`");
+    assert_eq!(vt.screen().cursor_position(), (0, 9));
+
+    // Move to column 1 (default)
+    vt.process(b"\x1b[`");
+    assert_eq!(vt.screen().cursor_position(), (0, 0));
+
+    // Move to column 50
+    vt.process(b"\x1b[50`");
+    assert_eq!(vt.screen().cursor_position(), (0, 49));
+
+    // Clamp to screen width (80 columns, so max position is 79)
+    vt.process(b"\x1b[500`");
+    assert_eq!(vt.screen().cursor_position(), (0, 79));
+}
+
+#[test]
+fn rep() {
+    let mut vt = vt100::Parser::default();
+
+    // REP (CSI b) repeats the last printed character
+    vt.process(b"x\x1b[5b");
+    assert_eq!(vt.screen().rows(0, 80).next().unwrap(), "xxxxxx");
+    assert_eq!(vt.screen().cursor_position(), (0, 6));
+
+    // REP with default count of 1
+    vt.process(b"\x1b[Hy\x1b[b");
+    assert_eq!(vt.screen().rows(0, 80).next().unwrap(), "yyxxxx");
+    assert_eq!(vt.screen().cursor_position(), (0, 2));
+
+    // REP on a new line
+    vt.process(b"\x1b[2;1Ha\x1b[3b");
+    assert_eq!(vt.screen().rows(0, 80).nth(1).unwrap(), "aaaa");
+
+    // REP should not do anything if no character was printed yet
+    let mut vt2 = vt100::Parser::default();
+    vt2.process(b"\x1b[5b");
+    assert_eq!(vt2.screen().rows(0, 80).next().unwrap(), "");
+    assert_eq!(vt2.screen().cursor_position(), (0, 0));
+}
