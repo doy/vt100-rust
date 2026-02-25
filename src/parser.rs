@@ -84,6 +84,7 @@ impl Default for Parser {
     }
 }
 
+#[cfg(feature = "std")]
 impl std::io::Write for Parser {
     fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
         self.process(buf);
@@ -92,5 +93,32 @@ impl std::io::Write for Parser {
 
     fn flush(&mut self) -> std::io::Result<()> {
         Ok(())
+    }
+}
+
+#[cfg(feature = "embedded-io")]
+impl embedded_io::ErrorType for Parser {
+    type Error = core::convert::Infallible;
+}
+
+#[cfg(feature = "embedded-io")]
+impl embedded_io::Write for Parser {
+    fn write(
+        &mut self,
+        buf: &[u8],
+    ) -> core::result::Result<usize, Self::Error> {
+        self.process(buf);
+        Ok(buf.len())
+    }
+
+    fn flush(&mut self) -> core::result::Result<(), Self::Error> {
+        Ok(())
+    }
+}
+
+#[cfg(feature = "embedded-io")]
+impl embedded_io::WriteReady for Parser {
+    fn write_ready(&mut self) -> core::result::Result<bool, Self::Error> {
+        Ok(true)
     }
 }

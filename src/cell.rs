@@ -14,7 +14,7 @@ pub struct Cell {
     len: u8,
     attrs: crate::attrs::Attrs,
 }
-const _: () = assert!(std::mem::size_of::<Cell>() == 32);
+const _: () = assert!(core::mem::size_of::<Cell>() == 32);
 
 impl PartialEq<Self> for Cell {
     fn eq(&self, other: &Self) -> bool {
@@ -87,7 +87,7 @@ impl Cell {
     #[allow(clippy::missing_panics_doc)]
     #[must_use]
     pub fn contents(&self) -> &str {
-        std::str::from_utf8(&self.contents[..self.len()]).unwrap()
+        core::str::from_utf8(&self.contents[..self.len()]).unwrap()
     }
 
     /// Returns whether the cell contains any text data.

@@ -1,5 +1,7 @@
 // TODO: read all of this from terminfo
 
+use alloc::vec::Vec;
+
 pub trait BufWrite {
     fn write_buf(&self, buf: &mut Vec<u8>);
 }

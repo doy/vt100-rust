@@ -1,4 +1,5 @@
 use crate::term::BufWrite as _;
+use alloc::{string::String, vec::Vec};
 
 #[derive(Clone, Debug)]
 pub struct Row {

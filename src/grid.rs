@@ -1,4 +1,5 @@
 use crate::term::BufWrite as _;
+use alloc::{string::String, vec::Vec};
 
 #[derive(Clone, Debug)]
 pub struct Grid {
@@ -10,7 +11,7 @@ pub struct Grid {
     scroll_bottom: u16,
     origin_mode: bool,
     saved_origin_mode: bool,
-    scrollback: std::collections::VecDeque<crate::row::Row>,
+    scrollback: alloc::collections::VecDeque<crate::row::Row>,
     scrollback_len: usize,
     scrollback_offset: usize,
 }
@@ -26,7 +27,7 @@ impl Grid {
             scroll_bottom: size.rows - 1,
             origin_mode: false,
             saved_origin_mode: false,
-            scrollback: std::collections::VecDeque::new(),
+            scrollback: alloc::collections::VecDeque::new(),
             scrollback_len,
             scrollback_offset: 0,
         }
@@ -35,7 +36,7 @@ impl Grid {
     pub fn allocate_rows(&mut self) {
         if self.rows.is_empty() {
             self.rows.extend(
-                std::iter::repeat_with(|| {
+                core::iter::repeat_with(|| {
                     crate::row::Row::new(self.size.cols)
                 })
                 .take(usize::from(self.size.rows)),

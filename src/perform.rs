@@ -1,3 +1,5 @@
+use alloc::vec::Vec;
+
 const BASE64: &[u8] =
     b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
 const CLIPBOARD_SELECTOR: &[u8] = b"cpqs01234567";
