@@ -1,4 +1,5 @@
 use crate::term::BufWrite as _;
+use alloc::{string::String, vec::Vec};
 use unicode_width::UnicodeWidthChar as _;
 
 const MODE_APPLICATION_KEYPAD: u8 = 0b0000_0001;
@@ -172,7 +173,7 @@ impl Screen {
         end_col: u16,
     ) -> String {
         match start_row.cmp(&end_row) {
-            std::cmp::Ordering::Less => {
+            core::cmp::Ordering::Less => {
                 let (_, cols) = self.size();
                 let mut contents = String::new();
                 for (i, row) in self
@@ -203,7 +204,7 @@ impl Screen {
                 }
                 contents
             }
-            std::cmp::Ordering::Equal => {
+            core::cmp::Ordering::Equal => {
                 if start_col < end_col {
                     self.rows(start_col, end_col - start_col)
                         .nth(usize::from(start_row))
@@ -212,7 +213,7 @@ impl Screen {
                     String::new()
                 }
             }
-            std::cmp::Ordering::Greater => String::new(),
+            core::cmp::Ordering::Greater => String::new(),
         }
     }
 

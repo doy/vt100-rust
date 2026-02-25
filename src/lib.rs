@@ -33,6 +33,7 @@
 //! );
 //! ```
 
+#![cfg_attr(not(feature = "std"), no_std)]
 #![warn(missing_docs)]
 #![warn(clippy::cargo)]
 #![warn(clippy::pedantic)]
@@ -46,6 +47,9 @@
 #![allow(clippy::too_many_arguments)]
 #![allow(clippy::too_many_lines)]
 #![allow(clippy::type_complexity)]
+
+#[macro_use]
+extern crate alloc;
 
 mod attrs;
 mod callbacks;

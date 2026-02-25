@@ -1,4 +1,12 @@
+#![cfg(any(feature = "std", feature = "embedded-io"))]
+
+#[cfg(feature = "std")]
 use std::io::Write as _;
+
+// Caveat: if both embedded-io and std features are specified, we only test
+// the std feature.
+#[cfg(all(feature = "embedded-io", not(feature = "std")))]
+use embedded_io::Write as _;
 
 #[test]
 fn write_text() {
