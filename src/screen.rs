@@ -100,6 +100,12 @@ impl Screen {
         (size.rows, size.cols)
     }
 
+    /// Returns the number of lines in the scrollback.
+    #[must_use]
+    pub fn scrollback_len(&self) -> usize {
+        self.grid().scrollback_len()
+    }
+
     /// Scrolls to the given position in the scrollback.
     ///
     /// This position indicates the offset from the top of the screen, and
