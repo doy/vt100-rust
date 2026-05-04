@@ -179,6 +179,15 @@ fn edge_of_screen() {
 }
 
 #[test]
+fn one_row_wrap_does_not_panic() {
+    let mut parser = vt100::Parser::new(1, 1, 10);
+
+    parser.process(b"ab");
+
+    assert_eq!(parser.screen().contents(), "b");
+}
+
+#[test]
 fn scrollback_larger_than_rows() {
     let mut parser = vt100::Parser::new(3, 20, 10);
 
