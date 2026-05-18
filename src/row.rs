@@ -72,8 +72,19 @@ impl Row {
     }
 
     pub fn resize(&mut self, len: u16, cell: crate::Cell) {
+        let old_len = self.cells.len();
         self.cells.resize(usize::from(len), cell);
         self.wrapped = false;
+        // When shrinking, a wide char at the new last position may
+        // have lost its continuation cell — clear it to avoid
+        // dangling state. Matches what Row::truncate already does.
+        let new_len = usize::from(len);
+        if new_len > 0 && new_len < old_len {
+            let last_cell = &mut self.cells[new_len - 1];
+            if last_cell.is_wide() {
+                last_cell.clear(*last_cell.attrs());
+            }
+        }
     }
 
     pub fn wrap(&mut self, wrap: bool) {
@@ -85,9 +96,20 @@ impl Row {
     }
 
     pub fn clear_wide(&mut self, col: u16) {
-        let cell = &self.cells[usize::from(col)];
+        let col_idx = usize::from(col);
+        let cell = &self.cells[col_idx];
         let other = if cell.is_wide() {
-            &mut self.cells[usize::from(col + 1)]
+            let next = col_idx + 1;
+            if next >= self.cells.len() {
+                // Wide char at the last column with no continuation
+                // (e.g. a shrinking resize that split the pair).
+                // Clear the cell in place instead of indexing past
+                // the end.
+                let attrs = *self.cells[col_idx].attrs();
+                self.cells[col_idx].clear(attrs);
+                return;
+            }
+            &mut self.cells[next]
         } else if cell.is_wide_continuation() {
             &mut self.cells[usize::from(col - 1)]
         } else {

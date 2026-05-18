@@ -122,3 +122,16 @@ fn cell_attrs() {
 
     assert!(parser.screen().cell(0, 4).unwrap().italic());
 }
+
+// Regression test for the panic where shrinking a screen truncates the
+// continuation cell of a wide character, then erasing the line tries
+// to clear past the end of the row. The repro is from
+// https://github.com/doy/vt100-rust/issues/28.
+#[test]
+fn resize_truncating_wide_char_then_erase_line_does_not_panic() {
+    let mut parser = vt100::Parser::new(2, 4, 0);
+    parser.process("你".as_bytes());
+    parser.screen_mut().set_size(2, 1);
+    parser.process(b"\x1b[K");
+    assert_eq!(parser.screen().size(), (2, 1));
+}
