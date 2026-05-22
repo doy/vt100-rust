@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+
+* Support for clearing scrollback with `Screen::clear_scrollback` and `CSI 3 J`.
+
 ## [0.16.2] - 2025-07-11
 
 ### Fixed

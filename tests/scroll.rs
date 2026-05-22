@@ -202,6 +202,65 @@ fn scrollback_larger_than_rows() {
     assert_eq!(parser.screen().contents(), gen_nums(1..=3, "\n"));
 }
 
+#[test]
+fn clear_scrollback() {
+    let mut parser = vt100::Parser::new(3, 20, 10);
+
+    parser.process(gen_nums(1..=6, "\r\n").as_bytes());
+    parser.screen_mut().set_scrollback(3);
+    assert_eq!(parser.screen().scrollback(), 3);
+    assert_eq!(parser.screen().contents(), gen_nums(1..=3, "\n"));
+
+    parser.screen_mut().clear_scrollback();
+    assert_eq!(parser.screen().scrollback(), 0);
+    assert_eq!(parser.screen().contents(), gen_nums(4..=6, "\n"));
+
+    parser.screen_mut().set_scrollback(10);
+    assert_eq!(parser.screen().scrollback(), 0);
+}
+
+#[test]
+fn erase_saved_lines_csi_3j() {
+    let mut parser = vt100::Parser::new(3, 20, 10);
+
+    parser.process(gen_nums(1..=6, "\r\n").as_bytes());
+    assert_eq!(parser.screen().contents(), gen_nums(4..=6, "\n"));
+
+    parser.screen_mut().set_scrollback(2);
+    assert_eq!(parser.screen().scrollback(), 2);
+    parser.process(b"\x1b[3J");
+
+    assert_eq!(parser.screen().scrollback(), 0);
+    assert_eq!(parser.screen().contents(), gen_nums(4..=6, "\n"));
+    parser.screen_mut().set_scrollback(10);
+    assert_eq!(parser.screen().scrollback(), 0);
+}
+
+#[test]
+fn erase_saved_lines_csi_3j_preserves_modes() {
+    let mut parser = vt100::Parser::new(3, 20, 10);
+
+    parser.process(b"\x1b[?1h\x1b[?25l\x1b[?1000h\x1b[?1006h\x1b[?2004h");
+    parser.process(gen_nums(1..=6, "\r\n").as_bytes());
+
+    parser.screen_mut().set_scrollback(2);
+    parser.process(b"\x1b[3J");
+
+    assert_eq!(parser.screen().scrollback(), 0);
+    assert_eq!(parser.screen().contents(), gen_nums(4..=6, "\n"));
+    assert!(parser.screen().application_cursor());
+    assert!(parser.screen().hide_cursor());
+    assert!(parser.screen().bracketed_paste());
+    assert_eq!(
+        parser.screen().mouse_protocol_mode(),
+        vt100::MouseProtocolMode::PressRelease
+    );
+    assert_eq!(
+        parser.screen().mouse_protocol_encoding(),
+        vt100::MouseProtocolEncoding::Sgr
+    );
+}
+
 #[cfg(test)]
 fn gen_nums(range: RangeInclusive<u8>, join: &str) -> String {
     range

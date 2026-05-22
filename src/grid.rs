@@ -200,6 +200,11 @@ impl Grid {
         self.scrollback_offset = rows.min(self.scrollback.len());
     }
 
+    pub fn clear_scrollback(&mut self) {
+        self.scrollback.clear();
+        self.scrollback_offset = 0;
+    }
+
     pub fn write_contents(&self, contents: &mut String) {
         let mut wrapping = false;
         for row in self.visible_rows() {

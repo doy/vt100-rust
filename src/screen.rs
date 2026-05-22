@@ -153,6 +153,16 @@ impl Screen {
         self.grid_mut().set_scrollback(rows);
     }
 
+    /// Clears the scrollback history for the active screen and returns the
+    /// scrollback position to the live viewport.
+    ///
+    /// This does not erase the visible screen contents or reset terminal
+    /// modes. To model a terminal action that clears both the visible display
+    /// and scrollback history, process both `CSI 2 J` and `CSI 3 J`.
+    pub fn clear_scrollback(&mut self) {
+        self.grid_mut().clear_scrollback();
+    }
+
     /// Returns the current position in the scrollback.
     ///
     /// This position indicates the offset from the top of the screen, and is
@@ -1157,6 +1167,7 @@ impl Screen {
             0 => self.grid_mut().erase_all_forward(attrs),
             1 => self.grid_mut().erase_all_backward(attrs),
             2 => self.grid_mut().erase_all(attrs),
+            3 => self.clear_scrollback(),
             _ => unhandled(self),
         }
     }
