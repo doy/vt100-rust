@@ -819,9 +819,12 @@ impl Screen {
 
         if width == 0 {
             if pos.col > 0 {
-                let mut prev_cell = self
-                    .grid_mut()
-                    .drawing_cell_mut(crate::grid::Pos {
+                // The combining character attaches to the base cell. If the
+                // cell immediately to the left is a wide continuation, the
+                // base is the cell before that.
+                let base_col = if self
+                    .grid()
+                    .drawing_cell(crate::grid::Pos {
                         row: pos.row,
                         col: pos.col - 1,
                     })
@@ -829,23 +832,89 @@ impl Screen {
                     // self.grid().pos() which we assume to always have a
                     // valid row value. pos.col - 1 is valid because we just
                     // checked for pos.col > 0.
-                    .unwrap();
-                if prev_cell.is_wide_continuation() {
-                    prev_cell = self
-                        .grid_mut()
-                        .drawing_cell_mut(crate::grid::Pos {
-                            row: pos.row,
-                            col: pos.col - 2,
-                        })
-                        // pos.row is valid, since it comes directly from
-                        // self.grid().pos() which we assume to always have a
-                        // valid row value. we know pos.col - 2 is valid
-                        // because the cell at pos.col - 1 is a wide
-                        // continuation character, which means there must be
-                        // the first half of the wide character before it.
+                    .unwrap()
+                    .is_wide_continuation()
+                {
+                    // pos.col - 2 is valid because the cell at pos.col - 1 is
+                    // a wide continuation character, which means there must be
+                    // the first half of the wide character before it.
+                    pos.col - 2
+                } else {
+                    pos.col - 1
+                };
+                let base_pos = crate::grid::Pos {
+                    row: pos.row,
+                    col: base_col,
+                };
+                self.grid_mut()
+                    .drawing_cell_mut(base_pos)
+                    // base_col was just shown to be a valid column.
+                    .unwrap()
+                    .append(c);
+
+                // U+FE0F (variation selector-16) promotes a text-presentation
+                // base char to emoji presentation, which is two columns at the
+                // string level (and to terminals/tmux), though our wide flag
+                // was set from the base char alone. If the cell grew to double
+                // width but is still flagged narrow, widen it and add a wide
+                // continuation so later columns stay aligned.
+                let cont_col = base_col + 1;
+                let promote = cont_col < size.cols && {
+                    let cell = self
+                        .grid()
+                        .drawing_cell(base_pos)
+                        // base_pos was just shown to be valid above.
                         .unwrap();
+                    !cell.is_wide()
+                        && unicode_width::UnicodeWidthStr::width(
+                            cell.contents(),
+                        ) > 1
+                };
+                if promote {
+                    self.grid_mut()
+                        .drawing_cell_mut(base_pos)
+                        .unwrap()
+                        .set_wide(true);
+                    let cont_pos = crate::grid::Pos {
+                        row: pos.row,
+                        col: cont_col,
+                    };
+                    // If the continuation column already holds the first half
+                    // of an existing wide glyph, clear that glyph's own
+                    // continuation first so it isn't left orphaned (mirrors
+                    // the wide-character placement in the width > 1 branch).
+                    if self
+                        .grid()
+                        .drawing_cell(cont_pos)
+                        // cont_col < size.cols was just checked.
+                        .unwrap()
+                        .is_wide()
+                        && cont_col + 1 < size.cols
+                    {
+                        self.grid_mut()
+                            .drawing_cell_mut(crate::grid::Pos {
+                                row: pos.row,
+                                col: cont_col + 1,
+                            })
+                            // cont_col + 1 < size.cols was just checked.
+                            .unwrap()
+                            .clear(crate::attrs::Attrs::default());
+                    }
+                    let cont = self
+                        .grid_mut()
+                        .drawing_cell_mut(cont_pos)
+                        // cont_col < size.cols was just checked.
+                        .unwrap();
+                    cont.clear(crate::attrs::Attrs::default());
+                    cont.set_wide_continuation(true);
+                    // If the cursor is sitting on the new continuation cell
+                    // (the combining char arrived immediately after the base
+                    // char, which is the normal case), step past it so later
+                    // characters are not written over the wide glyph.
+                    if pos.col == cont_col {
+                        self.grid_mut().col_inc(1);
+                    }
                 }
-                prev_cell.append(c);
             } else if pos.row > 0 {
                 let prev_row = self
                     .grid()
