@@ -57,7 +57,11 @@ impl Row {
         let wide = self.cells[usize::from(i)].is_wide();
         self.clear_wide(i);
         self.cells[usize::from(i)].clear(attrs);
-        if i == self.cols() - if wide { 2 } else { 1 } {
+        // `wide` is captured pre-erase on purpose: a 2-wide char occupies the
+        // logical last column at cols() - 2. saturating_sub guards the
+        // degenerate case of an orphaned wide cell in a one-column row, where
+        // cols() - 2 would underflow.
+        if i == self.cols().saturating_sub(if wide { 2 } else { 1 }) {
             self.wrapped = false;
         }
     }
@@ -493,5 +497,31 @@ impl Row {
         }
 
         (prev_pos, prev_attrs)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // An orphaned wide cell (wide flag set, no continuation) in a
+    // one-column row must not make Row::erase underflow when it derives the
+    // logical last column as cols() - 2. Covers the Copilot review note on
+    // the clear_wide OOB fix: clear_wide itself was hardened, but its caller
+    // erase computed cols() - 2 == 1 - 2 from the captured `wide` value.
+    #[test]
+    fn erase_wide_cell_in_one_column_row_does_not_underflow() {
+        let attrs = crate::attrs::Attrs::default();
+        let mut row = Row::new(1);
+        // A 2-wide char in the only column: a wide cell with no room for a
+        // continuation cell.
+        row.get_mut(0).unwrap().set('中', attrs);
+        assert!(row.get(0).unwrap().is_wide());
+
+        row.erase(0, attrs);
+
+        let cell = row.get(0).unwrap();
+        assert!(!cell.is_wide(), "erased cell must no longer be wide");
+        assert!(!cell.has_contents(), "erased cell must be empty");
     }
 }
