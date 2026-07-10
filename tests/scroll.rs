@@ -261,6 +261,28 @@ fn erase_saved_lines_csi_3j_preserves_modes() {
     );
 }
 
+#[test]
+fn scrollback_in_top_aligned_region() {
+    // Regression: inline TUIs (e.g. codex) insert finalized history into the scrollback using
+    // `SetScrollRegion(1..viewport_top)` + `\r\n` within the region. When the region top is the
+    // screen top (scroll_top == 0), scrolled-off rows must enter the scrollback — equivalent to
+    // full-screen scrolling, and matching xterm. Upstream's `!scroll_region_active()` dropped
+    // these rows unconditionally, so such TUIs never built any scrollback.
+    let mut parser = vt100::Parser::new(6, 10, 100);
+    parser.process(b"row1\r\nrow2\r\nrow3\r\nrow4\r\nrow5\r\nrow6");
+
+    // Scroll region 1..4 (screen top to row 4), cursor to region bottom, write 3 lines with
+    // newlines -> 3 rows should land in the scrollback.
+    parser.process(b"\x1b[1;4r\x1b[4;1Hh1\r\nh2\r\nh3\r\n\x1b[r");
+
+    parser.screen_mut().set_scrollback(100);
+    assert_eq!(parser.screen().scrollback(), 3);
+    let back = parser.screen().contents();
+    assert!(back.contains("row1"));
+    assert!(back.contains("row2"));
+    assert!(back.contains("row3"));
+}
+
 #[cfg(test)]
 fn gen_nums(range: RangeInclusive<u8>, join: &str) -> String {
     range
