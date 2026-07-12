@@ -6,6 +6,18 @@ fn absolute_movement() {
 }
 
 #[test]
+fn horizontal_vertical_position() {
+    let mut vt = vt100::Parser::new(5, 10, 0);
+
+    vt.process(b"\x1b[3;7fX");
+    assert_eq!(vt.screen().cell(2, 6).unwrap().contents(), "X");
+    assert_eq!(vt.screen().cursor_position(), (2, 7));
+
+    vt.process(b"\x1b[fY");
+    assert_eq!(vt.screen().cell(0, 0).unwrap().contents(), "Y");
+}
+
+#[test]
 fn row_clamp() {
     let mut vt = vt100::Parser::default();
     assert_eq!(vt.screen().cursor_position(), (0, 0));
