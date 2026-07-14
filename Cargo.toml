@@ -16,7 +16,8 @@ include = ["src/**/*", "LICENSE", "README.md", "CHANGELOG.md"]
 
 [dependencies]
 itoa = "1.0.15"
-unicode-width = "0.2.1"
+# Keep 0.2.0 compatible for consumers pinned by ratatui 0.29.
+unicode-width = "0.2"
 vte = "0.15.0"
 
 [dev-dependencies]
