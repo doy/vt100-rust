@@ -16,6 +16,15 @@ fn row_clamp() {
 }
 
 #[test]
+fn hvp() {
+    let mut vt = vt100::Parser::new(3, 3, 0);
+
+    vt.process(b"\x1b[2;3fX");
+
+    assert_eq!(vt.screen().cell(1, 2).unwrap().contents(), "X");
+}
+
+#[test]
 fn relative_movement() {
     helpers::fixture("relative_movement");
 }
