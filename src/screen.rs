@@ -253,8 +253,7 @@ impl Screen {
     }
 
     fn write_contents_formatted(&self, contents: &mut String) {
-        crate::term::HideCursor::new(self.hide_cursor())
-            .write_string(contents);
+        crate::term::HideCursor::new(self.hide_cursor()).write_buf(contents);
         let prev_attrs = self.grid().write_contents_formatted(contents);
         self.attrs.write_escape_code_diff(contents, &prev_attrs);
     }
@@ -318,7 +317,7 @@ impl Screen {
     fn write_contents_diff(&self, contents: &mut String, prev: &Self) {
         if self.hide_cursor() != prev.hide_cursor() {
             crate::term::HideCursor::new(self.hide_cursor())
-                .write_string(contents);
+                .write_buf(contents);
         }
         let prev_attrs = self.grid().write_contents_diff(
             contents,
@@ -387,23 +386,23 @@ impl Screen {
         crate::term::ApplicationKeypad::new(
             self.mode(MODE_APPLICATION_KEYPAD),
         )
-        .write_string(contents);
+        .write_buf(contents);
         crate::term::ApplicationCursor::new(
             self.mode(MODE_APPLICATION_CURSOR),
         )
-        .write_string(contents);
+        .write_buf(contents);
         crate::term::BracketedPaste::new(self.mode(MODE_BRACKETED_PASTE))
-            .write_string(contents);
+            .write_buf(contents);
         crate::term::MouseProtocolMode::new(
             self.mouse_protocol_mode,
             MouseProtocolMode::None,
         )
-        .write_string(contents);
+        .write_buf(contents);
         crate::term::MouseProtocolEncoding::new(
             self.mouse_protocol_encoding,
             MouseProtocolEncoding::Default,
         )
-        .write_string(contents);
+        .write_buf(contents);
     }
 
     /// Returns terminal escape sequences sufficient to change the previous
@@ -423,7 +422,7 @@ impl Screen {
             crate::term::ApplicationKeypad::new(
                 self.mode(MODE_APPLICATION_KEYPAD),
             )
-            .write_string(contents);
+            .write_buf(contents);
         }
         if self.mode(MODE_APPLICATION_CURSOR)
             != prev.mode(MODE_APPLICATION_CURSOR)
@@ -431,23 +430,23 @@ impl Screen {
             crate::term::ApplicationCursor::new(
                 self.mode(MODE_APPLICATION_CURSOR),
             )
-            .write_string(contents);
+            .write_buf(contents);
         }
         if self.mode(MODE_BRACKETED_PASTE) != prev.mode(MODE_BRACKETED_PASTE)
         {
             crate::term::BracketedPaste::new(self.mode(MODE_BRACKETED_PASTE))
-                .write_string(contents);
+                .write_buf(contents);
         }
         crate::term::MouseProtocolMode::new(
             self.mouse_protocol_mode,
             prev.mouse_protocol_mode,
         )
-        .write_string(contents);
+        .write_buf(contents);
         crate::term::MouseProtocolEncoding::new(
             self.mouse_protocol_encoding,
             prev.mouse_protocol_encoding,
         )
-        .write_string(contents);
+        .write_buf(contents);
     }
 
     /// Returns terminal escape sequences sufficient to set the current
@@ -476,7 +475,7 @@ impl Screen {
     }
 
     fn write_attributes_formatted(&self, contents: &mut String) {
-        crate::term::ClearAttrs.write_string(contents);
+        crate::term::ClearAttrs.write_buf(contents);
         self.attrs.write_escape_code_diff(
             contents,
             &crate::attrs::Attrs::default(),
@@ -517,8 +516,7 @@ impl Screen {
     }
 
     fn write_cursor_state_formatted(&self, contents: &mut String) {
-        crate::term::HideCursor::new(self.hide_cursor())
-            .write_string(contents);
+        crate::term::HideCursor::new(self.hide_cursor()).write_buf(contents);
         self.grid()
             .write_cursor_position_formatted(contents, None, None);
 
