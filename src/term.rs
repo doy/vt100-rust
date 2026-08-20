@@ -1,9 +1,16 @@
 // TODO: read all of this from terminfo
-
-use alloc::vec::Vec;
+use alloc::string::String;
 
 pub trait BufWrite {
-    fn write_buf(&self, buf: &mut Vec<u8>);
+    fn write_fmt(
+        &self,
+        writer: &mut impl alloc::fmt::Write,
+    ) -> alloc::fmt::Result;
+
+    fn write_buf(&self, buf: &mut String) {
+        self.write_fmt(buf)
+            .expect("writing to a String cannot fail");
+    }
 }
 
 #[derive(Default, Debug)]
@@ -11,8 +18,11 @@ pub trait BufWrite {
 pub struct ClearScreen;
 
 impl BufWrite for ClearScreen {
-    fn write_buf(&self, buf: &mut Vec<u8>) {
-        buf.extend_from_slice(b"\x1b[H\x1b[J");
+    fn write_fmt(
+        &self,
+        writer: &mut impl alloc::fmt::Write,
+    ) -> alloc::fmt::Result {
+        writer.write_str("\x1b[H\x1b[J")
     }
 }
 
@@ -21,8 +31,11 @@ impl BufWrite for ClearScreen {
 pub struct ClearRowForward;
 
 impl BufWrite for ClearRowForward {
-    fn write_buf(&self, buf: &mut Vec<u8>) {
-        buf.extend_from_slice(b"\x1b[K");
+    fn write_fmt(
+        &self,
+        writer: &mut impl alloc::fmt::Write,
+    ) -> alloc::fmt::Result {
+        writer.write_str("\x1b[K")
     }
 }
 
@@ -31,8 +44,11 @@ impl BufWrite for ClearRowForward {
 pub struct Crlf;
 
 impl BufWrite for Crlf {
-    fn write_buf(&self, buf: &mut Vec<u8>) {
-        buf.extend_from_slice(b"\r\n");
+    fn write_fmt(
+        &self,
+        writer: &mut impl alloc::fmt::Write,
+    ) -> alloc::fmt::Result {
+        writer.write_str("\r\n")
     }
 }
 
@@ -41,8 +57,11 @@ impl BufWrite for Crlf {
 pub struct Backspace;
 
 impl BufWrite for Backspace {
-    fn write_buf(&self, buf: &mut Vec<u8>) {
-        buf.extend_from_slice(b"\x08");
+    fn write_fmt(
+        &self,
+        writer: &mut impl alloc::fmt::Write,
+    ) -> alloc::fmt::Result {
+        writer.write_str("\x08")
     }
 }
 
@@ -51,8 +70,11 @@ impl BufWrite for Backspace {
 pub struct SaveCursor;
 
 impl BufWrite for SaveCursor {
-    fn write_buf(&self, buf: &mut Vec<u8>) {
-        buf.extend_from_slice(b"\x1b7");
+    fn write_fmt(
+        &self,
+        writer: &mut impl alloc::fmt::Write,
+    ) -> alloc::fmt::Result {
+        writer.write_str("\x1b7")
     }
 }
 
@@ -61,8 +83,11 @@ impl BufWrite for SaveCursor {
 pub struct RestoreCursor;
 
 impl BufWrite for RestoreCursor {
-    fn write_buf(&self, buf: &mut Vec<u8>) {
-        buf.extend_from_slice(b"\x1b8");
+    fn write_fmt(
+        &self,
+        writer: &mut impl alloc::fmt::Write,
+    ) -> alloc::fmt::Result {
+        writer.write_str("\x1b8")
     }
 }
 
@@ -83,15 +108,18 @@ impl MoveTo {
 }
 
 impl BufWrite for MoveTo {
-    fn write_buf(&self, buf: &mut Vec<u8>) {
+    fn write_fmt(
+        &self,
+        writer: &mut impl alloc::fmt::Write,
+    ) -> alloc::fmt::Result {
         if self.row == 0 && self.col == 0 {
-            buf.extend_from_slice(b"\x1b[H");
+            writer.write_str("\x1b[H")
         } else {
-            buf.extend_from_slice(b"\x1b[");
-            extend_itoa(buf, self.row + 1);
-            buf.push(b';');
-            extend_itoa(buf, self.col + 1);
-            buf.push(b'H');
+            writer.write_str("\x1b[")?;
+            write_itoa(writer, self.row + 1)?;
+            writer.write_char(';')?;
+            write_itoa(writer, self.col + 1)?;
+            writer.write_char('H')
         }
     }
 }
@@ -101,8 +129,11 @@ impl BufWrite for MoveTo {
 pub struct ClearAttrs;
 
 impl BufWrite for ClearAttrs {
-    fn write_buf(&self, buf: &mut Vec<u8>) {
-        buf.extend_from_slice(b"\x1b[m");
+    fn write_fmt(
+        &self,
+        writer: &mut impl alloc::fmt::Write,
+    ) -> alloc::fmt::Result {
+        writer.write_str("\x1b[m")
     }
 }
 
@@ -159,7 +190,10 @@ impl Attrs {
 impl BufWrite for Attrs {
     #[allow(unused_assignments)]
     #[allow(clippy::branches_sharing_code)]
-    fn write_buf(&self, buf: &mut Vec<u8>) {
+    fn write_fmt(
+        &self,
+        writer: &mut impl alloc::fmt::Write,
+    ) -> alloc::fmt::Result {
         if self.fgcolor.is_none()
             && self.bgcolor.is_none()
             && self.intensity.is_none()
@@ -167,10 +201,10 @@ impl BufWrite for Attrs {
             && self.underline.is_none()
             && self.inverse.is_none()
         {
-            return;
+            return Ok(());
         }
 
-        buf.extend_from_slice(b"\x1b[");
+        writer.write_str("\x1b[")?;
         let mut first = true;
 
         macro_rules! write_param {
@@ -178,9 +212,9 @@ impl BufWrite for Attrs {
                 if first {
                     first = false;
                 } else {
-                    buf.push(b';');
+                    writer.write_char(';')?;
                 }
-                extend_itoa(buf, $i);
+                write_itoa(writer, $i)?;
             }};
         }
 
@@ -268,7 +302,7 @@ impl BufWrite for Attrs {
             }
         }
 
-        buf.push(b'm');
+        writer.write_char('m')
     }
 }
 
@@ -291,14 +325,17 @@ impl Default for MoveRight {
 }
 
 impl BufWrite for MoveRight {
-    fn write_buf(&self, buf: &mut Vec<u8>) {
+    fn write_fmt(
+        &self,
+        writer: &mut impl alloc::fmt::Write,
+    ) -> alloc::fmt::Result {
         match self.count {
-            0 => {}
-            1 => buf.extend_from_slice(b"\x1b[C"),
+            0 => Ok(()),
+            1 => writer.write_str("\x1b[C"),
             n => {
-                buf.extend_from_slice(b"\x1b[");
-                extend_itoa(buf, n);
-                buf.push(b'C');
+                writer.write_str("\x1b[")?;
+                write_itoa(writer, n)?;
+                writer.write_char('C')
             }
         }
     }
@@ -323,14 +360,17 @@ impl Default for EraseChar {
 }
 
 impl BufWrite for EraseChar {
-    fn write_buf(&self, buf: &mut Vec<u8>) {
+    fn write_fmt(
+        &self,
+        writer: &mut impl alloc::fmt::Write,
+    ) -> alloc::fmt::Result {
         match self.count {
-            0 => {}
-            1 => buf.extend_from_slice(b"\x1b[X"),
+            0 => Ok(()),
+            1 => writer.write_str("\x1b[X"),
             n => {
-                buf.extend_from_slice(b"\x1b[");
-                extend_itoa(buf, n);
-                buf.push(b'X');
+                writer.write_str("\x1b[")?;
+                write_itoa(writer, n)?;
+                writer.write_char('X')
             }
         }
     }
@@ -349,11 +389,14 @@ impl HideCursor {
 }
 
 impl BufWrite for HideCursor {
-    fn write_buf(&self, buf: &mut Vec<u8>) {
+    fn write_fmt(
+        &self,
+        writer: &mut impl alloc::fmt::Write,
+    ) -> alloc::fmt::Result {
         if self.state {
-            buf.extend_from_slice(b"\x1b[?25l");
+            writer.write_str("\x1b[?25l")
         } else {
-            buf.extend_from_slice(b"\x1b[?25h");
+            writer.write_str("\x1b[?25h")
         }
     }
 }
@@ -372,15 +415,20 @@ impl MoveFromTo {
 }
 
 impl BufWrite for MoveFromTo {
-    fn write_buf(&self, buf: &mut Vec<u8>) {
+    fn write_fmt(
+        &self,
+        writer: &mut impl alloc::fmt::Write,
+    ) -> alloc::fmt::Result {
         if self.to.row == self.from.row + 1 && self.to.col == 0 {
-            crate::term::Crlf.write_buf(buf);
+            crate::term::Crlf.write_fmt(writer)
         } else if self.from.row == self.to.row && self.from.col < self.to.col
         {
             crate::term::MoveRight::new(self.to.col - self.from.col)
-                .write_buf(buf);
+                .write_fmt(writer)
         } else if self.to != self.from {
-            crate::term::MoveTo::new(self.to).write_buf(buf);
+            crate::term::MoveTo::new(self.to).write_fmt(writer)
+        } else {
+            Ok(())
         }
     }
 }
@@ -398,11 +446,14 @@ impl ApplicationKeypad {
 }
 
 impl BufWrite for ApplicationKeypad {
-    fn write_buf(&self, buf: &mut Vec<u8>) {
+    fn write_fmt(
+        &self,
+        writer: &mut impl alloc::fmt::Write,
+    ) -> alloc::fmt::Result {
         if self.state {
-            buf.extend_from_slice(b"\x1b=");
+            writer.write_str("\x1b=")
         } else {
-            buf.extend_from_slice(b"\x1b>");
+            writer.write_str("\x1b>")
         }
     }
 }
@@ -420,11 +471,14 @@ impl ApplicationCursor {
 }
 
 impl BufWrite for ApplicationCursor {
-    fn write_buf(&self, buf: &mut Vec<u8>) {
+    fn write_fmt(
+        &self,
+        writer: &mut impl alloc::fmt::Write,
+    ) -> alloc::fmt::Result {
         if self.state {
-            buf.extend_from_slice(b"\x1b[?1h");
+            writer.write_str("\x1b[?1h")
         } else {
-            buf.extend_from_slice(b"\x1b[?1l");
+            writer.write_str("\x1b[?1l")
         }
     }
 }
@@ -442,11 +496,14 @@ impl BracketedPaste {
 }
 
 impl BufWrite for BracketedPaste {
-    fn write_buf(&self, buf: &mut Vec<u8>) {
+    fn write_fmt(
+        &self,
+        writer: &mut impl alloc::fmt::Write,
+    ) -> alloc::fmt::Result {
         if self.state {
-            buf.extend_from_slice(b"\x1b[?2004h");
+            writer.write_str("\x1b[?2004h")
         } else {
-            buf.extend_from_slice(b"\x1b[?2004l");
+            writer.write_str("\x1b[?2004l")
         }
     }
 }
@@ -468,38 +525,39 @@ impl MouseProtocolMode {
 }
 
 impl BufWrite for MouseProtocolMode {
-    fn write_buf(&self, buf: &mut Vec<u8>) {
+    fn write_fmt(
+        &self,
+        writer: &mut impl alloc::fmt::Write,
+    ) -> alloc::fmt::Result {
         if self.mode == self.prev {
-            return;
+            return Ok(());
         }
 
         match self.mode {
             crate::MouseProtocolMode::None => match self.prev {
-                crate::MouseProtocolMode::None => {}
+                crate::MouseProtocolMode::None => Ok(()),
                 crate::MouseProtocolMode::Press => {
-                    buf.extend_from_slice(b"\x1b[?9l");
+                    writer.write_str("\x1b[?9l")
                 }
                 crate::MouseProtocolMode::PressRelease => {
-                    buf.extend_from_slice(b"\x1b[?1000l");
+                    writer.write_str("\x1b[?1000l")
                 }
                 crate::MouseProtocolMode::ButtonMotion => {
-                    buf.extend_from_slice(b"\x1b[?1002l");
+                    writer.write_str("\x1b[?1002l")
                 }
                 crate::MouseProtocolMode::AnyMotion => {
-                    buf.extend_from_slice(b"\x1b[?1003l");
+                    writer.write_str("\x1b[?1003l")
                 }
             },
-            crate::MouseProtocolMode::Press => {
-                buf.extend_from_slice(b"\x1b[?9h");
-            }
+            crate::MouseProtocolMode::Press => writer.write_str("\x1b[?9h"),
             crate::MouseProtocolMode::PressRelease => {
-                buf.extend_from_slice(b"\x1b[?1000h");
+                writer.write_str("\x1b[?1000h")
             }
             crate::MouseProtocolMode::ButtonMotion => {
-                buf.extend_from_slice(b"\x1b[?1002h");
+                writer.write_str("\x1b[?1002h")
             }
             crate::MouseProtocolMode::AnyMotion => {
-                buf.extend_from_slice(b"\x1b[?1003h");
+                writer.write_str("\x1b[?1003h")
             }
         }
     }
@@ -522,26 +580,29 @@ impl MouseProtocolEncoding {
 }
 
 impl BufWrite for MouseProtocolEncoding {
-    fn write_buf(&self, buf: &mut Vec<u8>) {
+    fn write_fmt(
+        &self,
+        writer: &mut impl alloc::fmt::Write,
+    ) -> alloc::fmt::Result {
         if self.encoding == self.prev {
-            return;
+            return Ok(());
         }
 
         match self.encoding {
             crate::MouseProtocolEncoding::Default => match self.prev {
-                crate::MouseProtocolEncoding::Default => {}
+                crate::MouseProtocolEncoding::Default => Ok(()),
                 crate::MouseProtocolEncoding::Utf8 => {
-                    buf.extend_from_slice(b"\x1b[?1005l");
+                    writer.write_str("\x1b[?1005l")
                 }
                 crate::MouseProtocolEncoding::Sgr => {
-                    buf.extend_from_slice(b"\x1b[?1006l");
+                    writer.write_str("\x1b[?1006l")
                 }
             },
             crate::MouseProtocolEncoding::Utf8 => {
-                buf.extend_from_slice(b"\x1b[?1005h");
+                writer.write_str("\x1b[?1005h")
             }
             crate::MouseProtocolEncoding::Sgr => {
-                buf.extend_from_slice(b"\x1b[?1006h");
+                writer.write_str("\x1b[?1006h")
             }
         }
     }
@@ -561,38 +622,38 @@ impl CursorStyle {
 }
 
 impl BufWrite for CursorStyle {
-    fn write_buf(&self, buf: &mut Vec<u8>) {
+    fn write_fmt(
+        &self,
+        writer: &mut impl alloc::fmt::Write,
+    ) -> alloc::fmt::Result {
         if self.style == self.prev {
-            return;
+            return Ok(());
         }
 
         match self.style {
-            crate::CursorStyle::Default => {
-                buf.extend_from_slice(b"\x1b[0 q");
-            }
-            crate::CursorStyle::BlinkBlock => {
-                buf.extend_from_slice(b"\x1b[1 q");
-            }
-            crate::CursorStyle::SteadyBlock => {
-                buf.extend_from_slice(b"\x1b[2 q");
-            }
+            crate::CursorStyle::Default => writer.write_str("\x1b[0 q"),
+            crate::CursorStyle::BlinkBlock => writer.write_str("\x1b[1 q"),
+            crate::CursorStyle::SteadyBlock => writer.write_str("\x1b[2 q"),
             crate::CursorStyle::BlinkUnderline => {
-                buf.extend_from_slice(b"\x1b[3 q");
+                writer.write_str("\x1b[3 q")
             }
             crate::CursorStyle::SteadyUnderline => {
-                buf.extend_from_slice(b"\x1b[4 q");
+                writer.write_str("\x1b[4 q")
             }
             crate::CursorStyle::BlinkVerticalBar => {
-                buf.extend_from_slice(b"\x1b[5 q");
+                writer.write_str("\x1b[5 q")
             }
             crate::CursorStyle::SteadyVerticalBar => {
-                buf.extend_from_slice(b"\x1b[6 q");
+                writer.write_str("\x1b[6 q")
             }
         }
     }
 }
 
-fn extend_itoa<I: itoa::Integer>(buf: &mut Vec<u8>, i: I) {
+fn write_itoa<I: itoa::Integer>(
+    writer: &mut impl alloc::fmt::Write,
+    i: I,
+) -> alloc::fmt::Result {
     let mut itoa_buf = itoa::Buffer::new();
-    buf.extend_from_slice(itoa_buf.format(i).as_bytes());
+    writer.write_str(itoa_buf.format(i))
 }

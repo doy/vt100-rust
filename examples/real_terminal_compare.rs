@@ -61,7 +61,7 @@ fn main() {
                         );
                     } else {
                         let diff = parser.screen().state_diff(&screen);
-                        stdout.write_all(&diff).unwrap();
+                        stdout.write_all(diff.as_bytes()).unwrap();
                         stdout.write_all(b"\x1b[6n").unwrap();
                         stdout.flush().unwrap();
 
@@ -105,7 +105,7 @@ fn main() {
                             byte,
                             pos.0,
                             pos.1,
-                            helpers::format_bytes(&diff),
+                            helpers::format_bytes(diff.as_bytes()),
                             row,
                             col,
                         )

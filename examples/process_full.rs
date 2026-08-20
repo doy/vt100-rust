@@ -17,7 +17,7 @@ fn draw_frames(frames: &[Vec<u8>]) {
     for frame in frames {
         parser.process(frame);
         let contents = parser.screen().contents_formatted();
-        stdout.write_all(&contents).unwrap();
+        stdout.write_all(contents.as_bytes()).unwrap();
     }
 }
 

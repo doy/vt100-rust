@@ -222,7 +222,7 @@ impl Grid {
 
     pub fn write_contents_formatted(
         &self,
-        contents: &mut Vec<u8>,
+        contents: &mut String,
     ) -> crate::attrs::Attrs {
         crate::term::ClearAttrs.write_buf(contents);
         crate::term::ClearScreen.write_buf(contents);
@@ -259,7 +259,7 @@ impl Grid {
 
     pub fn write_contents_diff(
         &self,
-        contents: &mut Vec<u8>,
+        contents: &mut String,
         prev: &Self,
         mut prev_attrs: crate::attrs::Attrs,
     ) -> crate::attrs::Attrs {
@@ -300,7 +300,7 @@ impl Grid {
 
     pub fn write_cursor_position_formatted(
         &self,
-        contents: &mut Vec<u8>,
+        contents: &mut String,
         prev_pos: Option<Pos>,
         prev_attrs: Option<crate::attrs::Attrs>,
     ) {
@@ -340,7 +340,7 @@ impl Grid {
                     crate::term::MoveTo::new(pos).write_buf(contents);
                 }
                 cell.attrs().write_escape_code_diff(contents, &prev_attrs);
-                contents.extend(cell.contents().as_bytes());
+                contents.push_str(cell.contents());
                 prev_attrs.write_escape_code_diff(contents, cell.attrs());
             } else {
                 // if the cell doesn't have contents, we can't have gotten
@@ -387,7 +387,7 @@ impl Grid {
                                     contents,
                                     &prev_attrs,
                                 );
-                                contents.extend(cell.contents().as_bytes());
+                                contents.push_str(cell.contents());
                                 prev_attrs.write_escape_code_diff(
                                     contents,
                                     cell.attrs(),
@@ -399,15 +399,14 @@ impl Grid {
                                 contents,
                                 &prev_attrs,
                             );
-                            contents.extend(cell.contents().as_bytes());
+                            contents.push_str(cell.contents());
                             prev_attrs.write_escape_code_diff(
                                 contents,
                                 cell.attrs(),
                             );
                         }
-                        contents.extend(
-                            "\n".repeat(usize::from(self.pos.row - i))
-                                .as_bytes(),
+                        contents.push_str(
+                            &"\n".repeat(usize::from(self.pos.row - i)),
                         );
                         found = true;
                         break;
@@ -431,7 +430,7 @@ impl Grid {
                     } else {
                         crate::term::MoveTo::new(pos).write_buf(contents);
                     }
-                    contents.push(b' ');
+                    contents.push(' ');
                     // we know that the cell has no contents, but it still may
                     // have drawing attributes (background color, etc)
                     let end_cell = self
