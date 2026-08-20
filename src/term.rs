@@ -1,7 +1,29 @@
 // TODO: read all of this from terminfo
 
 pub trait BufWrite {
-    fn write_buf(&self, buf: &mut Vec<u8>);
+    fn write_fmt(
+        &self,
+        writer: &mut impl std::fmt::Write,
+    ) -> std::fmt::Result;
+
+    fn write_string(&self, buf: &mut String) {
+        self.write_fmt(buf)
+            .expect("writing to a String cannot fail");
+    }
+
+    fn write_buf(&self, buf: &mut Vec<u8>) {
+        struct VecWrapper<'a>(&'a mut Vec<u8>);
+
+        impl std::fmt::Write for VecWrapper<'_> {
+            fn write_str(&mut self, s: &str) -> std::fmt::Result {
+                self.0.extend_from_slice(s.as_bytes());
+                Ok(())
+            }
+        }
+
+        self.write_fmt(&mut VecWrapper(buf))
+            .expect("writing to a VecWrapper cannot fail");
+    }
 }
 
 #[derive(Default, Debug)]
