@@ -1,5 +1,5 @@
 use crate::term::BufWrite as _;
-use alloc::vec::Vec;
+use alloc::string::String;
 
 /// Represents a foreground or background color for cells.
 #[derive(Eq, PartialEq, Debug, Copy, Clone, Default)]
@@ -94,7 +94,7 @@ impl Attrs {
 
     pub fn write_escape_code_diff(
         &self,
-        contents: &mut Vec<u8>,
+        contents: &mut String,
         other: &Self,
     ) {
         if self != other && self == &Self::default() {

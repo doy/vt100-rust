@@ -34,27 +34,27 @@ fn vb() {
     let screen = parser.screen().clone();
     parser.process(b"\x1bg");
     assert_eq!(parser.callbacks().vb, 1);
-    assert_eq!(parser.screen().contents_diff(&screen), b"");
+    assert_eq!(parser.screen().contents_diff(&screen), "");
 
     let screen = parser.screen().clone();
     parser.process(b"\x1bg");
     assert_eq!(parser.callbacks().vb, 2);
-    assert_eq!(parser.screen().contents_diff(&screen), b"");
+    assert_eq!(parser.screen().contents_diff(&screen), "");
 
     let screen = parser.screen().clone();
     parser.process(b"\x1bg\x1bg\x1bg");
     assert_eq!(parser.callbacks().vb, 5);
-    assert_eq!(parser.screen().contents_diff(&screen), b"");
+    assert_eq!(parser.screen().contents_diff(&screen), "");
 
     let screen = parser.screen().clone();
     parser.process(b"foo");
     assert_eq!(parser.callbacks().vb, 5);
-    assert_eq!(parser.screen().contents_diff(&screen), b"foo");
+    assert_eq!(parser.screen().contents_diff(&screen), "foo");
 
     let screen = parser.screen().clone();
     parser.process(b"ba\x1bgr");
     assert_eq!(parser.callbacks().vb, 6);
-    assert_eq!(parser.screen().contents_diff(&screen), b"bar");
+    assert_eq!(parser.screen().contents_diff(&screen), "bar");
 }
 
 #[test]
