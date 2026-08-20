@@ -97,7 +97,7 @@ impl Attrs {
         other: &Self,
     ) {
         if self != other && self == &Self::default() {
-            crate::term::ClearAttrs.write_buf(contents);
+            crate::term::ClearAttrs.write_bytes(contents);
             return;
         }
 
@@ -139,6 +139,6 @@ impl Attrs {
             attrs.inverse(self.inverse())
         };
 
-        attrs.write_buf(contents);
+        attrs.write_bytes(contents);
     }
 }

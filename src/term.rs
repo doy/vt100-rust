@@ -11,7 +11,7 @@ pub trait BufWrite {
             .expect("writing to a String cannot fail");
     }
 
-    fn write_buf(&self, buf: &mut Vec<u8>) {
+    fn write_bytes(&self, buf: &mut Vec<u8>) {
         struct VecWrapper<'a>(&'a mut Vec<u8>);
 
         impl std::fmt::Write for VecWrapper<'_> {
@@ -27,7 +27,7 @@ pub trait BufWrite {
 }
 
 #[derive(Default, Debug)]
-#[must_use = "this struct does nothing unless you call write_buf"]
+#[must_use = "this struct does nothing unless you call write_bytes"]
 pub struct ClearScreen;
 
 impl BufWrite for ClearScreen {
@@ -40,7 +40,7 @@ impl BufWrite for ClearScreen {
 }
 
 #[derive(Default, Debug)]
-#[must_use = "this struct does nothing unless you call write_buf"]
+#[must_use = "this struct does nothing unless you call write_bytes"]
 pub struct ClearRowForward;
 
 impl BufWrite for ClearRowForward {
@@ -53,7 +53,7 @@ impl BufWrite for ClearRowForward {
 }
 
 #[derive(Default, Debug)]
-#[must_use = "this struct does nothing unless you call write_buf"]
+#[must_use = "this struct does nothing unless you call write_bytes"]
 pub struct Crlf;
 
 impl BufWrite for Crlf {
@@ -66,7 +66,7 @@ impl BufWrite for Crlf {
 }
 
 #[derive(Default, Debug)]
-#[must_use = "this struct does nothing unless you call write_buf"]
+#[must_use = "this struct does nothing unless you call write_bytes"]
 pub struct Backspace;
 
 impl BufWrite for Backspace {
@@ -79,7 +79,7 @@ impl BufWrite for Backspace {
 }
 
 #[derive(Default, Debug)]
-#[must_use = "this struct does nothing unless you call write_buf"]
+#[must_use = "this struct does nothing unless you call write_bytes"]
 pub struct SaveCursor;
 
 impl BufWrite for SaveCursor {
@@ -92,7 +92,7 @@ impl BufWrite for SaveCursor {
 }
 
 #[derive(Default, Debug)]
-#[must_use = "this struct does nothing unless you call write_buf"]
+#[must_use = "this struct does nothing unless you call write_bytes"]
 pub struct RestoreCursor;
 
 impl BufWrite for RestoreCursor {
@@ -105,7 +105,7 @@ impl BufWrite for RestoreCursor {
 }
 
 #[derive(Default, Debug)]
-#[must_use = "this struct does nothing unless you call write_buf"]
+#[must_use = "this struct does nothing unless you call write_bytes"]
 pub struct MoveTo {
     row: u16,
     col: u16,
@@ -138,7 +138,7 @@ impl BufWrite for MoveTo {
 }
 
 #[derive(Default, Debug)]
-#[must_use = "this struct does nothing unless you call write_buf"]
+#[must_use = "this struct does nothing unless you call write_bytes"]
 pub struct ClearAttrs;
 
 impl BufWrite for ClearAttrs {
@@ -158,7 +158,7 @@ pub enum Intensity {
 }
 
 #[derive(Default, Debug)]
-#[must_use = "this struct does nothing unless you call write_buf"]
+#[must_use = "this struct does nothing unless you call write_bytes"]
 pub struct Attrs {
     fgcolor: Option<crate::Color>,
     bgcolor: Option<crate::Color>,
@@ -320,7 +320,7 @@ impl BufWrite for Attrs {
 }
 
 #[derive(Debug)]
-#[must_use = "this struct does nothing unless you call write_buf"]
+#[must_use = "this struct does nothing unless you call write_bytes"]
 pub struct MoveRight {
     count: u16,
 }
@@ -355,7 +355,7 @@ impl BufWrite for MoveRight {
 }
 
 #[derive(Debug)]
-#[must_use = "this struct does nothing unless you call write_buf"]
+#[must_use = "this struct does nothing unless you call write_bytes"]
 pub struct EraseChar {
     count: u16,
 }
@@ -390,7 +390,7 @@ impl BufWrite for EraseChar {
 }
 
 #[derive(Default, Debug)]
-#[must_use = "this struct does nothing unless you call write_buf"]
+#[must_use = "this struct does nothing unless you call write_bytes"]
 pub struct HideCursor {
     state: bool,
 }
@@ -415,7 +415,7 @@ impl BufWrite for HideCursor {
 }
 
 #[derive(Debug)]
-#[must_use = "this struct does nothing unless you call write_buf"]
+#[must_use = "this struct does nothing unless you call write_bytes"]
 pub struct MoveFromTo {
     from: crate::grid::Pos,
     to: crate::grid::Pos,
@@ -447,7 +447,7 @@ impl BufWrite for MoveFromTo {
 }
 
 #[derive(Default, Debug)]
-#[must_use = "this struct does nothing unless you call write_buf"]
+#[must_use = "this struct does nothing unless you call write_bytes"]
 pub struct ApplicationKeypad {
     state: bool,
 }
@@ -472,7 +472,7 @@ impl BufWrite for ApplicationKeypad {
 }
 
 #[derive(Default, Debug)]
-#[must_use = "this struct does nothing unless you call write_buf"]
+#[must_use = "this struct does nothing unless you call write_bytes"]
 pub struct ApplicationCursor {
     state: bool,
 }
@@ -497,7 +497,7 @@ impl BufWrite for ApplicationCursor {
 }
 
 #[derive(Default, Debug)]
-#[must_use = "this struct does nothing unless you call write_buf"]
+#[must_use = "this struct does nothing unless you call write_bytes"]
 pub struct BracketedPaste {
     state: bool,
 }
@@ -522,7 +522,7 @@ impl BufWrite for BracketedPaste {
 }
 
 #[derive(Default, Debug)]
-#[must_use = "this struct does nothing unless you call write_buf"]
+#[must_use = "this struct does nothing unless you call write_bytes"]
 pub struct MouseProtocolMode {
     mode: crate::MouseProtocolMode,
     prev: crate::MouseProtocolMode,
@@ -577,7 +577,7 @@ impl BufWrite for MouseProtocolMode {
 }
 
 #[derive(Default, Debug)]
-#[must_use = "this struct does nothing unless you call write_buf"]
+#[must_use = "this struct does nothing unless you call write_bytes"]
 pub struct MouseProtocolEncoding {
     encoding: crate::MouseProtocolEncoding,
     prev: crate::MouseProtocolEncoding,

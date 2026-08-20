@@ -167,8 +167,8 @@ impl Row {
                 prev_attrs = *default_attrs;
             }
             contents.push(b' ');
-            crate::term::Backspace.write_buf(contents);
-            crate::term::EraseChar::new(1).write_buf(contents);
+            crate::term::Backspace.write_bytes(contents);
+            crate::term::EraseChar::new(1).write_bytes(contents);
             prev_pos = crate::grid::Pos { row, col: 0 };
         }
 
@@ -203,11 +203,11 @@ impl Row {
                             );
                         } else {
                             contents.extend(b" ");
-                            crate::term::Backspace.write_buf(contents);
+                            crate::term::Backspace.write_bytes(contents);
                         }
                     } else {
                         crate::term::MoveFromTo::new(prev_pos, new_pos)
-                            .write_buf(contents);
+                            .write_bytes(contents);
                     }
                     prev_pos = new_pos;
                     if &prev_attrs != attrs {
@@ -215,7 +215,7 @@ impl Row {
                         prev_attrs = *attrs;
                     }
                     crate::term::EraseChar::new(pos.col - prev_col)
-                        .write_buf(contents);
+                        .write_bytes(contents);
                     erase = None;
                 }
             }
@@ -231,7 +231,7 @@ impl Row {
                             || pos.col != 0
                         {
                             crate::term::MoveFromTo::new(prev_pos, pos)
-                                .write_buf(contents);
+                                .write_bytes(contents);
                         }
                         prev_pos = pos;
                     }
@@ -261,18 +261,18 @@ impl Row {
                     );
                 } else {
                     contents.extend(b" ");
-                    crate::term::Backspace.write_buf(contents);
+                    crate::term::Backspace.write_bytes(contents);
                 }
             } else {
                 crate::term::MoveFromTo::new(prev_pos, new_pos)
-                    .write_buf(contents);
+                    .write_bytes(contents);
             }
             prev_pos = new_pos;
             if &prev_attrs != attrs {
                 attrs.write_escape_code_diff(contents, &prev_attrs);
                 prev_attrs = *attrs;
             }
-            crate::term::ClearRowForward.write_buf(contents);
+            crate::term::ClearRowForward.write_bytes(contents);
         }
 
         (prev_pos, prev_attrs)
@@ -318,12 +318,12 @@ impl Row {
                 false
             };
             contents.extend(cell_contents.as_bytes());
-            crate::term::Backspace.write_buf(contents);
+            crate::term::Backspace.write_bytes(contents);
             if prev_first_cell.is_wide() {
-                crate::term::Backspace.write_buf(contents);
+                crate::term::Backspace.write_bytes(contents);
             }
             if need_erase {
-                crate::term::EraseChar::new(1).write_buf(contents);
+                crate::term::EraseChar::new(1).write_bytes(contents);
             }
             prev_pos = crate::grid::Pos { row, col: 0 };
         }
@@ -360,11 +360,11 @@ impl Row {
                             );
                         } else {
                             contents.extend(b" ");
-                            crate::term::Backspace.write_buf(contents);
+                            crate::term::Backspace.write_bytes(contents);
                         }
                     } else {
                         crate::term::MoveFromTo::new(prev_pos, new_pos)
-                            .write_buf(contents);
+                            .write_bytes(contents);
                     }
                     prev_pos = new_pos;
                     if &prev_attrs != attrs {
@@ -372,7 +372,7 @@ impl Row {
                         prev_attrs = *attrs;
                     }
                     crate::term::EraseChar::new(pos.col - prev_col)
-                        .write_buf(contents);
+                        .write_bytes(contents);
                     erase = None;
                 }
             }
@@ -388,7 +388,7 @@ impl Row {
                             || pos.col != 0
                         {
                             crate::term::MoveFromTo::new(prev_pos, pos)
-                                .write_buf(contents);
+                                .write_bytes(contents);
                         }
                         prev_pos = pos;
                     }
@@ -417,18 +417,18 @@ impl Row {
                     );
                 } else {
                     contents.extend(b" ");
-                    crate::term::Backspace.write_buf(contents);
+                    crate::term::Backspace.write_bytes(contents);
                 }
             } else {
                 crate::term::MoveFromTo::new(prev_pos, new_pos)
-                    .write_buf(contents);
+                    .write_bytes(contents);
             }
             prev_pos = new_pos;
             if &prev_attrs != attrs {
                 attrs.write_escape_code_diff(contents, &prev_attrs);
                 prev_attrs = *attrs;
             }
-            crate::term::ClearRowForward.write_buf(contents);
+            crate::term::ClearRowForward.write_bytes(contents);
         }
 
         // if this row is going from wrapped to not wrapped, we need to erase
@@ -452,10 +452,10 @@ impl Row {
                 }
             };
             crate::term::MoveFromTo::new(prev_pos, end_pos)
-                .write_buf(contents);
+                .write_bytes(contents);
             prev_pos = end_pos;
             if !self.wrapped {
-                crate::term::EraseChar::new(1).write_buf(contents);
+                crate::term::EraseChar::new(1).write_bytes(contents);
             }
             let end_cell = &self.cells[usize::from(end_pos.col)];
             if end_cell.has_contents() {

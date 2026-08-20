@@ -218,8 +218,8 @@ impl Grid {
         &self,
         contents: &mut Vec<u8>,
     ) -> crate::attrs::Attrs {
-        crate::term::ClearAttrs.write_buf(contents);
-        crate::term::ClearScreen.write_buf(contents);
+        crate::term::ClearAttrs.write_bytes(contents);
+        crate::term::ClearScreen.write_bytes(contents);
 
         let mut prev_attrs = crate::attrs::Attrs::default();
         let mut prev_pos = Pos::default();
@@ -329,9 +329,9 @@ impl Grid {
             if cell.has_contents() {
                 if let Some(prev_pos) = prev_pos {
                     crate::term::MoveFromTo::new(prev_pos, pos)
-                        .write_buf(contents);
+                        .write_bytes(contents);
                 } else {
-                    crate::term::MoveTo::new(pos).write_buf(contents);
+                    crate::term::MoveTo::new(pos).write_bytes(contents);
                 }
                 cell.attrs().write_escape_code_diff(contents, &prev_attrs);
                 contents.extend(cell.contents().as_bytes());
@@ -376,7 +376,7 @@ impl Grid {
                                 || prev_pos.col < self.size.cols
                             {
                                 crate::term::MoveFromTo::new(prev_pos, pos)
-                                    .write_buf(contents);
+                                    .write_bytes(contents);
                                 cell.attrs().write_escape_code_diff(
                                     contents,
                                     &prev_attrs,
@@ -388,7 +388,8 @@ impl Grid {
                                 );
                             }
                         } else {
-                            crate::term::MoveTo::new(pos).write_buf(contents);
+                            crate::term::MoveTo::new(pos)
+                                .write_bytes(contents);
                             cell.attrs().write_escape_code_diff(
                                 contents,
                                 &prev_attrs,
@@ -421,9 +422,9 @@ impl Grid {
                     };
                     if let Some(prev_pos) = prev_pos {
                         crate::term::MoveFromTo::new(prev_pos, pos)
-                            .write_buf(contents);
+                            .write_bytes(contents);
                     } else {
-                        crate::term::MoveTo::new(pos).write_buf(contents);
+                        crate::term::MoveTo::new(pos).write_bytes(contents);
                     }
                     contents.push(b' ');
                     // we know that the cell has no contents, but it still may
@@ -436,19 +437,19 @@ impl Grid {
                     end_cell
                         .attrs()
                         .write_escape_code_diff(contents, &prev_attrs);
-                    crate::term::SaveCursor.write_buf(contents);
-                    crate::term::Backspace.write_buf(contents);
-                    crate::term::EraseChar::new(1).write_buf(contents);
-                    crate::term::RestoreCursor.write_buf(contents);
+                    crate::term::SaveCursor.write_bytes(contents);
+                    crate::term::Backspace.write_bytes(contents);
+                    crate::term::EraseChar::new(1).write_bytes(contents);
+                    crate::term::RestoreCursor.write_bytes(contents);
                     prev_attrs
                         .write_escape_code_diff(contents, end_cell.attrs());
                 }
             }
         } else if let Some(prev_pos) = prev_pos {
             crate::term::MoveFromTo::new(prev_pos, self.pos)
-                .write_buf(contents);
+                .write_bytes(contents);
         } else {
-            crate::term::MoveTo::new(self.pos).write_buf(contents);
+            crate::term::MoveTo::new(self.pos).write_bytes(contents);
         }
     }
 
