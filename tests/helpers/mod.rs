@@ -34,21 +34,23 @@ macro_rules! ok {
 }
 
 #[derive(Eq, PartialEq)]
-struct Bytes<'a>(&'a [u8]);
+struct Str<'a>(&'a str);
 
-impl std::fmt::Debug for Bytes<'_> {
+impl std::fmt::Debug for Str<'_> {
     fn fmt(
         &self,
         f: &mut std::fmt::Formatter<'_>,
     ) -> Result<(), std::fmt::Error> {
-        f.write_str("b\"")?;
-        for c in self.0 {
+        f.write_str("\"")?;
+        for c in self.0.chars() {
             match c {
-                10 => f.write_str("\\n")?,
-                13 => f.write_str("\\r")?,
-                92 => f.write_str("\\\\")?,
-                32..=126 => f.write_str(&char::from(*c).to_string())?,
-                _ => f.write_fmt(format_args!("\\x{c:02x}"))?,
+                '\n' => f.write_str("\\n")?,
+                '\r' => f.write_str("\\r")?,
+                '\\' => f.write_str("\\\\")?,
+                ' '..='~' => f.write_str(&c.to_string())?,
+                _ => {
+                    f.write_fmt(format_args!("\\u{{{:x}}}", u32::from(c)))?
+                }
             }
         }
         f.write_str("\"")?;
@@ -64,8 +66,8 @@ pub fn compare_screens(
 
     is!(got.contents(), expected.contents());
     is!(
-        Bytes(&got.contents_formatted()),
-        Bytes(&expected.contents_formatted())
+        Str(&got.contents_formatted()),
+        Str(&expected.contents_formatted())
     );
     for (got_row, expected_row) in
         got.rows(0, cols).zip(expected.rows(0, cols))
@@ -76,17 +78,17 @@ pub fn compare_screens(
         .rows_formatted(0, cols)
         .zip(expected.rows_formatted(0, cols))
     {
-        is!(Bytes(&got_row), Bytes(&expected_row));
+        is!(Str(&got_row), Str(&expected_row));
     }
     for i in 0..rows {
         is!(got.row_wrapped(i), expected.row_wrapped(i));
     }
     is!(
-        Bytes(&got.contents_diff(vt100::Parser::default().screen())),
-        Bytes(&expected.contents_diff(vt100::Parser::default().screen()))
+        Str(&got.contents_diff(vt100::Parser::default().screen())),
+        Str(&expected.contents_diff(vt100::Parser::default().screen()))
     );
 
-    is!(Bytes(&got.contents_diff(got)), Bytes(b""));
+    is!(Str(&got.contents_diff(got)), Str(""));
 
     for row in 0..rows {
         for col in 0..cols {
@@ -129,32 +131,32 @@ pub fn rows_formatted_reproduces_state(input: &[u8]) -> bool {
 
 pub fn contents_formatted_reproduces_screen(screen: &vt100::Screen) -> bool {
     let mut new_input = screen.contents_formatted();
-    new_input.extend(screen.input_mode_formatted());
+    new_input.push_str(&screen.input_mode_formatted());
     assert_eq!(new_input, screen.state_formatted());
     let mut new_parser = vt100::Parser::default();
-    new_parser.process(&new_input);
+    new_parser.process(new_input.as_bytes());
     let got_screen = new_parser.screen().clone();
 
     compare_screens(&got_screen, screen)
 }
 
 pub fn rows_formatted_reproduces_screen(screen: &vt100::Screen) -> bool {
-    let mut new_input = vec![];
+    let mut new_input = String::new();
     let mut wrapped = false;
     for (idx, row) in screen.rows_formatted(0, 80).enumerate() {
-        new_input.extend(b"\x1b[m");
+        new_input.push_str("\x1b[m");
         if !wrapped {
-            new_input.extend(format!("\x1b[{}H", idx + 1).as_bytes());
+            new_input.push_str(&format!("\x1b[{}H", idx + 1));
         }
-        new_input.extend(row);
+        new_input.push_str(&row);
         wrapped = screen.row_wrapped(idx.try_into().unwrap());
     }
-    new_input.extend(b"\x1b[m");
-    new_input.extend(screen.cursor_state_formatted());
-    new_input.extend(screen.attributes_formatted());
-    new_input.extend(screen.input_mode_formatted());
+    new_input.push_str("\x1b[m");
+    new_input.push_str(&screen.cursor_state_formatted());
+    new_input.push_str(&screen.attributes_formatted());
+    new_input.push_str(&screen.input_mode_formatted());
     let mut new_parser = vt100::Parser::default();
-    new_parser.process(&new_input);
+    new_parser.process(new_input.as_bytes());
     let got_screen = new_parser.screen().clone();
 
     compare_screens(&got_screen, screen)
@@ -190,15 +192,15 @@ pub fn contents_diff_reproduces_state_from_screens(
     screen: &vt100::Screen,
 ) -> bool {
     let mut diff_input = screen.contents_diff(prev_screen);
-    diff_input.extend(screen.input_mode_diff(prev_screen));
+    diff_input.push_str(&screen.input_mode_diff(prev_screen));
     assert_eq!(diff_input, screen.state_diff(prev_screen));
 
     let mut diff_prev_input = prev_screen.contents_formatted();
-    diff_prev_input.extend(screen.input_mode_formatted());
+    diff_prev_input.push_str(&screen.input_mode_formatted());
 
     let mut new_parser = vt100::Parser::default();
-    new_parser.process(&diff_prev_input);
-    new_parser.process(&diff_input);
+    new_parser.process(diff_prev_input.as_bytes());
+    new_parser.process(diff_input.as_bytes());
     let got_screen = new_parser.screen().clone();
 
     compare_screens(&got_screen, screen)
@@ -236,9 +238,9 @@ pub fn assert_reproduces_state_from(input: &[u8], prev_input: &[u8]) {
 }
 
 #[allow(dead_code)]
-pub fn format_bytes(bytes: &[u8]) -> String {
+pub fn format_bytes(bytes: impl AsRef<[u8]>) -> String {
     let mut v = vec![];
-    for b in bytes {
+    for b in bytes.as_ref() {
         match *b {
             10 => v.extend(b"\\n"),
             13 => v.extend(b"\\r"),
@@ -249,7 +251,7 @@ pub fn format_bytes(bytes: &[u8]) -> String {
             b => v.push(b),
         }
     }
-    String::from_utf8_lossy(&v).to_string()
+    String::from_utf8_lossy(&v).into_owned()
 }
 
 fn hex_char(c: u8) -> Result<u8, String> {

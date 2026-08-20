@@ -19,7 +19,7 @@ fn draw_frames(frames: &[Vec<u8>]) {
         parser.process(frame);
         let new_screen = parser.screen().clone();
         let diff = new_screen.contents_diff(&screen);
-        stdout.write_all(&diff).unwrap();
+        stdout.write_all(diff.as_bytes()).unwrap();
         screen = new_screen;
     }
 }

@@ -25,11 +25,11 @@
 //! parser.process(b"\x1b[3D\x1b[32mGREEN");
 //! assert_eq!(
 //!     parser.screen().contents_formatted(),
-//!     &b"\x1b[?25h\x1b[m\x1b[H\x1b[Jthis text is \x1b[32mGREEN"[..],
+//!     "\x1b[?25h\x1b[m\x1b[H\x1b[Jthis text is \x1b[32mGREEN",
 //! );
 //! assert_eq!(
 //!     parser.screen().contents_diff(&screen),
-//!     &b"\x1b[1;14H\x1b[32mGREEN"[..],
+//!     "\x1b[1;14H\x1b[32mGREEN",
 //! );
 //! ```
 

@@ -168,11 +168,11 @@ fn edge_of_screen() {
     );
     assert_eq!(
         parser.screen().contents_formatted(),
-        &b"\x1b[?25h\x1b[m\x1b[H\x1b[J\x1b[24;75H\x1b[31mfoobar\x1b[24;80H"[..]
+        "\x1b[?25h\x1b[m\x1b[H\x1b[J\x1b[24;75H\x1b[31mfoobar\x1b[24;80H"
     );
     assert_eq!(
         parser.screen().contents_diff(&screen),
-        b"\x1b[24;75H\x1b[31mfoobar\x1b[24;80H"
+        "\x1b[24;75H\x1b[31mfoobar\x1b[24;80H"
     );
 }
 
