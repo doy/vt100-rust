@@ -295,6 +295,42 @@ impl Row {
         (prev_pos, prev_attrs)
     }
 
+    pub fn write_contents_formatted_basic(
+        &self,
+        writer: &mut impl alloc::fmt::Write,
+        current_attrs: &mut crate::attrs::Attrs,
+    ) -> alloc::fmt::Result {
+        let mut prev_was_wide = false;
+        let mut num_empty = 0;
+        let default_cell = crate::cell::Cell::new();
+
+        for cell in self.cells() {
+            if core::mem::take(&mut prev_was_wide) {
+                continue;
+            }
+            prev_was_wide = cell.is_wide();
+
+            if *cell == default_cell {
+                num_empty += 1;
+                continue;
+            }
+
+            for _ in 0..core::mem::take(&mut num_empty) {
+                writer.write_char(' ')?;
+            }
+
+            let new_attrs = *cell.attrs();
+            new_attrs.write_escape_code_diff_fmt(writer, current_attrs)?;
+            *current_attrs = new_attrs;
+            if cell.has_contents() {
+                writer.write_str(cell.contents())?;
+            } else {
+                writer.write_char(' ')?;
+            }
+        }
+        Ok(())
+    }
+
     // while it's true that most of the logic in this is identical to
     // write_contents_formatted, i can't figure out how to break out the
     // common parts without making things noticeably slower.
