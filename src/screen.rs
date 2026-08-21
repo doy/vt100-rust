@@ -325,12 +325,23 @@ impl Screen {
         let mut contents = String::new();
         // Writing to a `String` cannot fail.
         #[allow(clippy::missing_panics_doc)]
-        self.write_contents_formatted_basic(&mut contents).unwrap();
+        self.write_contents_formatted_basic(
+            &mut contents,
+            &mut crate::capture::BasicFormattedCaptureState::new(),
+        )
+        .unwrap();
         contents
     }
 
     /// Like [`Self::contents_formatted_basic`] but writes into the provided
     /// writer.
+    ///
+    /// If you used the [`on_scroll`](crate::Callbacks::on_scroll) callback to
+    /// write terminal data into this writer in a streaming fashion, provide
+    /// your existing [`BasicFormattedCaptureState`][state] here. Otherwise,
+    /// you can pass `&mut Default::default()`.
+    ///
+    /// [state]: crate::capture::BasicFormattedCaptureState
     ///
     /// # Errors
     ///
@@ -339,8 +350,9 @@ impl Screen {
     pub fn write_contents_formatted_basic(
         &self,
         writer: &mut impl alloc::fmt::Write,
+        state: &mut crate::capture::BasicFormattedCaptureState,
     ) -> alloc::fmt::Result {
-        self.grid.write_contents_formatted_basic(writer)
+        self.grid.write_contents_formatted_basic(writer, state)
     }
 
     /// Returns the formatted visible contents of the terminal by row,
@@ -803,11 +815,30 @@ impl Screen {
     }
 }
 
-impl Screen {
-    pub(crate) fn text(&mut self, c: char) {
-        let pos = self.grid().pos();
-        let size = self.grid().size();
-        let attrs = self.attrs;
+pub struct WrappedScreen<CB: crate::Callbacks> {
+    pub screen: Screen,
+    pub callbacks: CB,
+}
+
+impl<CB: crate::Callbacks> WrappedScreen<CB> {
+    /// Gets the `on_row` callback for methods like
+    /// [`crate::grid::Grid::scroll_up`].
+    fn on_row<'cb>(
+        screen: &Screen,
+        callbacks: &'cb mut CB,
+    ) -> impl FnMut(&crate::row::Row) + 'cb {
+        let is_alternate = screen.mode(MODE_ALTERNATE_SCREEN);
+        move |row| {
+            callbacks
+                .on_scroll(crate::capture::RowContents(row), is_alternate);
+        }
+    }
+
+    pub fn text(&mut self, c: char) {
+        let screen = &mut self.screen;
+        let pos = screen.grid().pos();
+        let size = screen.grid().size();
+        let attrs = screen.attrs;
 
         let width = c.width();
         if width.is_none() && (u32::from(c)) < 256 {
@@ -845,7 +876,7 @@ impl Screen {
             // to do).
             let mut wrap = false;
             if pos.col + width > size.cols {
-                let last_cell = self
+                let last_cell = screen
                     .grid()
                     .drawing_cell(crate::grid::Pos {
                         row: pos.row,
@@ -862,18 +893,20 @@ impl Screen {
                     wrap = true;
                 }
             }
-            self.grid_mut().col_wrap(width, wrap);
+            let on_row = Self::on_row(screen, &mut self.callbacks);
+            screen.grid_mut().col_wrap(width, wrap, on_row);
             // col_wrap always sets self.grid().pos() to a valid cell
-            base_pos = self.grid().pos();
+            base_pos = screen.grid().pos();
             cell_was_wide =
-                self.grid().drawing_cell(base_pos).unwrap().is_wide();
+                screen.grid().drawing_cell(base_pos).unwrap().is_wide();
 
-            self.grid_mut()
+            screen
+                .grid_mut()
                 .drawing_cell_mut(base_pos)
                 .unwrap()
                 .set(c, attrs);
-            self.last_char = Some(c);
-            self.grid_mut().col_inc(width);
+            screen.last_char = Some(c);
+            screen.grid_mut().col_inc(width);
         } else {
             // a continuation character without a base character before it is
             // meaningless
@@ -889,7 +922,7 @@ impl Screen {
                 row: pos.row,
                 col: pos.col - 1,
             };
-            if self
+            if screen
                 .grid_mut()
                 .drawing_cell_mut(base_pos)
                 .unwrap()
@@ -907,47 +940,51 @@ impl Screen {
                 };
             }
             cell_was_wide =
-                self.grid().drawing_cell(base_pos).unwrap().is_wide();
+                screen.grid().drawing_cell(base_pos).unwrap().is_wide();
 
-            self.grid_mut()
+            screen
+                .grid_mut()
                 .drawing_cell_mut(base_pos)
                 .unwrap()
                 .append(c);
             let cell_is_wide =
-                self.grid().drawing_cell(base_pos).unwrap().is_wide();
+                screen.grid().drawing_cell(base_pos).unwrap().is_wide();
             if !cell_was_wide && cell_is_wide {
-                self.grid_mut().col_wrap(1, false);
+                let on_row = Self::on_row(screen, &mut self.callbacks);
+                screen.grid_mut().col_wrap(1, false, on_row);
                 // col_wrap always leaves self.grid().pos() on a valid cell,
                 // so .drawing_cell(new_pos).unwrap() will always be valid.
-                let new_pos = self.grid().pos();
+                let new_pos = screen.grid().pos();
                 if new_pos.col == 0 {
-                    let contents = self
+                    let contents = screen
                         .grid()
                         .drawing_cell(base_pos)
                         .unwrap()
                         .contents()
                         .to_string();
-                    self.grid_mut()
+                    screen
+                        .grid_mut()
                         .drawing_cell_mut(new_pos)
                         .unwrap()
                         .set_contents(&contents, attrs);
-                    self.grid_mut()
+                    screen
+                        .grid_mut()
                         .drawing_cell_mut(base_pos)
                         .unwrap()
                         .clear(attrs);
-                    self.grid_mut().col_inc(2);
+                    screen.grid_mut().col_inc(2);
                     base_pos = new_pos;
                 } else {
-                    self.grid_mut().col_inc(1);
+                    screen.grid_mut().col_inc(1);
                 }
             }
         }
 
         let cell_is_wide =
-            self.grid().drawing_cell(base_pos).unwrap().is_wide();
+            screen.grid().drawing_cell(base_pos).unwrap().is_wide();
 
         if base_pos.col > 0 {
-            let prev_cell = self
+            let prev_cell = screen
                 .grid_mut()
                 .drawing_cell_mut(crate::grid::Pos {
                     row: base_pos.row,
@@ -962,7 +999,7 @@ impl Screen {
         }
 
         if cell_was_wide && !cell_is_wide {
-            let next_cell = self
+            let next_cell = screen
                 .grid_mut()
                 .drawing_cell_mut(crate::grid::Pos {
                     row: base_pos.row,
@@ -976,7 +1013,7 @@ impl Screen {
         }
 
         if !cell_was_wide && cell_is_wide {
-            let next_cell = self
+            let next_cell = screen
                 .grid_mut()
                 .drawing_cell_mut(crate::grid::Pos {
                     row: base_pos.row,
@@ -991,7 +1028,7 @@ impl Screen {
             next_cell.clear(crate::attrs::Attrs::default());
             next_cell.set_wide_continuation(true);
             if next_cell_was_wide {
-                let next_next_cell = self
+                let next_next_cell = screen
                     .grid_mut()
                     .drawing_cell_mut(crate::grid::Pos {
                         row: base_pos.row,
@@ -1002,7 +1039,8 @@ impl Screen {
                     .unwrap();
                 next_next_cell.clear(attrs);
                 if base_pos.col + 2 == size.cols - 1 {
-                    self.grid_mut()
+                    screen
+                        .grid_mut()
                         .drawing_row_mut(base_pos.row)
                         .unwrap()
                         .wrap(false);
@@ -1013,60 +1051,64 @@ impl Screen {
 
     // control codes
 
-    pub(crate) fn bs(&mut self) {
-        self.grid_mut().col_dec(1);
+    pub fn bs(&mut self) {
+        self.screen.grid_mut().col_dec(1);
     }
 
-    pub(crate) fn tab(&mut self) {
-        self.grid_mut().col_tab();
+    pub fn tab(&mut self) {
+        self.screen.grid_mut().col_tab();
     }
 
-    pub(crate) fn lf(&mut self) {
-        self.grid_mut().row_inc_scroll(1);
+    pub fn lf(&mut self) {
+        let on_row = Self::on_row(&self.screen, &mut self.callbacks);
+        self.screen.grid_mut().row_inc_scroll(1, on_row);
     }
 
-    pub(crate) fn vt(&mut self) {
+    pub fn vt(&mut self) {
         self.lf();
     }
 
-    pub(crate) fn ff(&mut self) {
+    pub fn ff(&mut self) {
         self.lf();
     }
 
-    pub(crate) fn cr(&mut self) {
-        self.grid_mut().col_set(0);
+    pub fn cr(&mut self) {
+        self.screen.grid_mut().col_set(0);
     }
 
     // escape codes
 
     // ESC 7
-    pub(crate) fn decsc(&mut self) {
-        self.save_cursor();
+    pub fn decsc(&mut self) {
+        self.screen.save_cursor();
     }
 
     // ESC 8
-    pub(crate) fn decrc(&mut self) {
-        self.restore_cursor();
+    pub fn decrc(&mut self) {
+        self.screen.restore_cursor();
     }
 
     // ESC =
-    pub(crate) fn deckpam(&mut self) {
-        self.set_mode(MODE_APPLICATION_KEYPAD);
+    pub fn deckpam(&mut self) {
+        self.screen.set_mode(MODE_APPLICATION_KEYPAD);
     }
 
     // ESC >
-    pub(crate) fn deckpnm(&mut self) {
-        self.clear_mode(MODE_APPLICATION_KEYPAD);
+    pub fn deckpnm(&mut self) {
+        self.screen.clear_mode(MODE_APPLICATION_KEYPAD);
     }
 
     // ESC M
-    pub(crate) fn ri(&mut self) {
-        self.grid_mut().row_dec_scroll(1);
+    pub fn ri(&mut self) {
+        self.screen.grid_mut().row_dec_scroll(1);
     }
 
     // ESC c
-    pub(crate) fn ris(&mut self) {
-        *self = Self::new(self.grid.size(), self.grid.scrollback_len());
+    pub fn ris(&mut self) {
+        self.screen = Screen::new(
+            self.screen.grid.size(),
+            self.screen.grid.scrollback_len(),
+        );
     }
 
     // csi codes
@@ -1078,57 +1120,57 @@ impl Screen {
         mut unhandled: impl FnMut(&mut Self),
     ) {
         match cursor_style {
-            0 => self.set_cursor_style(CursorStyle::Default),
-            1 => self.set_cursor_style(CursorStyle::BlinkBlock),
-            2 => self.set_cursor_style(CursorStyle::SteadyBlock),
-            3 => self.set_cursor_style(CursorStyle::BlinkUnderline),
-            4 => self.set_cursor_style(CursorStyle::SteadyUnderline),
-            5 => self.set_cursor_style(CursorStyle::BlinkVerticalBar),
-            6 => self.set_cursor_style(CursorStyle::SteadyVerticalBar),
+            0 => self.screen.set_cursor_style(CursorStyle::Default),
+            1 => self.screen.set_cursor_style(CursorStyle::BlinkBlock),
+            2 => self.screen.set_cursor_style(CursorStyle::SteadyBlock),
+            3 => self.screen.set_cursor_style(CursorStyle::BlinkUnderline),
+            4 => self.screen.set_cursor_style(CursorStyle::SteadyUnderline),
+            5 => self.screen.set_cursor_style(CursorStyle::BlinkVerticalBar),
+            6 => self.screen.set_cursor_style(CursorStyle::SteadyVerticalBar),
             _ => unhandled(self),
         }
     }
 
     // CSI @
-    pub(crate) fn ich(&mut self, count: u16) {
-        self.grid_mut().insert_cells(count);
+    pub fn ich(&mut self, count: u16) {
+        self.screen.grid_mut().insert_cells(count);
     }
 
     // CSI A
-    pub(crate) fn cuu(&mut self, offset: u16) {
-        self.grid_mut().row_dec_clamp(offset);
+    pub fn cuu(&mut self, offset: u16) {
+        self.screen.grid_mut().row_dec_clamp(offset);
     }
 
     // CSI B
-    pub(crate) fn cud(&mut self, offset: u16) {
-        self.grid_mut().row_inc_clamp(offset);
+    pub fn cud(&mut self, offset: u16) {
+        self.screen.grid_mut().row_inc_clamp(offset);
     }
 
     // CSI C
-    pub(crate) fn cuf(&mut self, offset: u16) {
-        self.grid_mut().col_inc_clamp(offset);
+    pub fn cuf(&mut self, offset: u16) {
+        self.screen.grid_mut().col_inc_clamp(offset);
     }
 
     // CSI D
-    pub(crate) fn cub(&mut self, offset: u16) {
-        self.grid_mut().col_dec(offset);
+    pub fn cub(&mut self, offset: u16) {
+        self.screen.grid_mut().col_dec(offset);
     }
 
     // CSI E
-    pub(crate) fn cnl(&mut self, offset: u16) {
-        self.grid_mut().col_set(0);
-        self.grid_mut().row_inc_clamp(offset);
+    pub fn cnl(&mut self, offset: u16) {
+        self.screen.grid_mut().col_set(0);
+        self.screen.grid_mut().row_inc_clamp(offset);
     }
 
     // CSI F
-    pub(crate) fn cpl(&mut self, offset: u16) {
-        self.grid_mut().col_set(0);
-        self.grid_mut().row_dec_clamp(offset);
+    pub fn cpl(&mut self, offset: u16) {
+        self.screen.grid_mut().col_set(0);
+        self.screen.grid_mut().row_dec_clamp(offset);
     }
 
     // CSI G
-    pub(crate) fn cha(&mut self, col: u16) {
-        self.grid_mut().col_set(col - 1);
+    pub fn cha(&mut self, col: u16) {
+        self.screen.grid_mut().col_set(col - 1);
     }
 
     // CSI `  (HPA - Horizontal Position Absolute, equivalent to CHA)
@@ -1138,7 +1180,7 @@ impl Screen {
 
     // CSI b (REP - Repeat last printed character)
     pub(crate) fn rep(&mut self, count: u16) {
-        if let Some(c) = self.last_char {
+        if let Some(c) = self.screen.last_char {
             for _ in 0..count {
                 self.text(c);
             }
@@ -1146,177 +1188,164 @@ impl Screen {
     }
 
     // CSI H
-    pub(crate) fn cup(&mut self, (row, col): (u16, u16)) {
-        self.grid_mut().set_pos(crate::grid::Pos {
+    pub fn cup(&mut self, (row, col): (u16, u16)) {
+        self.screen.grid_mut().set_pos(crate::grid::Pos {
             row: row - 1,
             col: col - 1,
         });
     }
 
     // CSI J
-    pub(crate) fn ed(
-        &mut self,
-        mode: u16,
-        mut unhandled: impl FnMut(&mut Self),
-    ) {
-        let attrs = self.attrs;
+    pub fn ed(&mut self, mode: u16, mut unhandled: impl FnMut(&mut Self)) {
+        let attrs = self.screen.attrs;
         match mode {
-            0 => self.grid_mut().erase_all_forward(attrs),
-            1 => self.grid_mut().erase_all_backward(attrs),
-            2 => self.grid_mut().erase_all(attrs),
-            3 => self.clear_scrollback(),
+            0 => self.screen.grid_mut().erase_all_forward(attrs),
+            1 => self.screen.grid_mut().erase_all_backward(attrs),
+            2 => self.screen.grid_mut().erase_all(attrs),
+            3 => self.screen.clear_scrollback(),
             _ => unhandled(self),
         }
     }
 
     // CSI ? J
-    pub(crate) fn decsed(
-        &mut self,
-        mode: u16,
-        unhandled: impl FnMut(&mut Self),
-    ) {
+    pub fn decsed(&mut self, mode: u16, unhandled: impl FnMut(&mut Self)) {
         self.ed(mode, unhandled);
     }
 
     // CSI K
-    pub(crate) fn el(
-        &mut self,
-        mode: u16,
-        mut unhandled: impl FnMut(&mut Self),
-    ) {
-        let attrs = self.attrs;
+    pub fn el(&mut self, mode: u16, mut unhandled: impl FnMut(&mut Self)) {
+        let attrs = self.screen.attrs;
         match mode {
-            0 => self.grid_mut().erase_row_forward(attrs),
-            1 => self.grid_mut().erase_row_backward(attrs),
-            2 => self.grid_mut().erase_row(attrs),
+            0 => self.screen.grid_mut().erase_row_forward(attrs),
+            1 => self.screen.grid_mut().erase_row_backward(attrs),
+            2 => self.screen.grid_mut().erase_row(attrs),
             _ => unhandled(self),
         }
     }
 
     // CSI ? K
-    pub(crate) fn decsel(
-        &mut self,
-        mode: u16,
-        unhandled: impl FnMut(&mut Self),
-    ) {
+    pub fn decsel(&mut self, mode: u16, unhandled: impl FnMut(&mut Self)) {
         self.el(mode, unhandled);
     }
 
     // CSI L
-    pub(crate) fn il(&mut self, count: u16) {
-        self.grid_mut().insert_lines(count);
+    pub fn il(&mut self, count: u16) {
+        self.screen.grid_mut().insert_lines(count);
     }
 
     // CSI M
-    pub(crate) fn dl(&mut self, count: u16) {
-        self.grid_mut().delete_lines(count);
+    pub fn dl(&mut self, count: u16) {
+        self.screen.grid_mut().delete_lines(count);
     }
 
     // CSI P
-    pub(crate) fn dch(&mut self, count: u16) {
-        self.grid_mut().delete_cells(count);
+    pub fn dch(&mut self, count: u16) {
+        self.screen.grid_mut().delete_cells(count);
     }
 
     // CSI S
-    pub(crate) fn su(&mut self, count: u16) {
-        self.grid_mut().scroll_up(count);
+    pub fn su(&mut self, count: u16) {
+        let on_row = Self::on_row(&self.screen, &mut self.callbacks);
+        self.screen.grid_mut().scroll_up(count, on_row);
     }
 
     // CSI T
-    pub(crate) fn sd(&mut self, count: u16) {
-        self.grid_mut().scroll_down(count);
+    pub fn sd(&mut self, count: u16) {
+        self.screen.grid_mut().scroll_down(count);
     }
 
     // CSI X
-    pub(crate) fn ech(&mut self, count: u16) {
-        let attrs = self.attrs;
-        self.grid_mut().erase_cells(count, attrs);
+    pub fn ech(&mut self, count: u16) {
+        let attrs = self.screen.attrs;
+        self.screen.grid_mut().erase_cells(count, attrs);
     }
 
     // CSI d
-    pub(crate) fn vpa(&mut self, row: u16) {
-        self.grid_mut().row_set(row - 1);
+    pub fn vpa(&mut self, row: u16) {
+        self.screen.grid_mut().row_set(row - 1);
     }
 
     // CSI ? h
-    pub(crate) fn decset(
+    pub fn decset(
         &mut self,
         params: &vte::Params,
         mut unhandled: impl FnMut(&mut Self),
     ) {
         for param in params {
+            let screen = &mut self.screen;
             match param {
-                [1] => self.set_mode(MODE_APPLICATION_CURSOR),
-                [6] => self.grid_mut().set_origin_mode(true),
-                [9] => self.set_mouse_mode(MouseProtocolMode::Press),
-                [25] => self.clear_mode(MODE_HIDE_CURSOR),
-                [47] => self.enter_alternate_grid(),
+                [1] => screen.set_mode(MODE_APPLICATION_CURSOR),
+                [6] => screen.grid_mut().set_origin_mode(true),
+                [9] => screen.set_mouse_mode(MouseProtocolMode::Press),
+                [25] => screen.clear_mode(MODE_HIDE_CURSOR),
+                [47] => screen.enter_alternate_grid(),
                 [1000] => {
-                    self.set_mouse_mode(MouseProtocolMode::PressRelease);
+                    screen.set_mouse_mode(MouseProtocolMode::PressRelease);
                 }
                 [1002] => {
-                    self.set_mouse_mode(MouseProtocolMode::ButtonMotion);
+                    screen.set_mouse_mode(MouseProtocolMode::ButtonMotion);
                 }
-                [1003] => self.set_mouse_mode(MouseProtocolMode::AnyMotion),
+                [1003] => screen.set_mouse_mode(MouseProtocolMode::AnyMotion),
                 [1005] => {
-                    self.set_mouse_encoding(MouseProtocolEncoding::Utf8);
+                    screen.set_mouse_encoding(MouseProtocolEncoding::Utf8);
                 }
                 [1006] => {
-                    self.set_mouse_encoding(MouseProtocolEncoding::Sgr);
+                    screen.set_mouse_encoding(MouseProtocolEncoding::Sgr);
                 }
                 [1049] => {
                     self.decsc();
-                    self.alternate_grid.clear();
-                    self.enter_alternate_grid();
+                    self.screen.alternate_grid.clear();
+                    self.screen.enter_alternate_grid();
                 }
-                [2004] => self.set_mode(MODE_BRACKETED_PASTE),
+                [2004] => screen.set_mode(MODE_BRACKETED_PASTE),
                 _ => unhandled(self),
             }
         }
     }
 
     // CSI ? l
-    pub(crate) fn decrst(
+    pub fn decrst(
         &mut self,
         params: &vte::Params,
         mut unhandled: impl FnMut(&mut Self),
     ) {
         for param in params {
+            let screen = &mut self.screen;
             match param {
-                [1] => self.clear_mode(MODE_APPLICATION_CURSOR),
-                [6] => self.grid_mut().set_origin_mode(false),
-                [9] => self.clear_mouse_mode(MouseProtocolMode::Press),
-                [25] => self.set_mode(MODE_HIDE_CURSOR),
+                [1] => screen.clear_mode(MODE_APPLICATION_CURSOR),
+                [6] => screen.grid_mut().set_origin_mode(false),
+                [9] => screen.clear_mouse_mode(MouseProtocolMode::Press),
+                [25] => screen.set_mode(MODE_HIDE_CURSOR),
                 [47] => {
-                    self.exit_alternate_grid();
+                    screen.exit_alternate_grid();
                 }
                 [1000] => {
-                    self.clear_mouse_mode(MouseProtocolMode::PressRelease);
+                    screen.clear_mouse_mode(MouseProtocolMode::PressRelease);
                 }
                 [1002] => {
-                    self.clear_mouse_mode(MouseProtocolMode::ButtonMotion);
+                    screen.clear_mouse_mode(MouseProtocolMode::ButtonMotion);
                 }
                 [1003] => {
-                    self.clear_mouse_mode(MouseProtocolMode::AnyMotion);
+                    screen.clear_mouse_mode(MouseProtocolMode::AnyMotion);
                 }
                 [1005] => {
-                    self.clear_mouse_encoding(MouseProtocolEncoding::Utf8);
+                    screen.clear_mouse_encoding(MouseProtocolEncoding::Utf8);
                 }
                 [1006] => {
-                    self.clear_mouse_encoding(MouseProtocolEncoding::Sgr);
+                    screen.clear_mouse_encoding(MouseProtocolEncoding::Sgr);
                 }
                 [1049] => {
-                    self.exit_alternate_grid();
+                    screen.exit_alternate_grid();
                     self.decrc();
                 }
-                [2004] => self.clear_mode(MODE_BRACKETED_PASTE),
+                [2004] => screen.clear_mode(MODE_BRACKETED_PASTE),
                 _ => unhandled(self),
             }
         }
     }
 
     // CSI m
-    pub(crate) fn sgr(
+    pub fn sgr(
         &mut self,
         params: &vte::Params,
         mut unhandled: impl FnMut(&mut Self),
@@ -1325,7 +1354,7 @@ impl Screen {
         // instance with a 0 in it, but vte doesn't allow creating new Params
         // instances
         if params.is_empty() {
-            self.attrs = crate::attrs::Attrs::default();
+            self.screen.attrs = crate::attrs::Attrs::default();
             return;
         }
 
@@ -1361,36 +1390,37 @@ impl Screen {
         }
 
         loop {
+            let screen = &mut self.screen;
             match next_param!() {
-                [0] => self.attrs = crate::attrs::Attrs::default(),
-                [1] => self.attrs.set_bold(),
-                [2] => self.attrs.set_dim(),
-                [3] => self.attrs.set_italic(true),
-                [4] => self.attrs.set_underline(true),
-                [7] => self.attrs.set_inverse(true),
-                [22] => self.attrs.set_normal_intensity(),
-                [23] => self.attrs.set_italic(false),
-                [24] => self.attrs.set_underline(false),
-                [27] => self.attrs.set_inverse(false),
+                [0] => screen.attrs = crate::attrs::Attrs::default(),
+                [1] => screen.attrs.set_bold(),
+                [2] => screen.attrs.set_dim(),
+                [3] => screen.attrs.set_italic(true),
+                [4] => screen.attrs.set_underline(true),
+                [7] => screen.attrs.set_inverse(true),
+                [22] => screen.attrs.set_normal_intensity(),
+                [23] => screen.attrs.set_italic(false),
+                [24] => screen.attrs.set_underline(false),
+                [27] => screen.attrs.set_inverse(false),
                 [n] if (30..=37).contains(n) => {
-                    self.attrs.fgcolor = crate::Color::Idx(to_u8!(*n) - 30);
+                    screen.attrs.fgcolor = crate::Color::Idx(to_u8!(*n) - 30);
                 }
                 [38, 2, r, g, b] => {
-                    self.attrs.fgcolor =
+                    screen.attrs.fgcolor =
                         crate::Color::Rgb(to_u8!(*r), to_u8!(*g), to_u8!(*b));
                 }
                 [38, 5, i] => {
-                    self.attrs.fgcolor = crate::Color::Idx(to_u8!(*i));
+                    screen.attrs.fgcolor = crate::Color::Idx(to_u8!(*i));
                 }
                 [38] => match next_param!() {
                     [2] => {
                         let r = next_param_u8!();
                         let g = next_param_u8!();
                         let b = next_param_u8!();
-                        self.attrs.fgcolor = crate::Color::Rgb(r, g, b);
+                        screen.attrs.fgcolor = crate::Color::Rgb(r, g, b);
                     }
                     [5] => {
-                        self.attrs.fgcolor =
+                        screen.attrs.fgcolor =
                             crate::Color::Idx(next_param_u8!());
                     }
                     _ => {
@@ -1399,27 +1429,27 @@ impl Screen {
                     }
                 },
                 [39] => {
-                    self.attrs.fgcolor = crate::Color::Default;
+                    screen.attrs.fgcolor = crate::Color::Default;
                 }
                 [n] if (40..=47).contains(n) => {
-                    self.attrs.bgcolor = crate::Color::Idx(to_u8!(*n) - 40);
+                    screen.attrs.bgcolor = crate::Color::Idx(to_u8!(*n) - 40);
                 }
                 [48, 2, r, g, b] => {
-                    self.attrs.bgcolor =
+                    screen.attrs.bgcolor =
                         crate::Color::Rgb(to_u8!(*r), to_u8!(*g), to_u8!(*b));
                 }
                 [48, 5, i] => {
-                    self.attrs.bgcolor = crate::Color::Idx(to_u8!(*i));
+                    screen.attrs.bgcolor = crate::Color::Idx(to_u8!(*i));
                 }
                 [48] => match next_param!() {
                     [2] => {
                         let r = next_param_u8!();
                         let g = next_param_u8!();
                         let b = next_param_u8!();
-                        self.attrs.bgcolor = crate::Color::Rgb(r, g, b);
+                        screen.attrs.bgcolor = crate::Color::Rgb(r, g, b);
                     }
                     [5] => {
-                        self.attrs.bgcolor =
+                        screen.attrs.bgcolor =
                             crate::Color::Idx(next_param_u8!());
                     }
                     _ => {
@@ -1428,13 +1458,13 @@ impl Screen {
                     }
                 },
                 [49] => {
-                    self.attrs.bgcolor = crate::Color::Default;
+                    screen.attrs.bgcolor = crate::Color::Default;
                 }
                 [n] if (90..=97).contains(n) => {
-                    self.attrs.fgcolor = crate::Color::Idx(to_u8!(*n) - 82);
+                    screen.attrs.fgcolor = crate::Color::Idx(to_u8!(*n) - 82);
                 }
                 [n] if (100..=107).contains(n) => {
-                    self.attrs.bgcolor = crate::Color::Idx(to_u8!(*n) - 92);
+                    screen.attrs.bgcolor = crate::Color::Idx(to_u8!(*n) - 92);
                 }
                 _ => unhandled(self),
             }
@@ -1442,8 +1472,10 @@ impl Screen {
     }
 
     // CSI r
-    pub(crate) fn decstbm(&mut self, (top, bottom): (u16, u16)) {
-        self.grid_mut().set_scroll_region(top - 1, bottom - 1);
+    pub fn decstbm(&mut self, (top, bottom): (u16, u16)) {
+        self.screen
+            .grid_mut()
+            .set_scroll_region(top - 1, bottom - 1);
     }
 }
 

@@ -230,6 +230,7 @@ impl Grid {
         let mut prev_attrs = crate::attrs::Attrs::default();
         let mut prev_pos = Pos::default();
         let mut wrapping = false;
+
         for (i, row) in self.visible_rows().enumerate() {
             // we limit the number of cols to a u16 (see Size), so
             // visible_rows() can never return more rows than will fit
@@ -260,18 +261,11 @@ impl Grid {
     pub fn write_contents_formatted_basic(
         &self,
         writer: &mut impl alloc::fmt::Write,
+        state: &mut crate::capture::BasicFormattedCaptureState,
     ) -> alloc::fmt::Result {
-        let mut newline_pending = false;
-        let mut attrs = crate::attrs::Attrs::default();
-        for row in self.visible_rows() {
-            if newline_pending {
-                writer.write_char('\n')?;
-            }
-            newline_pending = !row.wrapped();
-            row.write_contents_formatted_basic(writer, &mut attrs)?;
-        }
-        // We intentionally do not emit a trailing newline.
-        Ok(())
+        self.visible_rows()
+            .map(crate::capture::RowContents)
+            .try_for_each(|row| row.write_formatted_basic(writer, state))
     }
 
     pub fn write_contents_diff(
@@ -580,11 +574,15 @@ impl Grid {
         }
     }
 
-    pub fn scroll_up(&mut self, count: u16) {
+    pub fn scroll_up<F>(&mut self, count: u16, mut on_row: F)
+    where
+        F: FnMut(&crate::row::Row),
+    {
         for _ in 0..(count.min(self.size.rows - self.scroll_top)) {
             self.rows
                 .insert(usize::from(self.scroll_bottom) + 1, self.new_row());
             let removed = self.rows.remove(usize::from(self.scroll_top));
+            on_row(&removed);
             // A scrolled-off row belongs in the scrollback only when it leaves the top of the
             // screen, i.e. when the scroll region starts at the screen top (scroll_top == 0).
             // Upstream used `!scroll_region_active()`, which dropped the row whenever ANY scroll
@@ -643,12 +641,15 @@ impl Grid {
         self.row_clamp_bottom(in_scroll_region);
     }
 
-    pub fn row_inc_scroll(&mut self, count: u16) -> u16 {
+    pub fn row_inc_scroll<F>(&mut self, count: u16, on_row: F) -> u16
+    where
+        F: FnMut(&crate::row::Row),
+    {
         let in_scroll_region = self.in_scroll_region();
         self.pos.row = self.pos.row.saturating_add(count);
         let lines = self.row_clamp_bottom(in_scroll_region);
         if in_scroll_region {
-            self.scroll_up(lines);
+            self.scroll_up(lines, on_row);
             lines
         } else {
             0
@@ -700,7 +701,10 @@ impl Grid {
         self.col_clamp();
     }
 
-    pub fn col_wrap(&mut self, width: u16, wrap: bool) {
+    pub fn col_wrap<F>(&mut self, width: u16, wrap: bool, on_row: F)
+    where
+        F: FnMut(&crate::row::Row),
+    {
         if self.pos.col <= self.size.cols - width {
             // we haven't reached the end of the row yet
             return;
@@ -708,7 +712,7 @@ impl Grid {
 
         let mut prev_pos = self.pos;
         self.pos.col = 0;
-        let scrolled = self.row_inc_scroll(1);
+        let scrolled = self.row_inc_scroll(1, on_row);
         if prev_pos.row == 0 && scrolled > 0 {
             // we're trying to scroll but we're already at the top of the
             // grid - this can happen when the grid height is set to 1. in
