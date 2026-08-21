@@ -718,6 +718,12 @@ impl Screen {
             // width() can only return 0, 1, or 2
             .unwrap();
 
+        // if the character is wider than the screen, we can't draw it, so
+        // just ignore it
+        if width > size.cols {
+            return;
+        }
+
         // it doesn't make any sense to wrap if the last column in a row
         // didn't already have contents. don't try to handle the case where a
         // character wraps because there was only one column left in the

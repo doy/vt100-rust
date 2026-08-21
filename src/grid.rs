@@ -677,17 +677,23 @@ impl Grid {
 
     pub fn col_wrap(&mut self, width: u16, wrap: bool) {
         if self.pos.col > self.size.cols - width {
-            let mut prev_pos = self.pos;
             self.pos.col = 0;
+            let prev_row = self.pos.row;
+            // Eagerly set the wrapped flag. If `row_inc_scroll` scrolls the
+            // row off the top of the screen, we can no longer access the row
+            // to set its wrapped flag, so we need to set it now. If we don't
+            // actually end up wrapping, we'll correct the wrapped flag to
+            // false later. The `unwrap` is ok because we assume `self.pos.row`
+            // is always valid.
+            self.drawing_row_mut(prev_row).unwrap().wrap(wrap);
             let scrolled = self.row_inc_scroll(1);
-            prev_pos.row -= scrolled;
-            let new_pos = self.pos;
-            self.drawing_row_mut(prev_pos.row)
-                // we assume self.pos.row is always valid, and so prev_pos.row
-                // must be valid because it is always less than or equal to
-                // self.pos.row
-                .unwrap()
-                .wrap(wrap && prev_pos.row + 1 == new_pos.row);
+            if scrolled == 0 && self.pos.row == prev_row {
+                // We didn't actually wrap: we didn't scroll and the cursor
+                // didn't change rows, so correct the wrapped flag to false.
+                // The `unwrap` is ok because we assume `self.pos.row` is
+                // always valid.
+                self.drawing_row_mut(prev_row).unwrap().wrap(false);
+            }
         }
     }
 
