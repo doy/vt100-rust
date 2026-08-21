@@ -76,18 +76,11 @@ impl Row {
     }
 
     pub fn resize(&mut self, len: u16, cell: crate::Cell) {
-        let old_len = self.cells.len();
-        self.cells.resize(usize::from(len), cell);
-        self.wrapped = false;
-        // When shrinking, a wide char at the new last position may
-        // have lost its continuation cell — clear it to avoid
-        // dangling state. Matches what Row::truncate already does.
-        let new_len = usize::from(len);
-        if new_len > 0 && new_len < old_len {
-            let last_cell = &mut self.cells[new_len - 1];
-            if last_cell.is_wide() {
-                last_cell.clear(*last_cell.attrs());
-            }
+        if usize::from(len) < self.cells.len() {
+            self.truncate(len);
+        } else {
+            self.cells.resize(usize::from(len), cell);
+            self.wrapped = false;
         }
     }
 
