@@ -4,52 +4,24 @@ const BASE64: &[u8] =
     b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
 const CLIPBOARD_SELECTOR: &[u8] = b"cpqs01234567";
 
-pub struct WrappedScreen<CB: crate::callbacks::Callbacks = ()> {
-    pub screen: crate::screen::Screen,
-    pub callbacks: CB,
-}
-
-impl WrappedScreen<()> {
-    pub fn new(rows: u16, cols: u16, scrollback_len: usize) -> Self {
-        Self::new_with_callbacks(rows, cols, scrollback_len, ())
-    }
-}
-
-impl<CB: crate::callbacks::Callbacks> WrappedScreen<CB> {
-    pub fn new_with_callbacks(
-        rows: u16,
-        cols: u16,
-        scrollback_len: usize,
-        callbacks: CB,
-    ) -> Self {
-        Self {
-            screen: crate::screen::Screen::new(
-                crate::grid::Size { rows, cols },
-                scrollback_len,
-            ),
-            callbacks,
-        }
-    }
-}
-
-impl<CB: crate::callbacks::Callbacks> vte::Perform for WrappedScreen<CB> {
+impl<CB: crate::Callbacks> vte::Perform for crate::screen::WrappedScreen<CB> {
     fn print(&mut self, c: char) {
         if c == '\u{fffd}' || ('\u{80}'..'\u{a0}').contains(&c) {
             self.callbacks.unhandled_char(&mut self.screen, c);
         } else {
-            self.screen.text(c);
+            self.text(c);
         }
     }
 
     fn execute(&mut self, b: u8) {
         match b {
             7 => self.callbacks.audible_bell(&mut self.screen),
-            8 => self.screen.bs(),
-            9 => self.screen.tab(),
-            10 => self.screen.lf(),
-            11 => self.screen.vt(),
-            12 => self.screen.ff(),
-            13 => self.screen.cr(),
+            8 => self.bs(),
+            9 => self.tab(),
+            10 => self.lf(),
+            11 => self.vt(),
+            12 => self.ff(),
+            13 => self.cr(),
             // we don't implement shift in/out alternate character sets, but
             // it shouldn't count as an "error"
             14 | 15 => {}
@@ -67,12 +39,12 @@ impl<CB: crate::callbacks::Callbacks> vte::Perform for WrappedScreen<CB> {
             );
         } else {
             match b {
-                b'7' => self.screen.decsc(),
-                b'8' => self.screen.decrc(),
-                b'=' => self.screen.deckpam(),
-                b'>' => self.screen.deckpnm(),
-                b'M' => self.screen.ri(),
-                b'c' => self.screen.ris(),
+                b'7' => self.decsc(),
+                b'8' => self.decrc(),
+                b'=' => self.deckpam(),
+                b'>' => self.deckpnm(),
+                b'M' => self.ri(),
+                b'c' => self.ris(),
                 b'g' => self.callbacks.visual_bell(&mut self.screen),
                 _ => {
                     self.callbacks.unhandled_escape(
@@ -93,9 +65,9 @@ impl<CB: crate::callbacks::Callbacks> vte::Perform for WrappedScreen<CB> {
         _ignore: bool,
         c: char,
     ) {
-        let unhandled = |screen: &mut crate::screen::Screen| {
-            self.callbacks.unhandled_csi(
-                screen,
+        let unhandled = |screen: &mut Self| {
+            screen.callbacks.unhandled_csi(
+                &mut screen.screen,
                 intermediates.first().copied(),
                 intermediates.get(1).copied(),
                 &params.iter().collect::<Vec<_>>(),
@@ -104,34 +76,30 @@ impl<CB: crate::callbacks::Callbacks> vte::Perform for WrappedScreen<CB> {
         };
         match intermediates.first() {
             None => match c {
-                '@' => self.screen.ich(canonicalize_params_1(params, 1)),
-                'A' => self.screen.cuu(canonicalize_params_1(params, 1)),
-                'B' => self.screen.cud(canonicalize_params_1(params, 1)),
-                'C' => self.screen.cuf(canonicalize_params_1(params, 1)),
-                'D' => self.screen.cub(canonicalize_params_1(params, 1)),
-                'E' => self.screen.cnl(canonicalize_params_1(params, 1)),
-                'F' => self.screen.cpl(canonicalize_params_1(params, 1)),
-                'G' => self.screen.cha(canonicalize_params_1(params, 1)),
+                '@' => self.ich(canonicalize_params_1(params, 1)),
+                'A' => self.cuu(canonicalize_params_1(params, 1)),
+                'B' => self.cud(canonicalize_params_1(params, 1)),
+                'C' => self.cuf(canonicalize_params_1(params, 1)),
+                'D' => self.cub(canonicalize_params_1(params, 1)),
+                'E' => self.cnl(canonicalize_params_1(params, 1)),
+                'F' => self.cpl(canonicalize_params_1(params, 1)),
+                'G' => self.cha(canonicalize_params_1(params, 1)),
                 'H' | 'f' => {
-                    self.screen.cup(canonicalize_params_2(params, 1, 1));
+                    self.cup(canonicalize_params_2(params, 1, 1));
                 }
-                'J' => self
-                    .screen
-                    .ed(canonicalize_params_1(params, 0), unhandled),
-                'K' => self
-                    .screen
-                    .el(canonicalize_params_1(params, 0), unhandled),
-                'L' => self.screen.il(canonicalize_params_1(params, 1)),
-                'M' => self.screen.dl(canonicalize_params_1(params, 1)),
-                'P' => self.screen.dch(canonicalize_params_1(params, 1)),
-                'S' => self.screen.su(canonicalize_params_1(params, 1)),
-                'T' => self.screen.sd(canonicalize_params_1(params, 1)),
-                'X' => self.screen.ech(canonicalize_params_1(params, 1)),
-                '`' => self.screen.hpa(canonicalize_params_1(params, 1)),
-                'b' => self.screen.rep(canonicalize_params_1(params, 1)),
-                'd' => self.screen.vpa(canonicalize_params_1(params, 1)),
-                'm' => self.screen.sgr(params, unhandled),
-                'r' => self.screen.decstbm(canonicalize_params_decstbm(
+                'J' => self.ed(canonicalize_params_1(params, 0), unhandled),
+                'K' => self.el(canonicalize_params_1(params, 0), unhandled),
+                'L' => self.il(canonicalize_params_1(params, 1)),
+                'M' => self.dl(canonicalize_params_1(params, 1)),
+                'P' => self.dch(canonicalize_params_1(params, 1)),
+                'S' => self.su(canonicalize_params_1(params, 1)),
+                'T' => self.sd(canonicalize_params_1(params, 1)),
+                'X' => self.ech(canonicalize_params_1(params, 1)),
+                '`' => self.hpa(canonicalize_params_1(params, 1)),
+                'b' => self.rep(canonicalize_params_1(params, 1)),
+                'd' => self.vpa(canonicalize_params_1(params, 1)),
+                'm' => self.sgr(params, unhandled),
+                'r' => self.decstbm(canonicalize_params_decstbm(
                     params,
                     self.screen.grid().size(),
                 )),
@@ -171,9 +139,12 @@ impl<CB: crate::callbacks::Callbacks> vte::Perform for WrappedScreen<CB> {
                 }
             },
             Some(b' ') => match c {
-                'q' => self
-                    .screen
-                    .decscusr(canonicalize_params_1(params, 0), unhandled),
+                'q' => {
+                    self.decscusr(
+                        canonicalize_params_1(params, 0),
+                        unhandled,
+                    );
+                }
                 _ => {
                     self.callbacks.unhandled_csi(
                         &mut self.screen,
@@ -184,25 +155,25 @@ impl<CB: crate::callbacks::Callbacks> vte::Perform for WrappedScreen<CB> {
                     );
                 }
             },
-            Some(b'?') => match c {
-                'J' => self
-                    .screen
-                    .decsed(canonicalize_params_1(params, 0), unhandled),
-                'K' => self
-                    .screen
-                    .decsel(canonicalize_params_1(params, 0), unhandled),
-                'h' => self.screen.decset(params, unhandled),
-                'l' => self.screen.decrst(params, unhandled),
-                _ => {
-                    self.callbacks.unhandled_csi(
-                        &mut self.screen,
-                        Some(b'?'),
-                        intermediates.get(1).copied(),
-                        &params.iter().collect::<Vec<_>>(),
-                        c,
-                    );
+            Some(b'?') => {
+                match c {
+                    'J' => self
+                        .decsed(canonicalize_params_1(params, 0), unhandled),
+                    'K' => self
+                        .decsel(canonicalize_params_1(params, 0), unhandled),
+                    'h' => self.decset(params, unhandled),
+                    'l' => self.decrst(params, unhandled),
+                    _ => {
+                        self.callbacks.unhandled_csi(
+                            &mut self.screen,
+                            Some(b'?'),
+                            intermediates.get(1).copied(),
+                            &params.iter().collect::<Vec<_>>(),
+                            c,
+                        );
+                    }
                 }
-            },
+            }
             Some(i) => {
                 self.callbacks.unhandled_csi(
                     &mut self.screen,

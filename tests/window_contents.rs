@@ -776,7 +776,10 @@ fn formatted_basic_writer() {
     let mut contents = String::new();
     parser
         .screen()
-        .write_contents_formatted_basic(&mut contents)
+        .write_contents_formatted_basic(
+            &mut contents,
+            &mut Default::default(),
+        )
         .unwrap();
     assert_eq!(contents, parser.screen().contents_formatted_basic());
 }

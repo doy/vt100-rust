@@ -1,5 +1,8 @@
+/// Callbacks for [`crate::Parser`].
+///
 /// This trait is used by the parser to handle extra escape sequences that
-/// don't have an impact on the terminal screen directly.
+/// don't have an impact on the terminal screen directly, as well as to emit
+/// other events like [`on_scroll`](Self::on_scroll).
 pub trait Callbacks {
     /// This callback is called when the terminal requests an audible bell
     /// (typically with `^G`).
@@ -64,6 +67,18 @@ pub trait Callbacks {
     /// This callback is called when the terminal receives a OSC sequence
     /// (`\e]`) which is otherwise not implemented.
     fn unhandled_osc(&mut self, _: &mut crate::Screen, _params: &[&[u8]]) {}
+    /// Called when a row scrolls off the top of the screen due to a new row
+    /// being added at the bottom of the screen.
+    ///
+    /// `alternate_screen` indicates whether the row came from the alternate
+    /// screen.
+    #[allow(unused_variables)]
+    fn on_scroll(
+        &mut self,
+        contents: crate::capture::RowContents<'_>,
+        alternate_screen: bool,
+    ) {
+    }
 }
 
 impl Callbacks for () {}

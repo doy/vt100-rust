@@ -53,6 +53,7 @@ extern crate alloc;
 
 mod attrs;
 mod callbacks;
+pub mod capture;
 mod cell;
 mod grid;
 mod parser;
