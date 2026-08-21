@@ -307,6 +307,42 @@ impl Screen {
         self.attrs.write_escape_code_diff(contents, &prev_attrs);
     }
 
+    /// Returns the formatted visible contents of the terminal in a "basic"
+    /// format.
+    ///
+    /// The contents will contain no escape sequences except SGR sequences,
+    /// and no control characters except `'\n'`.
+    ///
+    /// A newline will be inserted after each row that does not wrap onto the
+    /// next line, except the last. Trailing whitespace will not be trimmed
+    /// from the string; a blank terminal *n* rows tall will result in a string
+    /// with *n* - 1 newlines.
+    ///
+    /// Terminal attributes should be reset before and after displaying the
+    /// returned string; it will not begin or end with a reset sequence.
+    #[must_use]
+    pub fn contents_formatted_basic(&self) -> String {
+        let mut contents = String::new();
+        // Writing to a `String` cannot fail.
+        #[allow(clippy::missing_panics_doc)]
+        self.write_contents_formatted_basic(&mut contents).unwrap();
+        contents
+    }
+
+    /// Like [`Self::contents_formatted_basic`] but writes into the provided
+    /// writer.
+    ///
+    /// # Errors
+    ///
+    /// If the writer returns an error, this method will forward that error.
+    /// Otherwise, this method will not return any errors of its own.
+    pub fn write_contents_formatted_basic(
+        &self,
+        writer: &mut impl alloc::fmt::Write,
+    ) -> alloc::fmt::Result {
+        self.grid.write_contents_formatted_basic(writer)
+    }
+
     /// Returns the formatted visible contents of the terminal by row,
     /// restricted to the given subset of columns.
     ///

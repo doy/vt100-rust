@@ -2,6 +2,9 @@ mod helpers;
 
 use std::io::Read as _;
 
+const NUM_CRAWL_SHORT: usize = 500;
+const NUM_CRAWL_FULL: usize = 7625;
+
 #[test]
 fn formatted() {
     let mut parser = vt100::Parser::default();
@@ -544,13 +547,13 @@ fn diff_erase() {
 
 #[test]
 fn diff_crawl_short() {
-    diff_crawl(500);
+    diff_crawl(NUM_CRAWL_SHORT);
 }
 
 #[test]
 #[ignore]
 fn diff_crawl_full() {
-    diff_crawl(7625);
+    diff_crawl(NUM_CRAWL_FULL);
 }
 
 fn diff_crawl(i: usize) {
@@ -577,5 +580,216 @@ fn diff_crawl(i: usize) {
             }
             _ => unreachable!(),
         }
+    }
+}
+
+fn newlines(n: usize) -> String {
+    "\n".repeat(n)
+}
+
+/// Asserts `contents` contains no escape sequences except SGR escapes and no
+/// control characters except newlines.
+fn assert_basic_formatting(contents: &str) {
+    let mut chars = contents.chars();
+    while let Some(c) = chars.next() {
+        match c {
+            '\x1b' => {
+                assert_eq!(
+                    chars.next(),
+                    Some('['),
+                    "non-CSI escape sequence in {:?}",
+                    contents
+                );
+                let mut final_byte = None;
+                for c in chars.by_ref() {
+                    if !matches!(c, '0'..='9' | ';' | ':') {
+                        final_byte = Some(c);
+                        break;
+                    }
+                }
+                assert_eq!(
+                    final_byte,
+                    Some('m'),
+                    "non-SGR escape sequence in {:?}",
+                    contents
+                );
+            }
+            '\n' => {}
+            c => assert!(
+                !c.is_control(),
+                "unexpected control character {:?} in {:?}",
+                c,
+                contents
+            ),
+        }
+    }
+}
+
+#[test]
+fn formatted_basic() {
+    let mut parser = vt100::Parser::default();
+    assert_eq!(parser.screen().contents_formatted_basic(), newlines(23));
+
+    parser.process(b"foobar");
+    assert_eq!(
+        parser.screen().contents_formatted_basic(),
+        format!("foobar{}", newlines(23))
+    );
+
+    parser.process(b"\x1b[1;4H\x1b[1;7m\x1b[33mb");
+    assert_eq!(
+        parser.screen().contents_formatted_basic(),
+        format!("foo\x1b[33;1;7mb\x1b[mar{}", newlines(23))
+    );
+
+    parser.process(b"\x1b[1;5H\x1b[22;42ma");
+    assert_eq!(
+        parser.screen().contents_formatted_basic(),
+        format!("foo\x1b[33;1;7mb\x1b[42;22ma\x1b[mr{}", newlines(23))
+    );
+
+    // Attributes carry over from the end of one row to the start of the
+    // next, so `quux` (which has the same attributes as the `r` before it)
+    // needs no escape sequence of its own.
+    parser.process(b"\x1b[1;6H\x1b[35mr\r\nquux");
+    assert_eq!(
+        parser.screen().contents_formatted_basic(),
+        format!(
+            "foo\x1b[33;1;7mb\x1b[42;22ma\x1b[35mr\nquux{}",
+            newlines(22)
+        )
+    );
+
+    parser.process(b"\x1b[2;1H\x1b[45mquux");
+    assert_eq!(
+        parser.screen().contents_formatted_basic(),
+        format!(
+            "foo\x1b[33;1;7mb\x1b[42;22ma\x1b[35mr\n\x1b[45mquux{}",
+            newlines(22)
+        )
+    );
+
+    parser
+        .process(b"\x1b[2;2H\x1b[38;2;123;213;231mu\x1b[38;5;254mu\x1b[39mx");
+    assert_eq!(
+        parser.screen().contents_formatted_basic(),
+        format!(
+            "foo\x1b[33;1;7mb\x1b[42;22ma\x1b[35mr\n\
+             \x1b[45mq\x1b[38;2;123;213;231mu\x1b[38;5;254mu\x1b[39mx{}",
+            newlines(22)
+        )
+    );
+}
+
+#[test]
+fn formatted_basic_empty_cells() {
+    let mut parser = vt100::Parser::default();
+    parser.process(b"\x1b[5C\x1b[32m bar\x1b[H\x1b[31mfoo");
+    assert_eq!(parser.screen().contents(), "foo   bar");
+    // Gaps are padded with spaces rather than cursor movement sequences.
+    assert_eq!(
+        parser.screen().contents_formatted_basic(),
+        format!("\x1b[31mfoo  \x1b[32m bar{}", newlines(23))
+    );
+}
+
+#[test]
+fn formatted_basic_trailing_empty_cells() {
+    let mut parser = vt100::Parser::default();
+    parser.process(b"foo\x1b[2;1Hbar");
+    // Trailing empty cells at the end of a row aren't written.
+    assert_eq!(
+        parser.screen().contents_formatted_basic(),
+        format!("foo\nbar{}", newlines(22))
+    );
+}
+
+#[test]
+fn formatted_basic_erased_cells() {
+    let mut parser = vt100::Parser::default();
+    // Cells erased while a background color is set aren't empty, so they get
+    // written as spaces with the appropriate attributes.
+    parser.process(b"\x1b[41m\x1b[2K");
+    assert_eq!(parser.screen().contents(), "");
+    assert_eq!(
+        parser.screen().contents_formatted_basic(),
+        format!("\x1b[41m{}{}", " ".repeat(80), newlines(23))
+    );
+}
+
+#[test]
+fn formatted_basic_wrapping() {
+    let mut parser = vt100::Parser::default();
+    let long = "a".repeat(80);
+    parser.process(long.as_bytes());
+    // The row is full but hasn't wrapped yet, so it's still followed by a
+    // newline.
+    assert!(!parser.screen().row_wrapped(0));
+    assert_eq!(
+        parser.screen().contents_formatted_basic(),
+        format!("{}{}", long, newlines(23))
+    );
+
+    // Once the row wraps, no newline is written between it and its
+    // continuation, so the text reflows the same way when replayed.
+    parser.process(b"bbbb");
+    assert!(parser.screen().row_wrapped(0));
+    assert_eq!(
+        parser.screen().contents_formatted_basic(),
+        format!("{}bbbb{}", long, newlines(22))
+    );
+}
+
+#[test]
+fn formatted_basic_wide_chars() {
+    let mut parser = vt100::Parser::default();
+    parser.process("aあ\x1b[32mbい".as_bytes());
+    // The second cell of a wide character isn't written out twice.
+    assert_eq!(
+        parser.screen().contents_formatted_basic(),
+        format!("aあ\x1b[32mbい{}", newlines(23))
+    );
+}
+
+#[test]
+fn formatted_basic_scrollback() {
+    let mut parser = vt100::Parser::new(3, 10, 10);
+    parser.process(b"one\r\ntwo\r\nthree\r\nfour");
+    assert_eq!(
+        parser.screen().contents_formatted_basic(),
+        "two\nthree\nfour"
+    );
+
+    // Only the visible rows are written out.
+    parser.screen_mut().set_scrollback(1);
+    assert_eq!(
+        parser.screen().contents_formatted_basic(),
+        "one\ntwo\nthree"
+    );
+}
+
+#[test]
+fn formatted_basic_writer() {
+    let mut parser = vt100::Parser::default();
+    parser.process(b"\x1b[31mfoo\r\nbar");
+
+    let mut contents = String::new();
+    parser
+        .screen()
+        .write_contents_formatted_basic(&mut contents)
+        .unwrap();
+    assert_eq!(contents, parser.screen().contents_formatted_basic());
+}
+
+#[test]
+fn formatted_basic_has_no_cursor_movement() {
+    let mut parser = vt100::Parser::default();
+    assert_basic_formatting(&parser.screen().contents_formatted_basic());
+
+    for i in 1..=NUM_CRAWL_FULL {
+        let frame =
+            std::fs::read(format!("tests/data/crawl/crawl{i}")).unwrap();
+        parser.process(&frame);
+        assert_basic_formatting(&parser.screen().contents_formatted_basic());
     }
 }

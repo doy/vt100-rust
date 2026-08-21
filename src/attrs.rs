@@ -97,9 +97,17 @@ impl Attrs {
         contents: &mut String,
         other: &Self,
     ) {
+        self.write_escape_code_diff_fmt(contents, other)
+            .expect("writing to a String cannot fail");
+    }
+
+    pub fn write_escape_code_diff_fmt(
+        &self,
+        writer: &mut impl alloc::fmt::Write,
+        other: &Self,
+    ) -> alloc::fmt::Result {
         if self != other && self == &Self::default() {
-            crate::term::ClearAttrs.write_buf(contents);
-            return;
+            return crate::term::ClearAttrs.write_fmt(writer);
         }
 
         let attrs = crate::term::Attrs::default();
@@ -140,6 +148,6 @@ impl Attrs {
             attrs.inverse(self.inverse())
         };
 
-        attrs.write_buf(contents);
+        attrs.write_fmt(writer)
     }
 }
