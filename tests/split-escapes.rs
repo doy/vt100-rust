@@ -1,5 +1,7 @@
 use std::io::Read as _;
 
+mod helpers;
+
 fn get_file_contents(name: &str) -> Vec<u8> {
     let mut file = std::fs::File::open(name).unwrap();
     let mut buf = vec![];
@@ -8,7 +10,7 @@ fn get_file_contents(name: &str) -> Vec<u8> {
 }
 
 fn write_to_parser(chunks: &mut [Vec<u8>]) -> (String, String) {
-    let mut parser = vt100::Parser::new(37, 193, 0);
+    let mut parser = helpers::new(37, 193, 0);
     for chunk in chunks.iter_mut() {
         parser.process(chunk);
     }

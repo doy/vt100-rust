@@ -1,3 +1,5 @@
+use std::num::NonZeroU16;
+
 mod fixtures;
 #[allow(unused_imports)]
 pub use fixtures::FixtureScreen;
@@ -31,6 +33,46 @@ macro_rules! ok {
             return false;
         }
     };
+}
+
+/// Like [`vt100::Parser::new`], but takes [`u16`]s instead of [`NonZeroU16`]s.
+///
+/// Panics if `rows` or `cols` is 0.
+pub fn new(rows: u16, cols: u16, scrollback_len: usize) -> vt100::Parser {
+    vt100::Parser::new(
+        NonZeroU16::new(rows).unwrap(),
+        NonZeroU16::new(cols).unwrap(),
+        scrollback_len,
+    )
+}
+
+/// Like [`vt100::Parser::new_with_callbacks`], but takes [`u16`]s instead of
+/// [`NonZeroU16`]s.
+///
+/// Panics if `rows` or `cols` is 0.
+pub fn new_with_callbacks<CB: vt100::Callbacks>(
+    rows: u16,
+    cols: u16,
+    scrollback_len: usize,
+    callbacks: CB,
+) -> vt100::Parser<CB> {
+    vt100::Parser::new_with_callbacks(
+        NonZeroU16::new(rows).unwrap(),
+        NonZeroU16::new(cols).unwrap(),
+        scrollback_len,
+        callbacks,
+    )
+}
+
+/// Like [`vt100::Screen::set_size`], but takes [`u16`]s instead of
+/// [`NoneZeroU16`]s.
+///
+/// Panics if `rows` or `cols` is 0.
+pub fn set_size(screen: &mut vt100::Screen, rows: u16, cols: u16) {
+    screen.set_size(
+        NonZeroU16::new(rows).unwrap(),
+        NonZeroU16::new(cols).unwrap(),
+    );
 }
 
 #[derive(Eq, PartialEq)]
@@ -171,7 +213,6 @@ fn assert_rows_formatted_reproduces_state(input: &[u8]) {
     assert!(rows_formatted_reproduces_state(input));
 }
 
-#[allow(dead_code)]
 pub fn contents_diff_reproduces_state(input: &[u8]) -> bool {
     contents_diff_reproduces_state_from(input, &[])
 }
@@ -207,7 +248,6 @@ pub fn contents_diff_reproduces_state_from_screens(
     compare_screens(&got_screen, screen)
 }
 
-#[allow(dead_code)]
 pub fn assert_contents_diff_reproduces_state_from_screens(
     prev_screen: &vt100::Screen,
     screen: &vt100::Screen,
@@ -225,7 +265,6 @@ fn assert_contents_diff_reproduces_state_from(
     assert!(contents_diff_reproduces_state_from(input, prev_input));
 }
 
-#[allow(dead_code)]
 pub fn assert_reproduces_state(input: &[u8]) {
     assert_reproduces_state_from(input, &[]);
 }
@@ -238,7 +277,6 @@ pub fn assert_reproduces_state_from(input: &[u8], prev_input: &[u8]) {
     assert_contents_diff_reproduces_state_from(input, prev_input);
 }
 
-#[allow(dead_code)]
 pub fn format_bytes(bytes: impl AsRef<[u8]>) -> String {
     let mut v = vec![];
     for b in bytes.as_ref() {
@@ -287,7 +325,6 @@ pub fn hex(upper: u8, lower: u8) -> Result<u8, String> {
     Ok(hex_char(upper)? * 16 + hex_char(lower)?)
 }
 
-#[allow(dead_code)]
 pub fn unhex(s: &[u8]) -> Vec<u8> {
     let mut ret = vec![];
     let mut i = 0;
@@ -344,4 +381,19 @@ pub fn unhex(s: &[u8]) -> Vec<u8> {
         }
     }
     ret
+}
+
+// Silence unused function warnings. This approach is better than annotating
+// the functions with `#[allow(dead_code)]`, because that will silence dead
+// code warnings within the bodies of the functions too.
+#[allow(dead_code, unused_imports)]
+fn allow_unused() {
+    use assert_contents_diff_reproduces_state_from_screens;
+    use assert_reproduces_state;
+    use contents_diff_reproduces_state;
+    use format_bytes;
+    use new;
+    use new_with_callbacks;
+    use set_size;
+    use unhex;
 }

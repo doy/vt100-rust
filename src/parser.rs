@@ -6,10 +6,35 @@ pub struct Parser<CB: crate::Callbacks = ()> {
 }
 
 impl Parser {
+    /// The default number of rows used when creating a parser with
+    /// [`Parser::default`].
+    ///
+    /// The value of this constant is 24.
+    // `unwrap` is not `const` in this crate's MSRV.
+    pub const DEFAULT_ROWS: core::num::NonZeroU16 =
+        match core::num::NonZeroU16::new(24) {
+            Some(n) => n,
+            None => unreachable!(),
+        };
+
+    /// The default number of columns used when creating a parser with
+    /// [`Parser::default`].
+    ///
+    /// The value of this constant is 80.
+    pub const DEFAULT_COLS: core::num::NonZeroU16 =
+        match core::num::NonZeroU16::new(80) {
+            Some(n) => n,
+            None => unreachable!(),
+        };
+
     /// Creates a new terminal parser of the given size and with the given
     /// amount of scrollback.
     #[must_use]
-    pub fn new(rows: u16, cols: u16, scrollback_len: usize) -> Self {
+    pub fn new(
+        rows: core::num::NonZeroU16,
+        cols: core::num::NonZeroU16,
+        scrollback_len: usize,
+    ) -> Self {
         Self::new_with_callbacks(rows, cols, scrollback_len, ())
     }
 }
@@ -19,13 +44,16 @@ impl<CB: crate::Callbacks> Parser<CB> {
     /// amount of scrollback. Terminal events will be reported via method
     /// calls on the provided [`Callbacks`](crate::Callbacks) implementation.
     pub fn new_with_callbacks(
-        rows: u16,
-        cols: u16,
+        rows: core::num::NonZeroU16,
+        cols: core::num::NonZeroU16,
         scrollback_len: usize,
         callbacks: CB,
     ) -> Self {
         let screen = crate::screen::Screen::new(
-            crate::grid::Size { rows, cols },
+            crate::grid::Size {
+                rows: rows.get(),
+                cols: cols.get(),
+            },
             scrollback_len,
         );
         Self {
@@ -70,7 +98,7 @@ impl<CB: crate::Callbacks> Parser<CB> {
 impl Default for Parser {
     /// Returns a parser with dimensions 80x24 and no scrollback.
     fn default() -> Self {
-        Self::new(24, 80, 0)
+        Self::new(Self::DEFAULT_ROWS, Self::DEFAULT_COLS, 0)
     }
 }
 

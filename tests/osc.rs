@@ -22,7 +22,7 @@ fn title_icon_name() {
     }
 
     let mut parser =
-        vt100::Parser::new_with_callbacks(24, 80, 0, Window::default());
+        helpers::new_with_callbacks(24, 80, 0, Window::default());
     assert_eq!(parser.callbacks().icon_name, "");
     assert_eq!(parser.callbacks().title, "");
     parser.process(b"\x1b]1;icon_name\x07");
@@ -63,7 +63,7 @@ fn clipboard() {
     }
 
     let mut parser =
-        vt100::Parser::new_with_callbacks(24, 80, 0, Clipboard::default());
+        helpers::new_with_callbacks(24, 80, 0, Clipboard::default());
     assert!(parser.callbacks().clipboard.is_empty());
     assert!(parser.callbacks().pasted.is_empty());
     parser.process(b"\x1b]52;c;?\x07");

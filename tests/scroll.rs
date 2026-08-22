@@ -14,7 +14,7 @@ fn origin_mode() {
 
 #[test]
 fn scrollback() {
-    let mut parser = vt100::Parser::new(24, 80, 10);
+    let mut parser = helpers::new(24, 80, 10);
 
     assert_eq!(parser.screen().scrollback_len(), 10);
 
@@ -180,7 +180,7 @@ fn edge_of_screen() {
 
 #[test]
 fn one_row_wrap_does_not_panic() {
-    let mut parser = vt100::Parser::new(1, 1, 10);
+    let mut parser = helpers::new(1, 1, 10);
 
     parser.process(b"ab");
 
@@ -189,7 +189,7 @@ fn one_row_wrap_does_not_panic() {
 
 #[test]
 fn scrollback_larger_than_rows() {
-    let mut parser = vt100::Parser::new(3, 20, 10);
+    let mut parser = helpers::new(3, 20, 10);
 
     parser.process(gen_nums(1..=10, "\r\n").as_bytes());
 
@@ -204,7 +204,7 @@ fn scrollback_larger_than_rows() {
 
 #[test]
 fn clear_scrollback() {
-    let mut parser = vt100::Parser::new(3, 20, 10);
+    let mut parser = helpers::new(3, 20, 10);
 
     parser.process(gen_nums(1..=6, "\r\n").as_bytes());
     parser.screen_mut().set_scrollback(3);
@@ -221,7 +221,7 @@ fn clear_scrollback() {
 
 #[test]
 fn erase_saved_lines_csi_3j() {
-    let mut parser = vt100::Parser::new(3, 20, 10);
+    let mut parser = helpers::new(3, 20, 10);
 
     parser.process(gen_nums(1..=6, "\r\n").as_bytes());
     assert_eq!(parser.screen().contents(), gen_nums(4..=6, "\n"));
@@ -238,7 +238,7 @@ fn erase_saved_lines_csi_3j() {
 
 #[test]
 fn erase_saved_lines_csi_3j_preserves_modes() {
-    let mut parser = vt100::Parser::new(3, 20, 10);
+    let mut parser = helpers::new(3, 20, 10);
 
     parser.process(b"\x1b[?1h\x1b[?25l\x1b[?1000h\x1b[?1006h\x1b[?2004h");
     parser.process(gen_nums(1..=6, "\r\n").as_bytes());
@@ -268,7 +268,7 @@ fn scrollback_in_top_aligned_region() {
     // screen top (scroll_top == 0), scrolled-off rows must enter the scrollback — equivalent to
     // full-screen scrolling, and matching xterm. Upstream's `!scroll_region_active()` dropped
     // these rows unconditionally, so such TUIs never built any scrollback.
-    let mut parser = vt100::Parser::new(6, 10, 100);
+    let mut parser = helpers::new(6, 10, 100);
     parser.process(b"row1\r\nrow2\r\nrow3\r\nrow4\r\nrow5\r\nrow6");
 
     // Scroll region 1..4 (screen top to row 4), cursor to region bottom, write 3 lines with

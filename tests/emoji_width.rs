@@ -1,6 +1,7 @@
 // Regression tests for emoji-presentation width: a base char + U+FE0F
 // (VS16) is two columns, but vt100 used to store it as one narrow cell,
 // shifting everything after it and leaving on-screen residue.
+mod helpers;
 
 fn cell(parser: &vt100::Parser, row: u16, col: u16) -> (String, bool, bool) {
     let screen = parser.screen();
@@ -14,7 +15,7 @@ fn cell(parser: &vt100::Parser, row: u16, col: u16) -> (String, bool, bool) {
 
 #[test]
 fn vs16_emoji_occupies_two_columns() {
-    let mut parser = vt100::Parser::new(1, 20, 0);
+    let mut parser = helpers::new(1, 20, 0);
     parser.process("A\u{2764}\u{FE0F}B".as_bytes());
 
     assert_eq!(cell(&parser, 0, 0), ("A".into(), false, false), "col0 = A");
@@ -38,7 +39,7 @@ fn vs16_emoji_occupies_two_columns() {
 
 #[test]
 fn vs16_promotion_over_existing_wide_char_does_not_orphan_continuation() {
-    let mut parser = vt100::Parser::new(1, 6, 0);
+    let mut parser = helpers::new(1, 6, 0);
     parser.process("a\u{4E2D}".as_bytes());
     // Move the cursor back to col0 and write a text-presentation base + VS16.
     // The base lands on col0; its continuation lands on col1, which is the

@@ -7,7 +7,7 @@ fn absolute_movement() {
 
 #[test]
 fn horizontal_vertical_position() {
-    let mut vt = vt100::Parser::new(5, 10, 0);
+    let mut vt = helpers::new(5, 10, 0);
 
     vt.process(b"\x1b[3;7fX");
     assert_eq!(vt.screen().cell(2, 6).unwrap().contents(), "X");
@@ -66,11 +66,11 @@ fn xtwinops() {
             screen: &mut vt100::Screen,
             (rows, cols): (u16, u16),
         ) {
-            screen.set_size(rows, cols);
+            helpers::set_size(screen, rows, cols);
         }
     }
 
-    let mut vt = vt100::Parser::new_with_callbacks(24, 80, 0, Callbacks);
+    let mut vt = helpers::new_with_callbacks(24, 80, 0, Callbacks);
     assert_eq!(vt.screen().size(), (24, 80));
     vt.process(b"\x1b[8;24;80t");
     assert_eq!(vt.screen().size(), (24, 80));
@@ -81,7 +81,7 @@ fn xtwinops() {
     vt.process(b"\x1b[8;24t");
     assert_eq!(vt.screen().size(), (24, 24));
 
-    let mut vt = vt100::Parser::new_with_callbacks(24, 80, 0, Callbacks);
+    let mut vt = helpers::new_with_callbacks(24, 80, 0, Callbacks);
     assert_eq!(vt.screen().size(), (24, 80));
     vt.process(b"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
     assert_eq!(
