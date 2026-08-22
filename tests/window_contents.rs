@@ -753,7 +753,7 @@ fn formatted_basic_wide_chars() {
 
 #[test]
 fn formatted_basic_scrollback() {
-    let mut parser = vt100::Parser::new(3, 10, 10);
+    let mut parser = helpers::new(3, 10, 10);
     parser.process(b"one\r\ntwo\r\nthree\r\nfour");
     assert_eq!(
         parser.screen().contents_formatted_basic(),

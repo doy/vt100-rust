@@ -9,6 +9,8 @@
 
 use vt100::capture::{BasicFormattedCaptureState, RowContents};
 
+mod helpers;
+
 /// Appends every row that scrolls off the screen to a buffer.
 #[derive(Debug, Default)]
 struct Capture {
@@ -33,7 +35,7 @@ impl vt100::Callbacks for Capture {
 }
 
 fn parser(rows: u16, cols: u16) -> vt100::Parser<Capture> {
-    vt100::Parser::new_with_callbacks(rows, cols, 0, Capture::default())
+    helpers::new_with_callbacks(rows, cols, 0, Capture::default())
 }
 
 /// Returns the capture so far, without the visible contents of the screen.
@@ -55,7 +57,7 @@ fn finish(parser: &mut vt100::Parser<Capture>) -> String {
 /// Processes `data` with a screen tall enough that nothing scrolls off of it,
 /// which is what a capture of the same data is expected to reproduce.
 fn tall(rows: u16, cols: u16, data: &[u8]) -> String {
-    let mut parser = vt100::Parser::new(rows, cols, 0);
+    let mut parser = helpers::new(rows, cols, 0);
     parser.process(data);
     let mut contents = parser.screen().contents_formatted_basic();
     // Drop the blank rows below the ones that were actually written to.
@@ -222,7 +224,7 @@ fn a_capture_of_a_parser_with_scrollback_includes_the_scrollback() {
     // `on_scroll` fires for every row that leaves the screen, whether or not
     // the parser keeps it in its scrollback.
     let mut parser =
-        vt100::Parser::new_with_callbacks(3, 10, 10, Capture::default());
+        helpers::new_with_callbacks(3, 10, 10, Capture::default());
     parser.process(data);
     assert_eq!(finish(&mut parser), tall(20, 10, data));
 

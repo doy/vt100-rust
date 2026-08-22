@@ -1,4 +1,5 @@
 use std::io::{Read as _, Write as _};
+use std::num::NonZeroU16;
 
 #[path = "../tests/helpers/mod.rs"]
 mod helpers;
@@ -37,7 +38,10 @@ fn main() {
     stdout.write_all(b"\x1b[H\x1b[J").unwrap();
     stdout.flush().unwrap();
 
-    let mut parser = vt100::Parser::new(size.0, size.1, 0);
+    let rows = NonZeroU16::new(size.0).unwrap();
+    let cols = NonZeroU16::new(size.1).unwrap();
+
+    let mut parser = vt100::Parser::new(rows, cols, 0);
     let mut buf = [0u8; 4096];
     let mut screen = parser.screen().clone();
     let mut idx = 0;

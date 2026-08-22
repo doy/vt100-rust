@@ -12,7 +12,7 @@
 //! # Synopsis
 //!
 //! ```
-//! let mut parser = vt100::Parser::new(24, 80, 0);
+//! let mut parser = vt100::Parser::default();
 //!
 //! let screen = parser.screen().clone();
 //! parser.process(b"this text is \x1b[31mRED\x1b[m");

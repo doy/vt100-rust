@@ -1,3 +1,5 @@
+mod helpers;
+
 #[test]
 fn object_creation() {
     let parser = vt100::Parser::default();
@@ -18,18 +20,18 @@ fn set_size() {
     assert_eq!(parser.screen().size(), (24, 80));
     assert_eq!(parser.screen().cursor_position(), (0, 0));
 
-    parser.screen_mut().set_size(34, 8);
+    helpers::set_size(parser.screen_mut(), 34, 8);
     assert_eq!(parser.screen().size(), (34, 8));
     assert_eq!(parser.screen().cursor_position(), (0, 0));
 
     parser.process(b"\x1b[30;5H");
     assert_eq!(parser.screen().cursor_position(), (29, 4));
 
-    parser.screen_mut().set_size(24, 80);
+    helpers::set_size(parser.screen_mut(), 24, 80);
     assert_eq!(parser.screen().size(), (24, 80));
     assert_eq!(parser.screen().cursor_position(), (23, 4));
 
-    parser.screen_mut().set_size(34, 8);
+    helpers::set_size(parser.screen_mut(), 34, 8);
     assert_eq!(parser.screen().size(), (34, 8));
     assert_eq!(parser.screen().cursor_position(), (23, 4));
 
@@ -37,7 +39,7 @@ fn set_size() {
     assert_eq!(parser.screen().size(), (34, 8));
     assert_eq!(parser.screen().cursor_position(), (0, 0));
 
-    parser.screen_mut().set_size(24, 80);
+    helpers::set_size(parser.screen_mut(), 24, 80);
     assert_eq!(parser.screen().size(), (24, 80));
     assert_eq!(parser.screen().cursor_position(), (0, 0));
 
@@ -45,19 +47,19 @@ fn set_size() {
     assert_eq!(parser.screen().size(), (24, 80));
     assert_eq!(parser.screen().cursor_position(), (23, 4));
 
-    parser.screen_mut().set_size(34, 8);
+    helpers::set_size(parser.screen_mut(), 34, 8);
     parser.process(b"\x1bc01234567890123456789");
     assert_eq!(parser.screen().contents(), "01234567890123456789");
 
-    parser.screen_mut().set_size(24, 80);
+    helpers::set_size(parser.screen_mut(), 24, 80);
     assert_eq!(parser.screen().contents(), "01234567\n89012345\n6789");
 
-    parser.screen_mut().set_size(34, 8);
+    helpers::set_size(parser.screen_mut(), 34, 8);
     assert_eq!(parser.screen().contents(), "01234567\n89012345\n6789");
 
     let mut parser = vt100::Parser::default();
     assert_eq!(parser.screen().size(), (24, 80));
-    parser.screen_mut().set_size(30, 100);
+    helpers::set_size(parser.screen_mut(), 30, 100);
     assert_eq!(parser.screen().size(), (30, 100));
     parser.process(b"\x1b[75Cfoobar");
     assert_eq!(
@@ -67,7 +69,7 @@ fn set_size() {
 
     let mut parser = vt100::Parser::default();
     assert_eq!(parser.screen().size(), (24, 80));
-    parser.screen_mut().set_size(30, 100);
+    helpers::set_size(parser.screen_mut(), 30, 100);
     assert_eq!(parser.screen().size(), (30, 100));
     parser.process(b"1\r\n2\r\n3\r\n4\r\n5\r\n6\r\n7\r\n8\r\n9\r\n10\r\n11\r\n12\r\n13\r\n14\r\n15\r\n16\r\n17\r\n18\r\n19\r\n20\r\n21\r\n22\r\n23\r\n24\x1b[24;99Hfoobar");
     assert_eq!(
@@ -129,9 +131,9 @@ fn cell_attrs() {
 // https://github.com/doy/vt100-rust/issues/28.
 #[test]
 fn resize_truncating_wide_char_then_erase_line_does_not_panic() {
-    let mut parser = vt100::Parser::new(2, 4, 0);
+    let mut parser = helpers::new(2, 4, 0);
     parser.process("你".as_bytes());
-    parser.screen_mut().set_size(2, 1);
+    helpers::set_size(parser.screen_mut(), 2, 1);
     parser.process(b"\x1b[K");
     assert_eq!(parser.screen().size(), (2, 1));
 }

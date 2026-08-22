@@ -1,10 +1,12 @@
 //! Tests for small screens (only one row tall or one column wide).
 
-fn sizes() -> impl Iterator<Item = (u16, u16)> {
-    const DIMENSIONS: [u16; 3] = [1, 2, 10];
-    DIMENSIONS
-        .into_iter()
-        .flat_map(|rows| DIMENSIONS.into_iter().map(move |cols| (rows, cols)))
+use std::num::NonZeroU16;
+
+fn sizes() -> impl Iterator<Item = (NonZeroU16, NonZeroU16)> {
+    let dimensions =
+        || [1, 2, 10].into_iter().map(|n| NonZeroU16::new(n).unwrap());
+    dimensions()
+        .flat_map(move |rows| dimensions().map(move |cols| (rows, cols)))
 }
 
 // https://github.com/doy/vt100-rust/issues/37
@@ -31,7 +33,7 @@ fn resize_screen_containing_wide_char_to_one_column_and_clear() {
     for (rows, cols) in sizes() {
         let mut parser = vt100::Parser::new(rows, cols, 0);
         parser.process("あ".as_bytes());
-        parser.screen_mut().set_size(rows, 1);
+        parser.screen_mut().set_size(rows, NonZeroU16::MIN);
         parser.process(b"\x1b[K");
     }
 }

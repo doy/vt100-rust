@@ -32,7 +32,7 @@ fn split_osc() {
     }
 
     let mut parser =
-        vt100::Parser::new_with_callbacks(24, 80, 0, Window::default());
+        helpers::new_with_callbacks(24, 80, 0, Window::default());
     for c in b"\x1b]0;a '[]_\x07" {
         assert_eq!(parser.callbacks().icon_name, "");
         assert_eq!(parser.callbacks().title, "");
