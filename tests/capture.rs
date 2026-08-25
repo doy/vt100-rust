@@ -232,3 +232,14 @@ fn a_capture_of_a_parser_with_scrollback_includes_the_scrollback() {
     parser.screen_mut().set_scrollback(2);
     assert_eq!(parser.screen().contents(), "one\ntwo\nthree");
 }
+
+#[test]
+fn scroll_up_with_small_scrollback() {
+    let mut parser =
+        helpers::new_with_callbacks(6, 20, 2, Capture::default());
+    parser.process(b"1\r\n2\r\n3\r\n4\r\n5\r\n6");
+    assert_eq!(parser.screen().contents(), "1\n2\n3\n4\n5\n6");
+    assert_eq!(parser.callbacks().buf, "");
+    parser.process(b"\x1b[5S");
+    assert_eq!(parser.callbacks().buf, "1\n2\n3\n4\n5");
+}

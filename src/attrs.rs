@@ -22,14 +22,28 @@ const TEXT_MODE_ITALIC: u8 = 0b0000_0100;
 const TEXT_MODE_UNDERLINE: u8 = 0b0000_1000;
 const TEXT_MODE_INVERSE: u8 = 0b0001_0000;
 
-#[derive(Default, Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct Attrs {
     pub fgcolor: Color,
     pub bgcolor: Color,
     pub mode: u8,
 }
 
+impl Default for Attrs {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Attrs {
+    pub const fn new() -> Self {
+        Self {
+            fgcolor: Color::Default,
+            bgcolor: Color::Default,
+            mode: 0,
+        }
+    }
+
     pub fn bold(&self) -> bool {
         self.mode & TEXT_MODE_BOLD != 0
     }

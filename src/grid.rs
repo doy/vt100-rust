@@ -22,7 +22,7 @@ impl Grid {
             size,
             pos: Pos::default(),
             saved_pos: Pos::default(),
-            rows: vec![],
+            rows: Vec::new(),
             scroll_top: 0,
             scroll_bottom: size.rows - 1,
             origin_mode: false,
@@ -35,24 +35,17 @@ impl Grid {
 
     pub fn allocate_rows(&mut self) {
         if self.rows.is_empty() {
-            self.rows.extend(
-                core::iter::repeat_with(|| {
-                    crate::row::Row::new(self.size.cols)
-                })
-                .take(usize::from(self.size.rows)),
-            );
+            self.rows.resize_with(usize::from(self.size.rows), || {
+                crate::row::Row::new(self.size.cols)
+            });
         }
-    }
-
-    fn new_row(&self) -> crate::row::Row {
-        crate::row::Row::new(self.size.cols)
     }
 
     pub fn clear(&mut self) {
         self.pos = Pos::default();
         self.saved_pos = Pos::default();
         for row in self.drawing_rows_mut() {
-            row.clear(crate::attrs::Attrs::default());
+            row.reset();
         }
         self.scroll_top = 0;
         self.scroll_bottom = self.size.rows - 1;
@@ -79,7 +72,9 @@ impl Grid {
         for row in &mut self.rows {
             row.resize(size.cols, crate::Cell::new());
         }
-        self.rows.resize(usize::from(size.rows), self.new_row());
+        self.rows.resize_with(usize::from(size.rows), || {
+            crate::row::Row::new(self.size.cols)
+        });
 
         if self.scroll_bottom >= size.rows {
             self.scroll_bottom = size.rows - 1;
@@ -515,37 +510,16 @@ impl Grid {
     }
 
     pub fn insert_cells(&mut self, count: u16) {
-        let size = self.size;
         let pos = self.pos;
-        let wide = pos.col < size.cols
-            && self
-                .drawing_cell(pos)
-                // we assume self.pos.row is always valid, and we know we are
-                // not off the end of a row because we just checked pos.col <
-                // size.cols
-                .unwrap()
-                .is_wide_continuation();
         let row = self.current_row_mut();
-        for _ in 0..count {
-            if wide {
-                row.get_mut(pos.col).unwrap().set_wide_continuation(false);
-            }
-            row.insert(pos.col, crate::Cell::new());
-            if wide {
-                row.get_mut(pos.col).unwrap().set_wide_continuation(true);
-            }
-        }
-        row.truncate(size.cols);
+        row.insert(pos.col, count);
     }
 
     pub fn delete_cells(&mut self, count: u16) {
         let size = self.size;
         let pos = self.pos;
         let row = self.current_row_mut();
-        for _ in 0..(count.min(size.cols - pos.col)) {
-            row.remove(pos.col);
-        }
-        row.resize(size.cols, crate::Cell::new());
+        row.remove(pos.col..pos.col.saturating_add(count).min(size.cols));
     }
 
     pub fn erase_cells(&mut self, count: u16, attrs: crate::attrs::Attrs) {
@@ -558,59 +532,112 @@ impl Grid {
     }
 
     pub fn insert_lines(&mut self, count: u16) {
-        for _ in 0..count {
-            self.rows.remove(usize::from(self.scroll_bottom));
-            self.rows.insert(usize::from(self.pos.row), self.new_row());
-            // self.scroll_bottom is maintained to always be a valid row
-            self.rows[usize::from(self.scroll_bottom)].wrap(false);
+        if count == 0 {
+            return;
         }
+        if !(self.scroll_top..=self.scroll_bottom).contains(&self.pos.row) {
+            return;
+        }
+        let between = &mut self.rows
+            [usize::from(self.pos.row)..=usize::from(self.scroll_bottom)];
+        let num_between = between.len();
+        let num_removed = usize::from(count).min(num_between);
+        between.rotate_right(num_removed);
+        for row in &mut between[..num_removed] {
+            row.reset();
+        }
+        // self.scroll_bottom is maintained to always be a valid row
+        self.rows[usize::from(self.scroll_bottom)].wrap(false);
     }
 
     pub fn delete_lines(&mut self, count: u16) {
-        for _ in 0..(count.min(self.size.rows - self.pos.row)) {
-            self.rows
-                .insert(usize::from(self.scroll_bottom) + 1, self.new_row());
-            self.rows.remove(usize::from(self.pos.row));
+        if !(self.scroll_top..=self.scroll_bottom).contains(&self.pos.row) {
+            return;
         }
+        let between = &mut self.rows
+            [usize::from(self.pos.row)..=usize::from(self.scroll_bottom)];
+        let num_between = between.len();
+        let num_removed = usize::from(count).min(num_between);
+        for row in &mut between[..num_removed] {
+            row.reset();
+        }
+        between.rotate_left(num_removed);
     }
 
     pub fn scroll_up<F>(&mut self, count: u16, mut on_row: F)
     where
         F: FnMut(&crate::row::Row),
     {
-        for _ in 0..(count.min(self.size.rows - self.scroll_top)) {
-            self.rows
-                .insert(usize::from(self.scroll_bottom) + 1, self.new_row());
-            let removed = self.rows.remove(usize::from(self.scroll_top));
-            on_row(&removed);
-            // A scrolled-off row belongs in the scrollback only when it leaves the top of the
-            // screen, i.e. when the scroll region starts at the screen top (scroll_top == 0).
-            // Upstream used `!scroll_region_active()`, which dropped the row whenever ANY scroll
-            // region was set. That broke inline TUIs (e.g. codex) that insert finalized history
-            // via `SetScrollRegion(1..viewport_top)` + `\r\n` / reverse-index — they never built
-            // any scrollback. With `scroll_top == 0`, full-screen scrolling is unchanged and we
-            // save only when the region includes the screen top (matching xterm).
-            if self.scrollback_len > 0 && self.scroll_top == 0 {
-                self.scrollback.push_back(removed);
-                while self.scrollback.len() > self.scrollback_len {
-                    self.scrollback.pop_front();
+        let scrollback_enabled = self.scroll_top == 0;
+        let between = &mut self.rows
+            [usize::from(self.scroll_top)..=usize::from(self.scroll_bottom)];
+        let num_between = between.len();
+        let count = usize::from(count).min(num_between);
+
+        // Number of to-be-removed rows.
+        let num_removed = count.min(num_between);
+        let new_row = || crate::row::Row::new(self.size.cols);
+
+        if scrollback_enabled && self.scrollback_len > 0 {
+            // Number of rows that will be pushed to the scrollback.
+            let num_pushed = count.min(self.scrollback_len);
+
+            // Scrollback length is capped at `self.scrollback_len`. These rows
+            // will be lost, so just remove them now to avoid allocating.
+            let scrollback_overflow = (self.scrollback.len() + num_pushed)
+                .saturating_sub(self.scrollback_len);
+            self.scrollback.drain(0..scrollback_overflow);
+
+            // Number of rows that will simply be reset rather than pushed to
+            // the scrollback.
+            let num_reset = num_removed - num_pushed;
+
+            for row in &mut between[..num_reset] {
+                on_row(row);
+                row.reset();
+            }
+
+            self.scrollback.extend(
+                between[num_reset..num_removed]
+                    .iter_mut()
+                    .map(|row| core::mem::replace(row, new_row()))
+                    .inspect(|row| on_row(row)),
+            );
+
+            if self.scrollback_offset > 0 {
+                self.scrollback_offset = self
+                    .scrollback_offset
+                    .saturating_add(count)
+                    .min(self.scrollback.len());
+            }
+        } else {
+            for row in &mut between[..num_removed] {
+                if scrollback_enabled {
+                    on_row(row);
                 }
-                if self.scrollback_offset > 0 {
-                    self.scrollback_offset =
-                        self.scrollback.len().min(self.scrollback_offset + 1);
-                }
+                row.reset();
             }
         }
+
+        // Finally, rotate the rows so the "removed" ones (which have now been
+        // reset to empty) are at the bottom.
+        between.rotate_left(num_removed);
     }
 
     pub fn scroll_down(&mut self, count: u16) {
-        for _ in 0..count {
-            self.rows.remove(usize::from(self.scroll_bottom));
-            self.rows
-                .insert(usize::from(self.scroll_top), self.new_row());
-            // self.scroll_bottom is maintained to always be a valid row
-            self.rows[usize::from(self.scroll_bottom)].wrap(false);
+        if count == 0 {
+            return;
         }
+        let between = &mut self.rows
+            [usize::from(self.scroll_top)..=usize::from(self.scroll_bottom)];
+        let num_between = between.len();
+        let num_removed = usize::from(count).min(num_between);
+        between.rotate_right(num_removed);
+        for row in &mut between[..num_removed] {
+            row.reset();
+        }
+        // self.scroll_bottom is maintained to always be a valid row
+        self.rows[usize::from(self.scroll_bottom)].wrap(false);
     }
 
     pub fn set_scroll_region(&mut self, top: u16, bottom: u16) {
@@ -692,7 +719,7 @@ impl Grid {
 
     pub fn col_tab(&mut self) {
         self.pos.col -= self.pos.col % 8;
-        self.pos.col += 8;
+        self.pos.col = self.pos.col.saturating_add(8);
         self.col_clamp();
     }
 

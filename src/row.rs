@@ -30,6 +30,11 @@ impl Row {
         self.wrapped = false;
     }
 
+    pub fn reset(&mut self) {
+        self.cells.fill(crate::Cell::new());
+        self.wrapped = false;
+    }
+
     fn cells(&self) -> impl Iterator<Item = &crate::Cell> {
         self.cells.iter()
     }
@@ -42,14 +47,50 @@ impl Row {
         self.cells.get_mut(usize::from(col))
     }
 
-    pub fn insert(&mut self, i: u16, cell: crate::Cell) {
-        self.cells.insert(usize::from(i), cell);
-        self.wrapped = false;
+    /// Inserts empty cells without changing the size of the row.
+    ///
+    /// Cells at the end are dropped.
+    pub fn insert(&mut self, i: u16, count: u16) {
+        let count = usize::from(count).min(self.cells.len() - usize::from(i));
+        if count == 0 {
+            return;
+        }
+
+        let is_wide_continuation = self.get_mut(i).is_some_and(|cell| {
+            let is_wc = cell.is_wide_continuation();
+            if is_wc {
+                cell.set_wide_continuation(false);
+            }
+            is_wc
+        });
+
+        let slice = &mut self.cells[usize::from(i)..];
+        slice.rotate_right(count);
+        slice[..count].fill(crate::Cell::new());
+        if is_wide_continuation {
+            self.get_mut(i).unwrap().set_wide_continuation(true);
+        }
+        self.set_truncated();
     }
 
-    pub fn remove(&mut self, i: u16) {
-        self.clear_wide(i);
-        self.cells.remove(usize::from(i));
+    /// Removes cells without changing the size of the row.
+    ///
+    /// Empty cells are added to the end.
+    pub fn remove(&mut self, range: core::ops::Range<u16>) {
+        if range.start >= range.end {
+            return;
+        }
+
+        self.clear_wide(range.start);
+        let last = range.end - 1;
+        if last != range.start {
+            self.clear_wide(last);
+        }
+
+        let count = usize::from(range.end - range.start);
+        let slice = &mut self.cells[usize::from(range.start)..];
+        slice[..count].fill(crate::Cell::new());
+        slice.rotate_left(count);
         self.wrapped = false;
     }
 
@@ -68,10 +109,15 @@ impl Row {
 
     pub fn truncate(&mut self, len: u16) {
         self.cells.truncate(usize::from(len));
+        self.set_truncated();
+    }
+
+    fn set_truncated(&mut self) {
         self.wrapped = false;
-        let last_cell = &mut self.cells[usize::from(len) - 1];
-        if last_cell.is_wide() {
-            last_cell.clear(*last_cell.attrs());
+        if let Some(last_cell) = self.cells.last_mut() {
+            if last_cell.is_wide() {
+                last_cell.clear(*last_cell.attrs());
+            }
         }
     }
 
