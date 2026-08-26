@@ -53,6 +53,11 @@ impl Row {
     pub fn insert(&mut self, i: u16, count: u16) {
         let count = usize::from(count).min(self.cells.len() - usize::from(i));
         if count == 0 {
+            // Always "truncate", even when `count` is 0. However, because we
+            // didn't actually insert any cells, we don't need to follow the
+            // whole truncation procedure in `Self::set_truncated`; we can just
+            // clear the `wrapped` flag.
+            self.wrapped = false;
             return;
         }
 
@@ -77,6 +82,7 @@ impl Row {
     ///
     /// Empty cells are added to the end.
     pub fn remove(&mut self, range: core::ops::Range<u16>) {
+        self.wrapped = false;
         if range.start >= range.end {
             return;
         }
@@ -91,7 +97,6 @@ impl Row {
         let slice = &mut self.cells[usize::from(range.start)..];
         slice[..count].fill(crate::Cell::new());
         slice.rotate_left(count);
-        self.wrapped = false;
     }
 
     pub fn erase(&mut self, i: u16, attrs: crate::attrs::Attrs) {
