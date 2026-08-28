@@ -358,7 +358,7 @@ impl Screen {
         writer: &mut impl alloc::fmt::Write,
         state: &mut crate::capture::BasicFormattedCaptureState,
     ) -> alloc::fmt::Result {
-        self.grid.write_contents_formatted_basic(writer, state)
+        self.grid().write_contents_formatted_basic(writer, state)
     }
 
     /// Returns the formatted visible contents of the terminal by row,
