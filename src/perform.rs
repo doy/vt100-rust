@@ -109,14 +109,14 @@ impl<CB: crate::Callbacks> vte::Perform for crate::screen::WrappedScreen<CB> {
                         params_iter.next().and_then(|x| x.first().copied());
                     if op == Some(8) {
                         let (screen_rows, screen_cols) = self.screen.size();
-                        let rows =
-                            params_iter.next().map_or(screen_rows, |x| {
-                                *x.first().unwrap_or(&screen_rows)
-                            });
-                        let cols =
-                            params_iter.next().map_or(screen_cols, |x| {
-                                *x.first().unwrap_or(&screen_cols)
-                            });
+                        let rows = params_iter
+                            .next()
+                            .and_then(|p| p.first().copied())
+                            .unwrap_or_else(|| screen_rows.get());
+                        let cols = params_iter
+                            .next()
+                            .and_then(|p| p.first().copied())
+                            .unwrap_or_else(|| screen_cols.get());
                         self.callbacks.resize(&mut self.screen, (rows, cols));
                     } else {
                         self.callbacks.unhandled_csi(
@@ -258,7 +258,7 @@ fn canonicalize_params_decstbm(
     let top = if top == 0 { 1 } else { top };
 
     let bottom = iter.next().map_or(0, |x| *x.first().unwrap_or(&0));
-    let bottom = if bottom == 0 { size.rows } else { bottom };
+    let bottom = if bottom == 0 { size.rows() } else { bottom };
 
     (top, bottom)
 }

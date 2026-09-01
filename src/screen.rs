@@ -123,8 +123,6 @@ impl Screen {
         rows: core::num::NonZeroU16,
         cols: core::num::NonZeroU16,
     ) {
-        let rows = rows.get();
-        let cols = cols.get();
         self.grid.set_size(crate::grid::Size { rows, cols });
         self.alternate_grid
             .set_size(crate::grid::Size { rows, cols });
@@ -134,7 +132,7 @@ impl Screen {
     ///
     /// The return value will be (rows, cols).
     #[must_use]
-    pub fn size(&self) -> (u16, u16) {
+    pub fn size(&self) -> (core::num::NonZeroU16, core::num::NonZeroU16) {
         let size = self.grid().size();
         (size.rows, size.cols)
     }
@@ -229,6 +227,7 @@ impl Screen {
         match start_row.cmp(&end_row) {
             core::cmp::Ordering::Less => {
                 let (_, cols) = self.size();
+                let cols = cols.get();
                 let mut contents = String::new();
                 for (i, row) in self
                     .grid()
@@ -393,7 +392,7 @@ impl Screen {
                 None,
                 None,
             );
-            if start == 0 && width == self.grid.size().cols {
+            if start == 0 && width == self.grid.size().cols() {
                 wrapping = row.wrapped();
             }
             contents
@@ -841,7 +840,7 @@ impl Screen {
 
         // if the character is wider than the screen, we can't draw it, so
         // just ignore it
-        if width > size.cols {
+        if width > size.cols() {
             return None;
         }
 
@@ -871,12 +870,12 @@ impl Screen {
         // the concept of triple width cells, which i really don't want
         // to do).
         let mut wrap = false;
-        if pos.col + width > size.cols {
+        if pos.col + width > size.cols() {
             let last_cell = self
                 .grid()
                 .drawing_cell(crate::grid::Pos {
                     row: pos.row,
-                    col: size.cols - 1,
+                    col: size.cols() - 1,
                 })
                 // pos.row is valid, since it comes directly from
                 // self.grid().pos() which we assume to always have a
@@ -987,7 +986,7 @@ impl Screen {
                     // it must have had a continuation cell after it.
                     .unwrap();
                 next_next_cell.clear(attrs);
-                if base_pos.col + 2 == size.cols - 1 {
+                if base_pos.col + 2 == size.cols() - 1 {
                     self.grid_mut()
                         .drawing_row_mut(base_pos.row)
                         .unwrap()

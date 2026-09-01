@@ -1,7 +1,9 @@
+mod helpers;
+
 #[test]
 fn init() {
     let parser = vt100::Parser::default();
-    assert_eq!(parser.screen().size(), (24, 80));
+    assert_eq!(helpers::size(parser.screen()), (24, 80));
     assert_eq!(parser.screen().cursor_position(), (0, 0));
 
     let cell = parser.screen().cell(0, 0);
