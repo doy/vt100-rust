@@ -65,7 +65,7 @@ pub fn new_with_callbacks<CB: vt100::Callbacks>(
 }
 
 /// Like [`vt100::Screen::set_size`], but takes [`u16`]s instead of
-/// [`NoneZeroU16`]s.
+/// [`NonZeroU16`]s.
 ///
 /// Panics if `rows` or `cols` is 0.
 pub fn set_size(screen: &mut vt100::Screen, rows: u16, cols: u16) {
@@ -73,6 +73,12 @@ pub fn set_size(screen: &mut vt100::Screen, rows: u16, cols: u16) {
         NonZeroU16::new(rows).unwrap(),
         NonZeroU16::new(cols).unwrap(),
     );
+}
+
+/// Like [`vt100::Screen::size`], but returns plain [`u16`]s.
+pub fn size(screen: &vt100::Screen) -> (u16, u16) {
+    let (rows, cols) = screen.size();
+    (rows.get(), cols.get())
 }
 
 #[derive(Eq, PartialEq)]
@@ -104,7 +110,7 @@ pub fn compare_screens(
     got: &vt100::Screen,
     expected: &vt100::Screen,
 ) -> bool {
-    let (rows, cols) = got.size();
+    let (rows, cols) = size(got);
 
     is!(got.contents(), expected.contents());
     is!(

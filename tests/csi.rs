@@ -71,18 +71,18 @@ fn xtwinops() {
     }
 
     let mut vt = helpers::new_with_callbacks(24, 80, 0, Callbacks);
-    assert_eq!(vt.screen().size(), (24, 80));
+    assert_eq!(helpers::size(vt.screen()), (24, 80));
     vt.process(b"\x1b[8;24;80t");
-    assert_eq!(vt.screen().size(), (24, 80));
+    assert_eq!(helpers::size(vt.screen()), (24, 80));
     vt.process(b"\x1b[8t");
-    assert_eq!(vt.screen().size(), (24, 80));
+    assert_eq!(helpers::size(vt.screen()), (24, 80));
     vt.process(b"\x1b[8;80;24t");
-    assert_eq!(vt.screen().size(), (80, 24));
+    assert_eq!(helpers::size(vt.screen()), (80, 24));
     vt.process(b"\x1b[8;24t");
-    assert_eq!(vt.screen().size(), (24, 24));
+    assert_eq!(helpers::size(vt.screen()), (24, 24));
 
     let mut vt = helpers::new_with_callbacks(24, 80, 0, Callbacks);
-    assert_eq!(vt.screen().size(), (24, 80));
+    assert_eq!(helpers::size(vt.screen()), (24, 80));
     vt.process(b"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
     assert_eq!(
         vt.screen().rows(0, 80).next().unwrap(),

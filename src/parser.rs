@@ -50,10 +50,7 @@ impl<CB: crate::Callbacks> Parser<CB> {
         callbacks: CB,
     ) -> Self {
         let screen = crate::screen::Screen::new(
-            crate::grid::Size {
-                rows: rows.get(),
-                cols: cols.get(),
-            },
+            crate::grid::Size { rows, cols },
             scrollback_len,
         );
         Self {
