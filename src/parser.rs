@@ -90,6 +90,14 @@ impl<CB: crate::Callbacks> Parser<CB> {
     pub fn callbacks_mut(&mut self) -> &mut CB {
         &mut self.screen.callbacks
     }
+
+    /// Returns mutable references to both the [screen](Self::screen_mut) and
+    /// [callbacks](Self::callbacks_mut).
+    pub fn screen_and_callbacks_mut(
+        &mut self,
+    ) -> (&mut crate::Screen, &mut CB) {
+        (&mut self.screen.screen, &mut self.screen.callbacks)
+    }
 }
 
 impl Default for Parser {
