@@ -7,7 +7,10 @@
 //! buffer. The result is the same as if the data had been processed by a
 //! terminal tall enough to hold all of it at once.
 
-use vt100::capture::{BasicFormattedCaptureState, RowContents};
+use vt100::capture::{
+    BasicFormattedCaptureState, RowContents, basic_formatted_rows,
+    basic_formatted_to_plain,
+};
 
 mod helpers;
 
@@ -242,4 +245,247 @@ fn scroll_up_with_small_scrollback() {
     assert_eq!(parser.callbacks().buf, "");
     parser.process(b"\x1b[5S");
     assert_eq!(parser.callbacks().buf, "1\n2\n3\n4\n5");
+}
+
+/// Like [`tall`], but returns the plain text contents of the screen.
+fn tall_plain(rows: u16, cols: u16, data: &[u8]) -> String {
+    let mut parser = helpers::new(rows, cols, 0);
+    parser.process(data);
+    parser.screen().contents()
+}
+
+/// Like [`tall_plain`], but splits the output into rows. A row that wraps is
+/// considered two rows.
+fn tall_rows(rows: u16, cols: u16, data: &[u8]) -> Vec<String> {
+    let mut parser = helpers::new(rows, cols, 0);
+    parser.process(data);
+    let mut rows: Vec<String> = parser.screen().rows(0, cols).collect();
+    trim_trailing_blank_rows(&mut rows);
+    rows
+}
+
+fn trim_trailing_blank_rows(rows: &mut Vec<String>) {
+    while rows.last().is_some_and(String::is_empty) {
+        rows.pop();
+    }
+}
+
+#[test]
+fn to_plain_strips_sgr_sequences() {
+    let capture = "\x1b[31mfoo\x1b[1;32mbar\x1b[mbaz";
+    assert_eq!(
+        basic_formatted_to_plain(capture).collect::<String>(),
+        "foobarbaz"
+    );
+}
+
+#[test]
+fn to_plain_leaves_text_without_sgr_sequences_alone() {
+    // Text with no escapes at all is yielded as a single borrowed piece.
+    assert_eq!(
+        basic_formatted_to_plain("one\ntwo").collect::<Vec<_>>(),
+        ["one\ntwo"]
+    );
+}
+
+#[test]
+fn to_plain_of_a_blank_row_yields_nothing() {
+    for capture in ["", "\x1b[33m", "\x1b[33m\x1b[m"] {
+        assert_eq!(basic_formatted_to_plain(capture).next(), None);
+    }
+}
+
+#[test]
+fn to_plain_doesnt_yield_empty_pieces() {
+    assert_eq!(
+        basic_formatted_to_plain("\x1b[33m\x1b[1mfoo\x1b[m")
+            .collect::<Vec<_>>(),
+        ["foo"]
+    );
+    assert_eq!(basic_formatted_to_plain("\x1b[33m\x1b[m").next(), None);
+}
+
+#[test]
+fn to_plain_discards_a_truncated_trailing_sgr_sequence() {
+    // A capture should never end mid-escape, but if it does, we drop the
+    // partial escape rather than emitting it or looping forever.
+    assert_eq!(
+        basic_formatted_to_plain("foo\x1b[3").collect::<String>(),
+        "foo"
+    );
+    assert_eq!(
+        basic_formatted_to_plain("foo\x1b").collect::<String>(),
+        "foo"
+    );
+}
+
+#[test]
+fn to_plain_of_a_capture_matches_the_plain_contents_of_a_tall_screen() {
+    let data: &[u8] = b"\x1b[33mfoo\r\n\x1b[1mbar baz quux\r\n\
+        \x1b[mplugh\r\n\x1b[7mxyzzy\r\n\x1b[27m\r\nlast";
+    let mut parser = parser(3, 8);
+    parser.process(data);
+    let capture = finish(&mut parser);
+    assert_eq!(
+        basic_formatted_to_plain(&capture).collect::<String>(),
+        tall_plain(20, 8, data)
+    );
+}
+
+#[test]
+fn rows_splits_a_capture_at_the_screen_width() {
+    // `hello world` on a five column screen occupies three rows.
+    assert_eq!(
+        basic_formatted_rows("hello world", 5).collect::<Vec<_>>(),
+        ["hello", " worl", "d"]
+    );
+}
+
+#[test]
+fn rows_splits_a_capture_at_newlines() {
+    assert_eq!(
+        basic_formatted_rows("one\ntwo\nthree", 10).collect::<Vec<_>>(),
+        ["one", "two", "three"]
+    );
+}
+
+#[test]
+fn rows_keeps_blank_rows_in_the_middle_of_a_capture() {
+    assert_eq!(
+        basic_formatted_rows("one\n\n\ntwo", 10).collect::<Vec<_>>(),
+        ["one", "", "", "two"]
+    );
+}
+
+#[test]
+fn rows_of_a_capture_include_the_blank_rows_below_the_written_ones() {
+    let mut parser = parser(4, 10);
+    parser.process(b"one\r\ntwo\r\nthree\x1b[2S");
+    let capture = finish(&mut parser);
+    assert_eq!(capture, "one\ntwo\nthree\n\n\n");
+    // Two rows scrolled off. `three` plus the three blank rows below it are
+    // still on the screen.
+    assert_eq!(
+        basic_formatted_rows(&capture, 10).collect::<Vec<_>>(),
+        ["one", "two", "three", "", "", ""]
+    );
+}
+
+#[test]
+fn rows_yields_a_blank_row_after_a_trailing_newline() {
+    // A capture never ends with a newline just to terminate its last row, so
+    // a trailing newline means there's a blank row after it.
+    assert_eq!(
+        basic_formatted_rows("one\ntwo\n", 10).collect::<Vec<_>>(),
+        ["one", "two", ""]
+    );
+}
+
+#[test]
+fn rows_of_an_empty_capture_yields_a_single_blank_row() {
+    // An empty capture is indistinguishable from a capture of a single blank
+    // row. A capture can't actually be empty -- the terminal is always at
+    // least one row tall -- so a single blank row is the better reading.
+    assert_eq!(basic_formatted_rows("", 10).collect::<Vec<_>>(), [""]);
+}
+
+#[test]
+fn rows_doesnt_count_sgr_sequences_towards_the_width() {
+    // The escapes don't take up any columns.
+    assert_eq!(
+        basic_formatted_rows("\x1b[31mab\x1b[1mcde\x1b[mfgh", 5)
+            .collect::<Vec<_>>(),
+        ["\x1b[31mab\x1b[1mcde\x1b[m", "fgh"]
+    );
+}
+
+#[test]
+fn rows_counts_wide_characters_as_two_columns() {
+    // Three wide characters fill six columns, so the fourth starts a new row.
+    assert_eq!(
+        basic_formatted_rows("あいうえ", 6).collect::<Vec<_>>(),
+        ["あいう", "え"]
+    );
+    // A wide character that doesn't fit in the remaining column is pushed to
+    // the next row, the same way the terminal itself wraps it.
+    assert_eq!(
+        basic_formatted_rows("aあいb", 3).collect::<Vec<_>>(),
+        ["aあ", "いb"]
+    );
+}
+
+#[test]
+fn rows_doesnt_count_combining_characters_towards_the_width() {
+    // The combining acute accent is part of the `e` before it, so `resume`
+    // still fits in six columns.
+    assert_eq!(
+        basic_formatted_rows("r\u{301}esume\u{301}d", 6).collect::<Vec<_>>(),
+        ["r\u{301}esume\u{301}", "d"]
+    );
+}
+
+#[test]
+fn rows_counts_characters_wider_than_two_columns_as_two_columns() {
+    // U+17D8 KHMER SIGN BEYYAL is reported by `unicode-width` as three
+    // columns wide, but the screen draws it in two, so it has to be counted
+    // as two here as well.
+    assert_eq!(
+        basic_formatted_rows("a\u{17d8}b", 3).collect::<Vec<_>>(),
+        ["a\u{17d8}", "b"]
+    );
+}
+
+#[test]
+fn rows_yields_a_character_wider_than_the_screen_on_its_own_row() {
+    // A one column screen discards wide characters, so this can only happen
+    // if the terminal was resized after the capture was taken. Yield the
+    // oversized character on a row of its own rather than looping forever on
+    // a row we can never fit it into.
+    assert_eq!(
+        basic_formatted_rows("あいう", 1).collect::<Vec<_>>(),
+        ["あ", "い", "う"]
+    );
+    assert_eq!(
+        basic_formatted_rows("aあb", 1).collect::<Vec<_>>(),
+        ["a", "あ", "b"]
+    );
+    // A combining character still belongs to the oversized character before
+    // it, rather than being pushed onto the next row on its own.
+    assert_eq!(
+        basic_formatted_rows("あ\u{301}い", 1).collect::<Vec<_>>(),
+        ["あ\u{301}", "い"]
+    );
+}
+
+#[test]
+fn rows_of_a_capture_match_the_rows_of_a_tall_screen() {
+    let data: &[u8] = b"\x1b[33mfoo\r\n\x1b[1mbar baz quux\r\n\
+        \x1b[mplugh\r\n\x1b[7mxyzzy\r\n\x1b[27m\r\nlast";
+    let mut parser = parser(3, 8);
+    parser.process(data);
+    let capture = finish(&mut parser);
+
+    // `basic_formatted_rows` should separate wrapped rows, which don't contain
+    // any newlines in `capture`.
+    let rows: Vec<String> = basic_formatted_rows(&capture, 8)
+        .map(|row| basic_formatted_to_plain(row).collect())
+        .collect();
+    assert_eq!(rows, tall_rows(20, 8, data));
+}
+
+#[test]
+fn rows_of_a_capture_match_a_tall_screen_for_every_screen_width() {
+    let data = "\x1b[36;44malpha beta\r\n\x1b[3mgamma delta\r\n\
+        \x1b[23muo\u{308}mlaut\r\nwide \x1b[1mあ\u{17d8}い\x1b[m\r\nlast"
+        .as_bytes();
+    for cols in 3..=20 {
+        let mut parser = parser(3, cols);
+        parser.process(data);
+        let capture = finish(&mut parser);
+
+        let rows: Vec<String> = basic_formatted_rows(&capture, cols)
+            .map(|row| basic_formatted_to_plain(row).collect())
+            .collect();
+        assert_eq!(rows, tall_rows(30, cols, data), "{cols} cols");
+    }
 }
