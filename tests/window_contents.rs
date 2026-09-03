@@ -778,10 +778,54 @@ fn formatted_basic_writer() {
         .screen()
         .write_contents_formatted_basic(
             &mut contents,
-            &mut Default::default(),
+            vt100::capture::BasicFormattedCaptureRange::Visible,
         )
         .unwrap();
     assert_eq!(contents, parser.screen().contents_formatted_basic());
+}
+
+#[test]
+fn formatted_basic_writer_full_range_includes_the_scrollback() {
+    let mut parser = helpers::new(2, 10, 10);
+    parser.process(b"\x1b[31mone\r\ntwo\r\nthree");
+
+    // The visible range stops at the top of the screen.
+    let mut visible = String::new();
+    parser
+        .screen()
+        .write_contents_formatted_basic(
+            &mut visible,
+            vt100::capture::BasicFormattedCaptureRange::Visible,
+        )
+        .unwrap();
+    assert_eq!(visible, "\x1b[31mtwo\nthree");
+
+    // The full range starts at the top of the scrollback, and ignores the
+    // scrollback offset.
+    let mut full = String::new();
+    parser
+        .screen()
+        .write_contents_formatted_basic(
+            &mut full,
+            vt100::capture::BasicFormattedCaptureRange::Full(
+                &mut Default::default(),
+            ),
+        )
+        .unwrap();
+    assert_eq!(full, "\x1b[31mone\ntwo\nthree");
+
+    parser.screen_mut().set_scrollback(1);
+    let mut scrolled_back = String::new();
+    parser
+        .screen()
+        .write_contents_formatted_basic(
+            &mut scrolled_back,
+            vt100::capture::BasicFormattedCaptureRange::Full(
+                &mut Default::default(),
+            ),
+        )
+        .unwrap();
+    assert_eq!(scrolled_back, full);
 }
 
 #[test]

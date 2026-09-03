@@ -117,15 +117,21 @@ impl Screen {
         }
     }
 
-    /// Resizes the terminal.
+    /// Resizes the screen **without calling** the [`on_scroll`] callback.
+    ///
+    /// This method behaves the same as [`Parser::set_size`] but does not call
+    /// the [`on_scroll`] callback. If you want that, use [`Parser::set_size`].
+    ///
+    /// [`on_scroll`]: crate::Callbacks::on_scroll
+    /// [`Parser::set_size`]: crate::Parser::set_size
     pub fn set_size(
         &mut self,
         rows: core::num::NonZeroU16,
         cols: core::num::NonZeroU16,
     ) {
-        self.grid.set_size(crate::grid::Size { rows, cols });
+        self.grid.set_size(crate::grid::Size { rows, cols }, |_| {});
         self.alternate_grid
-            .set_size(crate::grid::Size { rows, cols });
+            .set_size(crate::grid::Size { rows, cols }, |_| {});
     }
 
     /// Returns the current size of the terminal.
@@ -332,7 +338,7 @@ impl Screen {
         #[allow(clippy::missing_panics_doc)]
         self.write_contents_formatted_basic(
             &mut contents,
-            &mut crate::capture::BasicFormattedCaptureState::new(),
+            crate::capture::BasicFormattedCaptureRange::Visible,
         )
         .unwrap();
         contents
@@ -341,12 +347,17 @@ impl Screen {
     /// Like [`Self::contents_formatted_basic`] but writes into the provided
     /// writer.
     ///
-    /// If you used the [`on_scroll`](crate::Callbacks::on_scroll) callback to
-    /// write terminal data into this writer in a streaming fashion, provide
-    /// your existing [`BasicFormattedCaptureState`][state] here. Otherwise,
-    /// you can pass `&mut Default::default()`.
+    /// For the `range` parameter, if you used the callback to write terminal
+    /// data into this writer in a streaming fashion, pass
+    /// [`BasicFormattedCaptureRange::Full`][full] with your existing
+    /// [`BasicFormattedCaptureState`][state]. Otherwise, if you want the same
+    /// result as [`Self::contents_formatted_basic`], pass
+    /// [`BasicFormattedCaptureRange::Visible`][visible].
     ///
+    /// [`on_scroll`]: crate::Callbacks::on_scroll
+    /// [full]: crate::capture::BasicFormattedCaptureRange::Full
     /// [state]: crate::capture::BasicFormattedCaptureState
+    /// [visible]: crate::capture::BasicFormattedCaptureRange::Visible
     ///
     /// # Errors
     ///
@@ -355,9 +366,9 @@ impl Screen {
     pub fn write_contents_formatted_basic(
         &self,
         writer: &mut impl alloc::fmt::Write,
-        state: &mut crate::capture::BasicFormattedCaptureState,
+        range: crate::capture::BasicFormattedCaptureRange<'_>,
     ) -> alloc::fmt::Result {
-        self.grid().write_contents_formatted_basic(writer, state)
+        self.grid().write_contents_formatted_basic(writer, range)
     }
 
     /// Returns the formatted visible contents of the terminal by row,
@@ -1014,6 +1025,29 @@ impl<CB: crate::Callbacks> WrappedScreen<CB> {
             callbacks
                 .on_scroll(crate::capture::RowContents(row), is_alternate);
         }
+    }
+
+    /// Resizes the screen, calling [`on_scroll`] for each row that is pushed
+    /// off the top of the screen's scrollback.
+    ///
+    /// [`on_scroll`]: crate::Callbacks::on_scroll
+    pub fn set_size_with_cb(
+        &mut self,
+        rows: core::num::NonZeroU16,
+        cols: core::num::NonZeroU16,
+    ) {
+        let callbacks = &mut self.callbacks;
+        self.screen
+            .grid
+            .set_size(crate::grid::Size { rows, cols }, |row| {
+                callbacks.on_scroll(crate::capture::RowContents(row), false);
+            });
+        self.screen.alternate_grid.set_size(
+            crate::grid::Size { rows, cols },
+            |row| {
+                callbacks.on_scroll(crate::capture::RowContents(row), true);
+            },
+        );
     }
 
     pub fn text(&mut self, c: char) {

@@ -67,11 +67,20 @@ pub trait Callbacks {
     /// This callback is called when the terminal receives a OSC sequence
     /// (`\e]`) which is otherwise not implemented.
     fn unhandled_osc(&mut self, _: &mut crate::Screen, _params: &[&[u8]]) {}
-    /// Called when a row scrolls off the top of the screen due to a new row
-    /// being added at the bottom of the screen.
+    /// Called when the top row of scrollback is discarded because a new row
+    /// was added at the bottom of the screen.
+    ///
+    /// If the parser's `scrollback_len` is 0, this will be called when the top
+    /// row of the screen is pushed off instead.
+    ///
+    /// Note that this callback can be called by [`Parser::set_size`]:
+    /// shrinking the terminal's height can cause rows to be pushed off
+    /// scrollback.
     ///
     /// `alternate_screen` indicates whether the row came from the alternate
     /// screen.
+    ///
+    /// [`Parser::set_size`]: crate::Parser::set_size
     #[allow(unused_variables)]
     fn on_scroll(
         &mut self,

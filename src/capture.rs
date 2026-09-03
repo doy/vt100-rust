@@ -5,6 +5,27 @@
 #[cfg(doc)]
 use crate::Screen;
 
+/// Specifies which rows will be captured in
+/// [`Screen::write_contents_formatted_basic`].
+#[derive(Debug)]
+pub enum BasicFormattedCaptureRange<'a> {
+    /// Capture all rows, including scrollback.
+    Full(
+        /// Your existing [`BasicFormattedCaptureState`], if any.
+        ///
+        /// If you have an existing [`BasicFormattedCaptureState`] that you've
+        /// been using with the [`on_scroll`](crate::Callbacks::on_scroll)
+        /// callback, and you're writing into the same buffer, provide that
+        /// state here. Otherwise, you can pass `&mut Default::default()`.
+        &'a mut BasicFormattedCaptureState,
+    ),
+    /// Capture only the visible rows of the terminal.
+    ///
+    /// This will produce the same result as
+    /// [`Screen::contents_formatted_basic`].
+    Visible,
+}
+
 /// Represents the state of an in-progress capture of "basic formatted"
 /// terminal data.
 ///

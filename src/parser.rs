@@ -65,6 +65,41 @@ impl<CB: crate::Callbacks> Parser<CB> {
         self.parser.advance(&mut self.screen, bytes);
     }
 
+    /// Resizes the terminal.
+    ///
+    /// When the screen height is decreased, this function does the following:
+    ///
+    /// * If the cursor is not at the bottom of the screen, rows from the
+    ///   bottom are discarded until the cursor is at the bottom (or until the
+    ///   desired height is reached, whichever is earlier).
+    /// * If the screen is still too tall after that, rows from the top of the
+    ///   screen are pushed into scrollback. If this would cause scrollback to
+    ///   exceed the maximum size, rows from the top of scrollback are
+    ///   discarded, and the [`on_scroll`] callback is called for each of them.
+    ///
+    /// When the screen height is increased, this function does the following:
+    ///
+    /// * Rows from the bottom of scrollback are pushed to the top of the
+    ///   screen and removed from scrollback, until the desired height is
+    ///   reached.
+    /// * If scrollback is emptied but the screen is still too short, blank
+    ///   rows are added to the bottom of the screen until the desired height
+    ///   is reached.
+    ///
+    /// When the screen width is changed, each row is naively truncated or
+    /// extended with blank cells as necessary. This does not match the
+    /// behavior of most terminals and may be changed in a future
+    /// SemVer-incompatible version.
+    ///
+    /// [`on_scroll`]: crate::Callbacks::on_scroll
+    pub fn set_size(
+        &mut self,
+        rows: core::num::NonZeroU16,
+        cols: core::num::NonZeroU16,
+    ) {
+        self.screen.set_size_with_cb(rows, cols);
+    }
+
     /// Returns a reference to a [`Screen`](crate::Screen) object containing
     /// the terminal state.
     #[must_use]
