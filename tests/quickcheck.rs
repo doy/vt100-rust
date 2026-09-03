@@ -100,6 +100,135 @@ fn choose_terminal_input_fragment(g: &mut quickcheck::Gen) -> Vec<u8> {
     // TODO: sometimes add garbage in random places
 }
 
+/// A sequence of terminal input interleaved with resizes and scrollback
+/// movement.
+#[derive(Clone, Debug)]
+struct TerminalSession {
+    rows: u16,
+    cols: u16,
+    scrollback_len: usize,
+    ops: Vec<Op>,
+}
+
+#[derive(Clone, Debug)]
+enum Op {
+    Input(Vec<u8>),
+    /// A resize through [`vt100::Screen::set_size`].
+    Resize(u16, u16),
+    /// A resize through [`vt100::Parser::set_size`].
+    ResizeWithCallbacks(u16, u16),
+    Scrollback(usize),
+}
+
+impl quickcheck::Arbitrary for TerminalSession {
+    fn arbitrary(g: &mut quickcheck::Gen) -> Self {
+        let len = gen_range(g, 1..g.size().max(2));
+        Self {
+            rows: gen_range(g, 1..12u16),
+            cols: gen_range(g, 1..12u16),
+            scrollback_len: gen_range(g, 0..8usize),
+            ops: (0..len).map(|_| Op::arbitrary(g)).collect(),
+        }
+    }
+
+    fn shrink(&self) -> Box<dyn Iterator<Item = Self>> {
+        let this = self.clone();
+        Box::new(self.ops.shrink().map(move |ops| Self {
+            ops,
+            ..this.clone()
+        }))
+    }
+}
+
+impl quickcheck::Arbitrary for Op {
+    fn arbitrary(g: &mut quickcheck::Gen) -> Self {
+        match gen_range(g, 0..10u8) {
+            0 | 1 => Self::Resize(gen_range(g, 1..12), gen_range(g, 1..12)),
+            2 | 3 => Self::ResizeWithCallbacks(
+                gen_range(g, 1..12),
+                gen_range(g, 1..12),
+            ),
+            4 => Self::Scrollback(gen_range(g, 0..10usize)),
+            _ => Self::Input(choose_terminal_input_fragment(g)),
+        }
+    }
+
+    fn shrink(&self) -> Box<dyn Iterator<Item = Self>> {
+        match self {
+            Self::Input(bytes) => Box::new(bytes.shrink().map(Self::Input)),
+            _ => quickcheck::empty_shrinker(),
+        }
+    }
+}
+
+/// Counts the rows reported by `on_scroll`, to make sure the callback doesn't
+/// panic and that resizes go through the callback path.
+#[derive(Debug, Default)]
+struct ScrollCounter(usize);
+
+impl vt100::Callbacks for ScrollCounter {
+    fn on_scroll(
+        &mut self,
+        contents: vt100::capture::RowContents<'_>,
+        _alternate_screen: bool,
+    ) {
+        contents
+            .write_formatted_basic(
+                &mut String::new(),
+                &mut Default::default(),
+            )
+            .unwrap();
+        self.0 += 1;
+    }
+}
+
+/// Resizing a screen in arbitrary ways, at arbitrary points in a stream of
+/// terminal input, always leaves it in a consistent state.
+fn resizes_keep_the_screen_consistent(session: TerminalSession) -> bool {
+    let mut parser = helpers::new_with_callbacks(
+        session.rows,
+        session.cols,
+        session.scrollback_len,
+        ScrollCounter::default(),
+    );
+    for op in &session.ops {
+        match op {
+            Op::Input(bytes) => parser.process(bytes),
+            Op::Resize(rows, cols) => {
+                helpers::set_size(parser.screen_mut(), *rows, *cols);
+            }
+            Op::ResizeWithCallbacks(rows, cols) => {
+                helpers::set_parser_size(&mut parser, *rows, *cols);
+            }
+            Op::Scrollback(n) => parser.screen_mut().set_scrollback(*n),
+        }
+        if !helpers::screen_is_consistent(parser.screen()) {
+            return false;
+        }
+    }
+    parser.screen_mut().set_scrollback(0);
+    helpers::contents_formatted_reproduces_sized_screen(parser.screen())
+}
+
+#[test]
+fn qc_resizes_short() {
+    let mut qc = quickcheck::QuickCheck::new().tests(1_000).max_tests(1_000);
+    qc.quickcheck(
+        resizes_keep_the_screen_consistent as fn(TerminalSession) -> bool,
+    );
+}
+
+#[test]
+#[ignore]
+fn qc_resizes_long() {
+    let mut qc = quickcheck::QuickCheck::new()
+        .tests(1_000_000)
+        .max_tests(1_000_000);
+    qc.quickcheck(
+        resizes_keep_the_screen_consistent as fn(TerminalSession) -> bool,
+    );
+}
+
 fn contents_formatted_reproduces_state_random(input: Vec<u8>) -> bool {
     helpers::contents_formatted_reproduces_state(&input)
 }

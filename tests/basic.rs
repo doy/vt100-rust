@@ -78,6 +78,220 @@ fn set_size() {
     );
 }
 
+/// The rows that don't fit on a shrinking screen are pushed off the top and
+/// into the scrollback, and pulled back out when the screen grows again.
+#[test]
+fn set_size_shrink_pushes_rows_into_the_scrollback() {
+    let mut parser = helpers::new(6, 10, 10);
+    parser.process(b"1\r\n2\r\n3\r\n4\r\n5\r\n6");
+    assert_eq!(parser.screen().contents(), "1\n2\n3\n4\n5\n6");
+    assert_eq!(parser.screen().cursor_position(), (5, 1));
+
+    helpers::set_size(parser.screen_mut(), 3, 10);
+    assert_eq!(parser.screen().contents(), "4\n5\n6");
+    assert_eq!(parser.screen().cursor_position(), (2, 1));
+
+    // The rows that were pushed off the top are in the scrollback.
+    parser.screen_mut().set_scrollback(3);
+    assert_eq!(parser.screen().contents(), "1\n2\n3");
+    parser.screen_mut().set_scrollback(0);
+
+    // Growing the screen again pulls them back out of the scrollback.
+    helpers::set_size(parser.screen_mut(), 6, 10);
+    assert_eq!(parser.screen().contents(), "1\n2\n3\n4\n5\n6");
+    assert_eq!(parser.screen().cursor_position(), (5, 1));
+    assert_eq!(parser.screen().scrollback(), 0);
+}
+
+/// Rows are only pushed off the top of a shrinking screen when they have to
+/// be to keep the cursor on the screen; otherwise the excess rows are removed
+/// from the bottom, leaving the visible contents where they are.
+#[test]
+fn set_size_shrink_keeps_the_contents_of_a_screen_that_isnt_full() {
+    let mut parser = helpers::new(6, 10, 10);
+    parser.process(b"1\r\n2\r\n3");
+    assert_eq!(parser.screen().cursor_position(), (2, 1));
+
+    helpers::set_size(parser.screen_mut(), 4, 10);
+    assert_eq!(parser.screen().contents(), "1\n2\n3");
+    assert_eq!(parser.screen().cursor_position(), (2, 1));
+    // Nothing was pushed into the scrollback.
+    parser.screen_mut().set_scrollback(3);
+    assert_eq!(parser.screen().scrollback(), 0);
+
+    // Shrinking past the cursor starts pushing rows off the top again.
+    helpers::set_size(parser.screen_mut(), 2, 10);
+    assert_eq!(parser.screen().contents(), "2\n3");
+    assert_eq!(parser.screen().cursor_position(), (1, 1));
+    parser.screen_mut().set_scrollback(1);
+    assert_eq!(parser.screen().contents(), "1\n2");
+}
+
+/// When the scrollback doesn't have enough rows to fill out a growing screen,
+/// the remaining rows are added at the bottom, so the visible contents stay
+/// where they are.
+#[test]
+fn set_size_grow_adds_blank_rows_at_the_bottom() {
+    let mut parser = helpers::new(3, 10, 10);
+    parser.process(b"1\r\n2\r\n3\r\n4");
+    // One row is in the scrollback at this point.
+    assert_eq!(parser.screen().contents(), "2\n3\n4");
+    assert_eq!(parser.screen().cursor_position(), (2, 1));
+
+    helpers::set_size(parser.screen_mut(), 6, 10);
+    // The single scrollback row moved back onto the screen, pushing the
+    // contents down one row, and the other two new rows are blank ones at the
+    // bottom.
+    assert_eq!(parser.screen().contents(), "1\n2\n3\n4");
+    assert_eq!(parser.screen().cursor_position(), (3, 1));
+
+    // With an empty scrollback, growing doesn't move the contents at all.
+    let mut parser = helpers::new(6, 10, 0);
+    parser.process(b"1\r\n2");
+    helpers::set_size(parser.screen_mut(), 10, 10);
+    assert_eq!(parser.screen().contents(), "1\n2");
+    assert_eq!(parser.screen().cursor_position(), (1, 1));
+}
+
+/// Rows can be pushed out of the scrollback entirely when the screen shrinks.
+#[test]
+fn set_size_shrink_with_a_small_scrollback() {
+    let mut parser = helpers::new(6, 10, 2);
+    parser.process(b"1\r\n2\r\n3\r\n4\r\n5\r\n6");
+
+    helpers::set_size(parser.screen_mut(), 2, 10);
+    assert_eq!(parser.screen().contents(), "5\n6");
+    // Only the last two of the four rows that were pushed off the top fit in
+    // the scrollback; `1` and `2` are gone.
+    parser.screen_mut().set_scrollback(2);
+    assert_eq!(parser.screen().contents(), "3\n4");
+}
+
+/// Resizing always resets the scroll region and the scrollback offset, which
+/// is what xterm does.
+#[test]
+fn set_size_resets_the_scroll_region_and_scrollback_offset() {
+    let mut parser = helpers::new(6, 10, 10);
+    parser.process(b"\x1b[2;4r");
+    helpers::set_size(parser.screen_mut(), 6, 20);
+    // The scroll region is gone, so writing past the bottom row scrolls the
+    // whole screen.
+    parser.process(b"\x1b[6;1Hx\r\ny");
+    assert_eq!(parser.screen().contents(), "\n\n\n\nx\ny");
+
+    let mut parser = helpers::new(3, 10, 10);
+    parser.process(b"1\r\n2\r\n3\r\n4\r\n5\r\n6");
+    parser.screen_mut().set_scrollback(2);
+    assert_eq!(parser.screen().scrollback(), 2);
+    helpers::set_size(parser.screen_mut(), 4, 10);
+    assert_eq!(parser.screen().scrollback(), 0);
+}
+
+/// Rows in the scrollback keep their old width until they're pulled back onto
+/// the screen, at which point they're resized like any other row.
+#[test]
+fn set_size_resizes_scrollback_rows_when_they_come_back_onto_the_screen() {
+    let mut parser = helpers::new(2, 10, 10);
+    parser.process(b"aaaaaaaaaa\r\nbbbbbbbbbb\r\ncccccccccc");
+    helpers::set_size(parser.screen_mut(), 2, 5);
+
+    // The scrollback row is still 10 columns wide while it's in the
+    // scrollback, so it has cells past the last column of the screen, even
+    // though only the first 5 columns of it are displayed.
+    parser.screen_mut().set_scrollback(1);
+    assert_eq!(parser.screen().contents(), "aaaaa\nbbbbb");
+    assert!(parser.screen().cell(0, 5).is_some());
+    parser.screen_mut().set_scrollback(0);
+
+    // Growing the screen pulls it back out of the scrollback, which truncates
+    // it to the width of the screen.
+    helpers::set_size(parser.screen_mut(), 3, 5);
+    assert_eq!(parser.screen().contents(), "aaaaa\nbbbbb\nccccc");
+    assert!(parser.screen().cell(0, 4).is_some());
+    assert!(parser.screen().cell(0, 5).is_none());
+}
+
+/// Changing only the height leaves the `wrapped` flag of each row alone.
+#[test]
+fn set_size_height_only_preserves_wrapping() {
+    let mut parser = helpers::new(3, 5, 0);
+    parser.process(b"abcdefg");
+    assert!(parser.screen().row_wrapped(0));
+
+    helpers::set_size(parser.screen_mut(), 6, 5);
+    assert!(parser.screen().row_wrapped(0));
+    assert_eq!(parser.screen().contents(), "abcdefg");
+
+    // Changing the width clears it, because the rows aren't reflowed.
+    helpers::set_size(parser.screen_mut(), 6, 8);
+    assert!(!parser.screen().row_wrapped(0));
+    assert_eq!(parser.screen().contents(), "abcde\nfg");
+}
+
+/// Removing rows from the bottom of the screen can't leave the new bottom row
+/// marked as wrapped, because there's nothing below it left to wrap onto.
+#[test]
+fn set_size_shrink_unwraps_the_new_bottom_row() {
+    let mut parser = helpers::new(4, 3, 0);
+    parser.process(b"abcdef\x1b[H");
+    assert!(parser.screen().row_wrapped(0));
+
+    // The cursor is at the top, so the three bottom rows are removed and the
+    // wrapped row becomes the bottom row.
+    helpers::set_size(parser.screen_mut(), 1, 3);
+    assert_eq!(parser.screen().contents(), "abc");
+    assert!(!parser.screen().row_wrapped(0));
+    // A wrapped bottom row can't be written out, so leaving the flag set
+    // would make the screen impossible to reproduce.
+    assert!(helpers::contents_formatted_reproduces_sized_screen(
+        parser.screen()
+    ));
+}
+
+/// The saved cursor moves with the screen contents, and stays in bounds.
+#[test]
+fn set_size_moves_the_saved_cursor() {
+    let mut parser = helpers::new(6, 10, 10);
+    parser.process(b"1\r\n2\r\n3\r\n4\r\n5\r\n6\x1b[5;9H\x1b7\x1b[6;1H");
+
+    // Two rows are pushed off the top to keep the cursor on the screen, so
+    // the saved cursor moves up two rows too, and is clamped to the new
+    // width.
+    helpers::set_size(parser.screen_mut(), 4, 5);
+    parser.process(b"\x1b8");
+    assert_eq!(parser.screen().cursor_position(), (2, 4));
+
+    // The saved cursor is clamped to the last row when the rows it was on are
+    // removed from the bottom of the screen.
+    let mut parser = helpers::new(6, 10, 10);
+    parser.process(b"\x1b[6;1H\x1b7\x1b[H");
+    helpers::set_size(parser.screen_mut(), 2, 10);
+    parser.process(b"\x1b8");
+    assert_eq!(parser.screen().cursor_position(), (1, 0));
+}
+
+/// The alternate screen is resized the same way as the main screen, and the
+/// two are resized independently of each other.
+#[test]
+fn set_size_alternate_screen() {
+    let mut parser = helpers::new(4, 10, 10);
+    parser.process(b"1\r\n2\r\n3\r\n4");
+    parser.process(b"\x1b[?1049halt1\r\nalt2\r\nalt3\r\nalt4");
+
+    helpers::set_size(parser.screen_mut(), 2, 10);
+    // The alternate screen has no scrollback, so the rows pushed off the top
+    // of it are simply gone.
+    assert_eq!(parser.screen().contents(), "alt3\nalt4");
+    assert_eq!(parser.screen().cursor_position(), (1, 4));
+
+    parser.process(b"\x1b[?1049l");
+    assert_eq!(parser.screen().contents(), "3\n4");
+    assert_eq!(parser.screen().cursor_position(), (1, 1));
+    // The main screen kept its rows in its own scrollback.
+    parser.screen_mut().set_scrollback(2);
+    assert_eq!(parser.screen().contents(), "1\n2");
+}
+
 #[test]
 fn cell_contents() {
     let mut parser = vt100::Parser::default();

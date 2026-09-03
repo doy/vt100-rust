@@ -8,8 +8,8 @@
 //! terminal tall enough to hold all of it at once.
 
 use vt100::capture::{
-    BasicFormattedCaptureState, RowContents, basic_formatted_rows,
-    basic_formatted_to_plain,
+    BasicFormattedCaptureRange, BasicFormattedCaptureState, RowContents,
+    basic_formatted_rows, basic_formatted_to_plain,
 };
 
 mod helpers;
@@ -52,7 +52,10 @@ fn finish(parser: &mut vt100::Parser<Capture>) -> String {
     let mut capture = std::mem::take(parser.callbacks_mut());
     parser
         .screen()
-        .write_contents_formatted_basic(&mut capture.buf, &mut capture.state)
+        .write_contents_formatted_basic(
+            &mut capture.buf,
+            BasicFormattedCaptureRange::Full(&mut capture.state),
+        )
         .unwrap();
     capture.buf
 }
@@ -224,8 +227,9 @@ fn a_capture_matches_a_tall_screen_for_every_screen_height() {
 #[test]
 fn a_capture_of_a_parser_with_scrollback_includes_the_scrollback() {
     let data: &[u8] = b"one\r\ntwo\r\n\x1b[35mthree\r\nfour\r\n\x1b[mfive";
-    // `on_scroll` fires for every row that leaves the screen, whether or not
-    // the parser keeps it in its scrollback.
+    // `on_scroll` only fires for rows that leave the *scrollback*, so nothing
+    // is captured here; the rows that scrolled off the screen are picked up
+    // from the scrollback by `finish`.
     let mut parser =
         helpers::new_with_callbacks(3, 10, 10, Capture::default());
     parser.process(data);
@@ -242,9 +246,119 @@ fn scroll_up_with_small_scrollback() {
         helpers::new_with_callbacks(6, 20, 2, Capture::default());
     parser.process(b"1\r\n2\r\n3\r\n4\r\n5\r\n6");
     assert_eq!(parser.screen().contents(), "1\n2\n3\n4\n5\n6");
-    assert_eq!(parser.callbacks().buf, "");
+    assert_eq!(scrolled(&parser), "");
     parser.process(b"\x1b[5S");
-    assert_eq!(parser.callbacks().buf, "1\n2\n3\n4\n5");
+    // Five rows scrolled off, but the scrollback only holds the last two of
+    // them, so the other three went straight back out of it and were
+    // captured.
+    assert_eq!(scrolled(&parser), "1\n2\n3");
+    parser.screen_mut().set_scrollback(2);
+    assert_eq!(parser.screen().contents(), "4\n5\n6");
+    parser.screen_mut().set_scrollback(0);
+    // The capture still reproduces everything, because `finish` includes the
+    // rows that are still in the scrollback.
+    assert_eq!(finish(&mut parser), "1\n2\n3\n4\n5\n6\n\n\n\n\n");
+}
+
+/// A row that goes into the scrollback and is later pushed out of it is only
+/// captured once, when it leaves the scrollback.
+#[test]
+fn rows_are_captured_when_they_leave_the_scrollback() {
+    let mut parser =
+        helpers::new_with_callbacks(2, 10, 2, Capture::default());
+    parser.process(b"one\r\ntwo\r\nthree");
+    // `one` is in the scrollback, not captured yet.
+    assert_eq!(scrolled(&parser), "");
+
+    parser.process(b"\r\nfour");
+    // `one` and `two` fill the scrollback; still nothing has left it.
+    assert_eq!(scrolled(&parser), "");
+
+    parser.process(b"\r\nfive");
+    // `one` was pushed out of the scrollback to make room for `three`.
+    assert_eq!(scrolled(&parser), "one");
+    assert_eq!(finish(&mut parser), "one\ntwo\nthree\nfour\nfive");
+}
+
+/// Shrinking the screen with [`vt100::Parser::set_size`] captures the rows
+/// that get pushed out of the scrollback as a result.
+#[test]
+fn rows_pushed_out_of_the_scrollback_by_a_resize_are_captured() {
+    let mut parser =
+        helpers::new_with_callbacks(6, 10, 2, Capture::default());
+    parser.process(b"one\r\ntwo\r\nthree\r\nfour\r\nfive\r\nsix");
+    assert_eq!(scrolled(&parser), "");
+
+    helpers::set_parser_size(&mut parser, 2, 10);
+    // Four rows were pushed off the top of the screen, and the scrollback
+    // only holds two of them.
+    assert_eq!(scrolled(&parser), "one\ntwo");
+    assert_eq!(parser.screen().contents(), "five\nsix");
+    assert_eq!(finish(&mut parser), "one\ntwo\nthree\nfour\nfive\nsix");
+}
+
+#[test]
+fn a_capture_across_resizes_matches_a_screen_tall_enough_to_hold_everything()
+{
+    let data: &[u8] = b"\x1b[33mone\r\n\x1b[1mtwo three\r\n\x1b[mfour\r\n\
+        \x1b[7mfive\r\n\x1b[27msix\r\nseven";
+    let expected = tall(20, 8, data);
+
+    let heights = [(6, 2), (2, 6), (4, 4), (3, 9), (9, 3)];
+    for (before, after, scrollback_len) in heights
+        .into_iter()
+        .flat_map(|(h1, h2)| (0..=10).map(move |len| (h1, h2, len)))
+    {
+        let mut parser = helpers::new_with_callbacks(
+            before,
+            8,
+            scrollback_len,
+            Capture::default(),
+        );
+        for chunk in data.split_inclusive(|&b| b == b'\n') {
+            parser.process(chunk);
+        }
+        helpers::set_parser_size(&mut parser, after, 8);
+        let captured = finish(&mut parser);
+        assert_eq!(
+            captured.trim_end_matches('\n'),
+            expected,
+            "{before} rows -> {after} rows"
+        );
+    }
+}
+
+/// Resizing through [`vt100::Screen::set_size`] doesn't call `on_scroll`.
+#[test]
+fn screen_set_size_does_not_capture_anything() {
+    let mut parser = parser(6, 10);
+    parser.process(b"one\r\ntwo\r\nthree\r\nfour\r\nfive\r\nsix");
+    assert_eq!(scrolled(&parser), "");
+
+    helpers::set_size(parser.screen_mut(), 2, 10);
+    assert_eq!(scrolled(&parser), "");
+    assert_eq!(parser.screen().contents(), "five\nsix");
+}
+
+/// Rows pushed off the top of the alternate screen by a resize are reported
+/// as coming from the alternate screen.
+#[test]
+fn rows_pushed_off_the_alternate_screen_by_a_resize_are_reported_separately()
+{
+    let mut parser = parser(4, 10);
+    parser.process(b"one\r\ntwo\r\nthree\r\nfour\r\nfive");
+    parser.process(b"\x1b[?1049halt1\r\nalt2\r\nalt3\r\nalt4");
+    assert_eq!(scrolled(&parser), "one");
+
+    helpers::set_parser_size(&mut parser, 2, 10);
+    assert_eq!(parser.callbacks().alternate, ["alt1", "alt2"]);
+    // The main screen was resized too, and its rows went into the main
+    // screen's capture.
+    assert_eq!(scrolled(&parser), "one\ntwo\nthree");
+
+    parser.process(b"\x1b[?1049l");
+    assert_eq!(parser.screen().contents(), "four\nfive");
+    assert_eq!(finish(&mut parser), "one\ntwo\nthree\nfour\nfive");
 }
 
 /// Like [`tall`], but returns the plain text contents of the screen.

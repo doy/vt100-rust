@@ -75,6 +75,21 @@ pub fn set_size(screen: &mut vt100::Screen, rows: u16, cols: u16) {
     );
 }
 
+/// Like [`vt100::Parser::set_size`], but takes [`u16`]s instead of
+/// [`NonZeroU16`]s.
+///
+/// Panics if `rows` or `cols` is 0.
+pub fn set_parser_size<CB: vt100::Callbacks>(
+    parser: &mut vt100::Parser<CB>,
+    rows: u16,
+    cols: u16,
+) {
+    parser.set_size(
+        NonZeroU16::new(rows).unwrap(),
+        NonZeroU16::new(cols).unwrap(),
+    );
+}
+
 /// Like [`vt100::Screen::size`], but returns plain [`u16`]s.
 pub fn size(screen: &vt100::Screen) -> (u16, u16) {
     let (rows, cols) = screen.size();
@@ -187,6 +202,42 @@ pub fn contents_formatted_reproduces_screen(screen: &vt100::Screen) -> bool {
     let got_screen = new_parser.screen().clone();
 
     compare_screens(&got_screen, screen)
+}
+
+/// Like [`contents_formatted_reproduces_screen`], but reproduces the screen
+/// with a parser of the same size rather than an 80x24 one.
+pub fn contents_formatted_reproduces_sized_screen(
+    screen: &vt100::Screen,
+) -> bool {
+    let mut new_input = screen.contents_formatted();
+    new_input.push_str(&screen.input_mode_formatted());
+    is!(Str(&new_input), Str(&screen.state_formatted()));
+    let (rows, cols) = screen.size();
+    let mut new_parser = vt100::Parser::new(rows, cols, 0);
+    new_parser.process(new_input.as_bytes());
+    compare_screens(new_parser.screen(), screen)
+}
+
+/// Checks the invariants that should hold for any screen, whatever has been
+/// done to it.
+pub fn screen_is_consistent(screen: &vt100::Screen) -> bool {
+    let (rows, cols) = size(screen);
+    let (cursor_row, cursor_col) = screen.cursor_position();
+    ok!(cursor_row < rows);
+    // The cursor is allowed to sit one column past the end of the screen when
+    // a wrap is pending.
+    ok!(cursor_col <= cols);
+    is!(screen.rows(0, cols).count(), usize::from(rows));
+    // Rows on the screen are exactly as wide as the screen. Rows in the
+    // scrollback aren't resized until they're pulled back onto the screen, so
+    // the rows currently scrolled into view are skipped here.
+    let scrolled_back =
+        u16::try_from(screen.scrollback()).unwrap_or(u16::MAX);
+    for row in scrolled_back.min(rows)..rows {
+        ok!(screen.cell(row, cols).is_none());
+    }
+    ok!(screen.cell(rows, 0).is_none());
+    true
 }
 
 pub fn rows_formatted_reproduces_screen(screen: &vt100::Screen) -> bool {
@@ -397,9 +448,12 @@ fn allow_unused() {
     use assert_contents_diff_reproduces_state_from_screens;
     use assert_reproduces_state;
     use contents_diff_reproduces_state;
+    use contents_formatted_reproduces_sized_screen;
     use format_bytes;
     use new;
     use new_with_callbacks;
+    use screen_is_consistent;
+    use set_parser_size;
     use set_size;
     use unhex;
 }

@@ -57,42 +57,81 @@ impl Grid {
         self.size
     }
 
-    pub fn set_size(&mut self, size: Size) {
-        if size.cols != self.size.cols {
-            for row in &mut self.rows {
-                row.wrap(false);
-            }
+    pub fn set_size<F>(&mut self, size: Size, on_row: F)
+    where
+        F: FnMut(&crate::row::Row),
+    {
+        if size == self.size {
+            return;
         }
 
-        if self.scroll_bottom == self.size.rows() - 1 {
-            self.scroll_bottom = size.rows() - 1;
-        }
+        // xterm always resets the scroll region and scrollback offset when the
+        // screen is resized.
+        self.scroll_top = 0;
+        self.scroll_bottom = self.size.rows() - 1;
+        self.scrollback_offset = 0;
 
-        self.size = size;
+        let diff = self.size.rows().abs_diff(size.rows());
+        // `rows` might be empty if this is the alternate screen and the rows
+        // haven't been allocated (Self::allocate_rows) yet.
+        let is_empty = self.rows.is_empty();
+        let pos_diff = if is_empty {
+            0
+        } else if size.rows() < self.size.rows() {
+            let num_excess_bottom = self.size.rows() - self.pos.row - 1;
+            let num_pushed = diff.saturating_sub(num_excess_bottom);
+            self.scroll_up(num_pushed, on_row);
+            self.rows.truncate(size.rows().into());
+            num_pushed
+        } else {
+            let num_pulled = u16::try_from(self.scrollback.len())
+                .unwrap_or(u16::MAX)
+                .min(diff);
+            self.rows.splice(
+                0..0,
+                self.scrollback
+                    .drain(self.scrollback.len() - usize::from(num_pulled)..),
+            );
+            self.rows.resize_with(size.rows().into(), || {
+                crate::row::Row::new(size.cols())
+            });
+            num_pulled
+        };
+
+        if let Some(row) = self.rows.last_mut() {
+            // The last row is maintained to always be a valid row
+            row.wrap(false);
+        }
         for row in &mut self.rows {
             row.resize(size.cols(), crate::Cell::new());
         }
-        self.rows.resize_with(usize::from(size.rows()), || {
-            crate::row::Row::new(self.size.cols())
-        });
 
-        if self.scroll_bottom >= size.rows() {
-            self.scroll_bottom = size.rows() - 1;
-        }
-        if self.scroll_bottom < self.scroll_top {
-            self.scroll_top = 0;
+        // Maintain the cursor position relative to the bottom-left corner of
+        // the screen.
+        if size.rows() < self.size.rows() {
+            self.pos.row = self.pos.row.saturating_sub(pos_diff);
+            self.saved_pos.row = self
+                .saved_pos
+                .row
+                .saturating_sub(pos_diff)
+                .min(size.rows() - 1);
+        } else {
+            self.pos.row += pos_diff;
+            self.saved_pos.row += pos_diff;
         }
 
-        self.row_clamp_top(false);
-        self.row_clamp_bottom(false);
-        self.col_clamp();
+        self.pos.col = self.pos.col.min(size.cols() - 1);
+        self.saved_pos.col = self.saved_pos.col.min(size.cols() - 1);
+        self.scroll_bottom = size.rows() - 1;
+        self.size = size;
 
-        if self.saved_pos.row > self.size.rows() - 1 {
-            self.saved_pos.row = self.size.rows() - 1;
+        if !is_empty {
+            debug_assert_eq!(self.rows.len(), usize::from(self.size.rows()));
         }
-        if self.saved_pos.col > self.size.cols() - 1 {
-            self.saved_pos.col = self.size.cols() - 1;
-        }
+        debug_assert!(self.pos.row < self.size.rows());
+        debug_assert!(self.pos.col < self.size.cols());
+        debug_assert!(self.saved_pos.row < self.size.rows());
+        debug_assert!(self.saved_pos.col < self.size.cols());
     }
 
     pub fn pos(&self) -> Pos {
@@ -256,11 +295,26 @@ impl Grid {
     pub fn write_contents_formatted_basic(
         &self,
         writer: &mut impl alloc::fmt::Write,
-        state: &mut crate::capture::BasicFormattedCaptureState,
+        range: crate::capture::BasicFormattedCaptureRange<'_>,
     ) -> alloc::fmt::Result {
-        self.visible_rows()
-            .map(crate::capture::RowContents)
-            .try_for_each(|row| row.write_formatted_basic(writer, state))
+        fn write<'a>(
+            rows: impl Iterator<Item = &'a crate::row::Row>,
+            writer: &mut impl alloc::fmt::Write,
+            state: &mut crate::capture::BasicFormattedCaptureState,
+        ) -> alloc::fmt::Result {
+            rows.map(crate::capture::RowContents)
+                .try_for_each(|row| row.write_formatted_basic(writer, state))
+        }
+        match range {
+            crate::capture::BasicFormattedCaptureRange::Full(state) => {
+                write(self.scrollback.iter().chain(&self.rows), writer, state)
+            }
+            crate::capture::BasicFormattedCaptureRange::Visible => write(
+                self.visible_rows(),
+                writer,
+                &mut crate::capture::BasicFormattedCaptureState::new(),
+            ),
+        }
     }
 
     pub fn write_contents_diff(
@@ -587,7 +641,9 @@ impl Grid {
             // will be lost, so just remove them now to avoid allocating.
             let scrollback_overflow = (self.scrollback.len() + num_pushed)
                 .saturating_sub(self.scrollback_len);
-            self.scrollback.drain(0..scrollback_overflow);
+            for row in self.scrollback.drain(0..scrollback_overflow) {
+                on_row(&row);
+            }
 
             // Number of rows that will simply be reset rather than pushed to
             // the scrollback.
@@ -601,8 +657,7 @@ impl Grid {
             self.scrollback.extend(
                 between[num_reset..num_removed]
                     .iter_mut()
-                    .map(|row| core::mem::replace(row, new_row()))
-                    .inspect(|row| on_row(row)),
+                    .map(|row| core::mem::replace(row, new_row())),
             );
 
             if self.scrollback_offset > 0 {
