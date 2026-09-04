@@ -11,13 +11,36 @@ pub struct Grid {
     scroll_bottom: u16,
     origin_mode: bool,
     saved_origin_mode: bool,
-    scrollback: alloc::collections::VecDeque<crate::row::Row>,
-    scrollback_len: usize,
-    scrollback_offset: usize,
+    scrollback: Option<ScrollbackState>,
+}
+
+#[derive(Clone, Debug)]
+struct ScrollbackState {
+    rows: alloc::collections::VecDeque<crate::row::Row>,
+    capacity: usize,
+    offset: usize,
+    /// The number of rows of scrollback there *would* be if the scrollback
+    /// capacity were unlimited.
+    unbounded_len: usize,
+}
+
+#[derive(Clone, Copy, Debug)]
+pub enum Scrollback {
+    Disabled,
+    Enabled { capacity: usize },
 }
 
 impl Grid {
-    pub fn new(size: Size, scrollback_len: usize) -> Self {
+    pub fn new(size: Size, scrollback: Scrollback) -> Self {
+        let scrollback = match scrollback {
+            Scrollback::Disabled => None,
+            Scrollback::Enabled { capacity } => Some(ScrollbackState {
+                rows: alloc::collections::VecDeque::new(),
+                capacity,
+                offset: 0,
+                unbounded_len: 0,
+            }),
+        };
         Self {
             size,
             pos: Pos::default(),
@@ -27,9 +50,7 @@ impl Grid {
             scroll_bottom: size.rows() - 1,
             origin_mode: false,
             saved_origin_mode: false,
-            scrollback: alloc::collections::VecDeque::new(),
-            scrollback_len,
-            scrollback_offset: 0,
+            scrollback,
         }
     }
 
@@ -69,8 +90,11 @@ impl Grid {
         // screen is resized.
         self.scroll_top = 0;
         self.scroll_bottom = self.size.rows() - 1;
-        self.scrollback_offset = 0;
+        if let Some(scrollback) = &mut self.scrollback {
+            scrollback.offset = 0;
+        }
 
+        let new_row = || crate::row::Row::new(size.cols());
         let diff = self.size.rows().abs_diff(size.rows());
         // `rows` might be empty if this is the alternate screen and the rows
         // haven't been allocated (Self::allocate_rows) yet.
@@ -83,19 +107,31 @@ impl Grid {
             self.scroll_up(num_pushed, on_row);
             self.rows.truncate(size.rows().into());
             num_pushed
-        } else {
-            let num_pulled = u16::try_from(self.scrollback.len())
+        } else if let Some(scrollback) = &mut self.scrollback {
+            let num_pulled = u16::try_from(scrollback.unbounded_len)
                 .unwrap_or(u16::MAX)
                 .min(diff);
-            self.rows.splice(
-                0..0,
-                self.scrollback
-                    .drain(self.scrollback.len() - usize::from(num_pulled)..),
-            );
-            self.rows.resize_with(size.rows().into(), || {
-                crate::row::Row::new(size.cols())
-            });
+            // Number of rows actually pulled from scrollback.
+            let num_pulled_scrollback =
+                scrollback.rows.len().min(num_pulled.into());
+            // Number of blank rows inserted at the top, because our scrollback
+            // buffer isn't as large as the theoretical amount of scrollback
+            // an unbounded terminal would have.
+            let num_pulled_blank =
+                usize::from(num_pulled) - num_pulled_scrollback;
+            let pulled =
+                core::iter::repeat_with(new_row)
+                    .take(num_pulled_blank)
+                    .chain(scrollback.rows.drain(
+                        scrollback.rows.len() - num_pulled_scrollback..,
+                    ));
+            self.rows.splice(0..0, pulled);
+            self.rows.resize_with(size.rows().into(), new_row);
+            scrollback.unbounded_len -= usize::from(num_pulled);
             num_pulled
+        } else {
+            self.rows.resize_with(size.rows().into(), new_row);
+            0
         };
 
         if let Some(row) = self.rows.last_mut() {
@@ -159,23 +195,13 @@ impl Grid {
     }
 
     pub fn visible_rows(&self) -> impl Iterator<Item = &crate::row::Row> {
-        let scrollback_len = self.scrollback.len();
-        let rows_len = self.rows.len();
         self.scrollback
-            .iter()
-            .skip(scrollback_len - self.scrollback_offset)
-            // when scrollback_offset > rows_len (e.g. rows = 3,
-            // scrollback_len = 10, offset = 9) the skip(10 - 9)
-            // will take 9 rows instead of 3. we need to set
-            // the upper bound to rows_len (e.g. 3)
-            .take(rows_len)
-            // same for rows_len - scrollback_offset (e.g. 3 - 9).
-            // it'll panic with overflow. we have to saturate the subtraction.
-            .chain(
-                self.rows
-                    .iter()
-                    .take(rows_len.saturating_sub(self.scrollback_offset)),
-            )
+            .as_ref()
+            .map(|s| s.rows.iter().skip(s.rows.len() - s.offset))
+            .into_iter()
+            .flatten()
+            .chain(&self.rows)
+            .take(self.rows.len())
     }
 
     pub fn drawing_rows(&self) -> impl Iterator<Item = &crate::row::Row> {
@@ -222,21 +248,22 @@ impl Grid {
             .and_then(|r| r.get_mut(pos.col))
     }
 
+    pub fn scrollback_capacity(&self) -> usize {
+        self.scrollback.as_ref().map_or(0, |s| s.capacity)
+    }
+
     pub fn scrollback_len(&self) -> usize {
-        self.scrollback_len
+        self.scrollback.as_ref().map_or(0, |s| s.rows.len())
     }
 
     pub fn scrollback(&self) -> usize {
-        self.scrollback_offset
+        self.scrollback.as_ref().map_or(0, |s| s.offset)
     }
 
     pub fn set_scrollback(&mut self, rows: usize) {
-        self.scrollback_offset = rows.min(self.scrollback.len());
-    }
-
-    pub fn clear_scrollback(&mut self) {
-        self.scrollback.clear();
-        self.scrollback_offset = 0;
+        if let Some(scrollback) = &mut self.scrollback {
+            scrollback.offset = rows.min(scrollback.rows.len());
+        }
     }
 
     pub fn write_contents(&self, contents: &mut String) {
@@ -307,7 +334,10 @@ impl Grid {
         }
         match range {
             crate::capture::BasicFormattedCaptureRange::Full(state) => {
-                write(self.scrollback.iter().chain(&self.rows), writer, state)
+                if let Some(scrollback) = &self.scrollback {
+                    write(scrollback.rows.iter(), writer, state)?;
+                }
+                write(self.rows.iter(), writer, state)
             }
             crate::capture::BasicFormattedCaptureRange::Visible => write(
                 self.visible_rows(),
@@ -541,6 +571,19 @@ impl Grid {
         self.erase_row_backward(attrs);
     }
 
+    pub fn erase_all_scrollback<F>(&mut self, mut on_row: F)
+    where
+        F: FnMut(&crate::row::Row),
+    {
+        if let Some(scrollback) = &mut self.scrollback {
+            for row in scrollback.rows.drain(..) {
+                on_row(&row);
+            }
+            scrollback.unbounded_len = 0;
+            scrollback.offset = 0;
+        }
+    }
+
     pub fn erase_row(&mut self, attrs: crate::attrs::Attrs) {
         self.current_row_mut().clear(attrs);
     }
@@ -623,6 +666,8 @@ impl Grid {
     where
         F: FnMut(&crate::row::Row),
     {
+        // This can be true even when `self.scrollback` is `None`; it controls
+        // whether we call the `on_row` callback.
         let scrollback_enabled = self.scroll_top == 0;
         let between = &mut self.rows
             [usize::from(self.scroll_top)..=usize::from(self.scroll_bottom)];
@@ -633,15 +678,20 @@ impl Grid {
         let num_removed = count.min(num_between);
         let new_row = || crate::row::Row::new(self.size.cols());
 
-        if scrollback_enabled && self.scrollback_len > 0 {
-            // Number of rows that will be pushed to the scrollback.
-            let num_pushed = count.min(self.scrollback_len);
+        if let Some(scrollback) =
+            self.scrollback.as_mut().filter(|_| scrollback_enabled)
+        {
+            scrollback.unbounded_len =
+                scrollback.unbounded_len.saturating_add(num_removed);
 
-            // Scrollback length is capped at `self.scrollback_len`. These rows
+            // Number of rows that will be pushed to the scrollback.
+            let num_pushed = count.min(scrollback.capacity);
+
+            // Scrollback length is capped at `scrollback.capacity`. These rows
             // will be lost, so just remove them now to avoid allocating.
-            let scrollback_overflow = (self.scrollback.len() + num_pushed)
-                .saturating_sub(self.scrollback_len);
-            for row in self.scrollback.drain(0..scrollback_overflow) {
+            let scrollback_overflow = (scrollback.rows.len() + num_pushed)
+                .saturating_sub(scrollback.capacity);
+            for row in scrollback.rows.drain(0..scrollback_overflow) {
                 on_row(&row);
             }
 
@@ -654,17 +704,17 @@ impl Grid {
                 row.reset();
             }
 
-            self.scrollback.extend(
+            scrollback.rows.extend(
                 between[num_reset..num_removed]
                     .iter_mut()
                     .map(|row| core::mem::replace(row, new_row())),
             );
 
-            if self.scrollback_offset > 0 {
-                self.scrollback_offset = self
-                    .scrollback_offset
+            if scrollback.offset > 0 {
+                scrollback.offset = scrollback
+                    .offset
                     .saturating_add(count)
-                    .min(self.scrollback.len());
+                    .min(scrollback.rows.len());
             }
         } else {
             for row in &mut between[..num_removed] {
