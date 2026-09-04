@@ -30,6 +30,8 @@ impl PartialEq<Self> for Cell {
 }
 
 impl Cell {
+    pub(crate) const DEFAULT: Self = Self::new();
+
     pub(crate) const fn new() -> Self {
         Self {
             contents: [0; CONTENT_BYTES],

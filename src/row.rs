@@ -126,6 +126,19 @@ impl Row {
         }
     }
 
+    fn grow_unchecked(&mut self, len: u16, cell: crate::Cell) {
+        debug_assert!(self.cells.len() < usize::from(len));
+        self.cells.resize(len.into(), cell);
+        self.wrapped = false;
+    }
+
+    /// Like [`Self::resize`], but never decreases the size of the row.
+    pub fn grow(&mut self, len: u16, cell: crate::Cell) {
+        if self.cells.len() < usize::from(len) {
+            self.grow_unchecked(len, cell);
+        }
+    }
+
     pub fn resize(&mut self, len: u16, cell: crate::Cell) {
         match usize::from(len).cmp(&self.cells.len()) {
             core::cmp::Ordering::Equal => {}
@@ -133,10 +146,21 @@ impl Row {
                 self.truncate(len);
             }
             core::cmp::Ordering::Greater => {
-                self.cells.resize(len.into(), cell);
-                self.wrapped = false;
+                self.grow_unchecked(len, cell);
             }
         }
+    }
+
+    /// Trims trailing blank cells from the row.
+    pub fn trim(&mut self) {
+        let excess = self
+            .cells
+            .iter()
+            .rev()
+            .take_while(|c| **c == crate::cell::Cell::DEFAULT)
+            .count();
+        self.cells.truncate(self.cells.len() - excess);
+        self.cells.shrink_to_fit();
     }
 
     pub fn wrap(&mut self, wrap: bool) {
@@ -220,7 +244,6 @@ impl Row {
         prev_attrs: Option<crate::attrs::Attrs>,
     ) -> (crate::grid::Pos, crate::attrs::Attrs) {
         let mut prev_was_wide = false;
-        let default_cell = crate::Cell::new();
 
         let mut prev_pos = prev_pos.unwrap_or_else(|| {
             if wrapping {
@@ -235,9 +258,9 @@ impl Row {
         let mut prev_attrs = prev_attrs.unwrap_or_default();
 
         let first_cell = &self.cells[usize::from(start)];
-        if wrapping && first_cell == &default_cell {
-            let default_attrs = default_cell.attrs();
-            if &prev_attrs != default_attrs {
+        if wrapping && first_cell == &crate::cell::Cell::DEFAULT {
+            let default_attrs = crate::cell::Cell::DEFAULT.attrs();
+            if prev_attrs != *default_attrs {
                 default_attrs.write_escape_code_diff(contents, &prev_attrs);
                 prev_attrs = *default_attrs;
             }
@@ -294,7 +317,7 @@ impl Row {
                 }
             }
 
-            if cell != &default_cell {
+            if *cell != crate::cell::Cell::DEFAULT {
                 let attrs = cell.attrs();
                 if cell.has_contents() {
                     if pos != prev_pos {
@@ -357,7 +380,6 @@ impl Row {
     ) -> alloc::fmt::Result {
         let mut prev_was_wide = false;
         let mut num_empty = 0;
-        let default_cell = crate::cell::Cell::new();
 
         for cell in self.cells() {
             if core::mem::take(&mut prev_was_wide) {
@@ -365,7 +387,7 @@ impl Row {
             }
             prev_was_wide = cell.is_wide();
 
-            if *cell == default_cell {
+            if *cell == crate::cell::Cell::DEFAULT {
                 num_empty += 1;
                 continue;
             }
