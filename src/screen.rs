@@ -97,13 +97,21 @@ pub struct Screen {
 impl Screen {
     pub(crate) fn new(
         size: crate::grid::Size,
-        scrollback_len: usize,
+        scrollback_capacity: usize,
     ) -> Self {
-        let mut grid = crate::grid::Grid::new(size, scrollback_len);
+        let mut grid = crate::grid::Grid::new(
+            size,
+            crate::grid::Scrollback::Enabled {
+                capacity: scrollback_capacity,
+            },
+        );
         grid.allocate_rows();
         Self {
             grid,
-            alternate_grid: crate::grid::Grid::new(size, 0),
+            alternate_grid: crate::grid::Grid::new(
+                size,
+                crate::grid::Scrollback::Disabled,
+            ),
 
             attrs: crate::attrs::Attrs::default(),
             saved_attrs: crate::attrs::Attrs::default(),
@@ -149,6 +157,12 @@ impl Screen {
         self.grid().scrollback_len()
     }
 
+    /// Returns the maximum capacity of the scrollback.
+    #[must_use]
+    pub fn scrollback_capacity(&self) -> usize {
+        self.grid().scrollback_capacity()
+    }
+
     /// Scrolls to the given position in the scrollback.
     ///
     /// This position indicates the offset from the top of the screen, and
@@ -166,11 +180,12 @@ impl Screen {
     /// Clears the scrollback history for the active screen and returns the
     /// scrollback position to the live viewport.
     ///
-    /// This does not erase the visible screen contents or reset terminal
-    /// modes. To model a terminal action that clears both the visible display
-    /// and scrollback history, process both `CSI 2 J` and `CSI 3 J`.
+    /// This does not erase the visible screen contents, reset terminal
+    /// modes, or call the `on_row` callback. To model a terminal action that
+    /// clears both the visible display and scrollback history, process both
+    /// `CSI 2 J` and `CSI 3 J`.
     pub fn clear_scrollback(&mut self) {
-        self.grid_mut().clear_scrollback();
+        self.grid_mut().erase_all_scrollback(|_| {});
     }
 
     /// Returns the current position in the scrollback.
@@ -1193,7 +1208,7 @@ impl<CB: crate::Callbacks> WrappedScreen<CB> {
     pub fn ris(&mut self) {
         self.screen = Screen::new(
             self.screen.grid.size(),
-            self.screen.grid.scrollback_len(),
+            self.screen.grid.scrollback_capacity(),
         );
     }
 
@@ -1288,7 +1303,10 @@ impl<CB: crate::Callbacks> WrappedScreen<CB> {
             0 => self.screen.grid_mut().erase_all_forward(attrs),
             1 => self.screen.grid_mut().erase_all_backward(attrs),
             2 => self.screen.grid_mut().erase_all(attrs),
-            3 => self.screen.clear_scrollback(),
+            3 => {
+                let on_row = Self::on_row(&self.screen, &mut self.callbacks);
+                self.screen.grid_mut().erase_all_scrollback(on_row);
+            }
             _ => unhandled(self),
         }
     }

@@ -70,17 +70,33 @@ pub trait Callbacks {
     /// Called when the top row of scrollback is discarded because a new row
     /// was added at the bottom of the screen.
     ///
-    /// If the parser's `scrollback_len` is 0, this will be called when the top
-    /// row of the screen is pushed off instead.
+    /// If the parser's `scrollback_capacity` is 0, this will be called when
+    /// the top row of the screen is pushed off instead.
     ///
     /// Note that this callback can be called by [`Parser::set_size`]:
     /// shrinking the terminal's height can cause rows to be pushed off
     /// scrollback.
     ///
+    /// Also note that increasing the height of the screen with
+    /// [`Parser::set_size`] or [`Screen::set_size`] can cause the "same" row
+    /// to be emitted twice in this callback. When the theoretical amount of
+    /// scrollback that we "should" have exceeds the actual length of the
+    /// scrollback buffer due to the `scrollback_capacity` limit, we simulate
+    /// pushing the "lost" rows of scrollback by inserting blank rows at the
+    /// top of the screen instead. Like any other row, these blank rows will
+    /// get emitted via this callback (or via the final
+    /// [`Screen::write_contents_formatted_basic`][write]), but the "lost" rows
+    /// they represent have already been emitted via this callback as well, so
+    /// the rows (but not their contents) have been "duplicated". This is a
+    /// trade-off; we err on the side of keeping more data rather than losing
+    /// it.
+    ///
     /// `alternate_screen` indicates whether the row came from the alternate
     /// screen.
     ///
     /// [`Parser::set_size`]: crate::Parser::set_size
+    /// [`Screen::set_size`]: crate::Screen::set_size
+    /// [write]: crate::Screen::write_contents_formatted_basic
     #[allow(unused_variables)]
     fn on_scroll(
         &mut self,

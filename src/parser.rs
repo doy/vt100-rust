@@ -33,9 +33,9 @@ impl Parser {
     pub fn new(
         rows: core::num::NonZeroU16,
         cols: core::num::NonZeroU16,
-        scrollback_len: usize,
+        scrollback_capacity: usize,
     ) -> Self {
-        Self::new_with_callbacks(rows, cols, scrollback_len, ())
+        Self::new_with_callbacks(rows, cols, scrollback_capacity, ())
     }
 }
 
@@ -46,12 +46,12 @@ impl<CB: crate::Callbacks> Parser<CB> {
     pub fn new_with_callbacks(
         rows: core::num::NonZeroU16,
         cols: core::num::NonZeroU16,
-        scrollback_len: usize,
+        scrollback_capacity: usize,
         callbacks: CB,
     ) -> Self {
         let screen = crate::screen::Screen::new(
             crate::grid::Size { rows, cols },
-            scrollback_len,
+            scrollback_capacity,
         );
         Self {
             parser: vte::Parser::new(),
@@ -81,15 +81,28 @@ impl<CB: crate::Callbacks> Parser<CB> {
     ///
     /// * Rows from the bottom of scrollback are pushed to the top of the
     ///   screen and removed from scrollback, until the desired height is
-    ///   reached.
-    /// * If scrollback is emptied but the screen is still too short, blank
-    ///   rows are added to the bottom of the screen until the desired height
-    ///   is reached.
+    ///   reached.[^1]
+    /// * If, after pushing all scrollback to the top, the screen is still too
+    ///   short, blank rows are added to the bottom of the screen until the
+    ///   desired height is reached.
     ///
     /// When the screen width is changed, each row is naively truncated or
     /// extended with blank cells as necessary. This does not match the
     /// behavior of most terminals and may be changed in a future
     /// SemVer-incompatible version.
+    ///
+    /// [^1]: The parser tracks how many rows of scrollback there *would* be if
+    /// the scrollback capacity were unbounded. For the purposes of determining
+    /// how many rows should be pushed to the top vs. the bottom, this
+    /// *theoretical scrollback length* is used rather than the actual length
+    /// of the scrollback buffer, which is capped at `scrollback_capacity`.
+    /// Assuming a sufficiently large change in height, once the real
+    /// scrollback buffer has been emptied, blank rows will continue to be
+    /// pushed to the top of the screen until the theoretical scrollback length
+    /// is reached, and only then will blank rows be added to the bottom until
+    /// the desired height is reached. This behavior is intended to more
+    /// closely match the behavior of a real terminal emulator that this parser
+    /// might be mirroring.
     ///
     /// [`on_scroll`]: crate::Callbacks::on_scroll
     pub fn set_size(

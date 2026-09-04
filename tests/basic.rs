@@ -31,9 +31,12 @@ fn set_size() {
     assert_eq!(helpers::size(parser.screen()), (24, 80));
     assert_eq!(parser.screen().cursor_position(), (23, 4));
 
+    // The six rows that were pushed off the top to make the screen shorter
+    // come back at the top when it grows again, even though this parser has
+    // no scrollback to hold them, so the cursor moves back down with them.
     helpers::set_size(parser.screen_mut(), 34, 8);
     assert_eq!(helpers::size(parser.screen()), (34, 8));
-    assert_eq!(parser.screen().cursor_position(), (23, 4));
+    assert_eq!(parser.screen().cursor_position(), (29, 4));
 
     parser.process(b"\x1b[?1049h");
     assert_eq!(helpers::size(parser.screen()), (34, 8));
@@ -127,9 +130,9 @@ fn set_size_shrink_keeps_the_contents_of_a_screen_that_isnt_full() {
     assert_eq!(parser.screen().contents(), "1\n2");
 }
 
-/// When the scrollback doesn't have enough rows to fill out a growing screen,
-/// the remaining rows are added at the bottom, so the visible contents stay
-/// where they are.
+/// When fewer rows have scrolled off the screen than are needed to fill out a
+/// growing screen, the remaining rows are added at the bottom, so the visible
+/// contents stay where they are.
 #[test]
 fn set_size_grow_adds_blank_rows_at_the_bottom() {
     let mut parser = helpers::new(3, 10, 10);
@@ -145,12 +148,47 @@ fn set_size_grow_adds_blank_rows_at_the_bottom() {
     assert_eq!(parser.screen().contents(), "1\n2\n3\n4");
     assert_eq!(parser.screen().cursor_position(), (3, 1));
 
-    // With an empty scrollback, growing doesn't move the contents at all.
+    // When nothing has scrolled off, growing doesn't move the contents at all.
     let mut parser = helpers::new(6, 10, 0);
     parser.process(b"1\r\n2");
     helpers::set_size(parser.screen_mut(), 10, 10);
     assert_eq!(parser.screen().contents(), "1\n2");
     assert_eq!(parser.screen().cursor_position(), (1, 1));
+}
+
+/// When the scrollback is too small to have held every row that scrolled off
+/// the screen, growing the screen still adds rows at the top; the rows the
+/// scrollback no longer holds are replaced with blank ones above the rows it
+/// does hold, since they're the older ones.
+#[test]
+fn set_size_grow_with_a_small_scrollback() {
+    let mut parser = helpers::new(2, 10, 1);
+    parser.process(b"1\r\n2\r\n3\r\n4");
+    // Two rows scrolled off, but the scrollback only held on to `2`.
+    assert_eq!(parser.screen().contents(), "3\n4");
+    parser.screen_mut().set_scrollback(1);
+    assert_eq!(parser.screen().contents(), "2\n3");
+    parser.screen_mut().set_scrollback(0);
+
+    helpers::set_size(parser.screen_mut(), 4, 10);
+    // Both rows come back at the top, with a blank row standing in for `1`.
+    assert_eq!(parser.screen().contents(), "\n2\n3\n4");
+    assert_eq!(parser.screen().cursor_position(), (3, 1));
+    assert_eq!(parser.screen().scrollback(), 0);
+
+    // With no scrollback at all, every row that comes back is blank.
+    let mut parser = helpers::new(2, 10, 0);
+    parser.process(b"1\r\n2\r\n3\r\n4");
+    assert_eq!(parser.screen().contents(), "3\n4");
+    helpers::set_size(parser.screen_mut(), 4, 10);
+    assert_eq!(parser.screen().contents(), "\n\n3\n4");
+    assert_eq!(parser.screen().cursor_position(), (3, 1));
+
+    // Growing further than the rows that scrolled off still adds the extra
+    // rows at the bottom.
+    helpers::set_size(parser.screen_mut(), 6, 10);
+    assert_eq!(parser.screen().contents(), "\n\n3\n4");
+    assert_eq!(parser.screen().cursor_position(), (3, 1));
 }
 
 /// Rows can be pushed out of the scrollback entirely when the screen shrinks.

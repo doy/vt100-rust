@@ -1,6 +1,4 @@
-//! Types related to in-progress capturing of terminal data.
-//!
-//! See [`crate::Callbacks::on_scroll`].
+//! Types related to capturing terminal data.
 
 #[cfg(doc)]
 use crate::Screen;
@@ -49,6 +47,10 @@ impl BasicFormattedCaptureState {
 }
 
 /// Represents the contents of a row in the terminal.
+///
+/// This type is used by [`Callbacks::on_scroll`][on_scroll].
+///
+/// [on_scroll]: crate::Callbacks::on_scroll
 pub struct RowContents<'a>(pub(crate) &'a crate::row::Row);
 
 impl RowContents<'_> {
