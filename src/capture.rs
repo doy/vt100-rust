@@ -78,29 +78,58 @@ impl RowContents<'_> {
 
 /// Iterator returned by [`basic_formatted_to_plain`].
 pub struct BasicFormattedToPlain<'a> {
-    capture: &'a str,
+    indexed: BasicFormattedToPlainIndexed<'a>,
 }
 
 impl<'a> Iterator for BasicFormattedToPlain<'a> {
     type Item = &'a str;
 
     fn next(&mut self) -> Option<Self::Item> {
+        self.indexed.next().map(|(_i, s)| s)
+    }
+}
+
+impl core::iter::FusedIterator for BasicFormattedToPlain<'_> {}
+
+/// Iterator returned by [`basic_formatted_to_plain_indexed`].
+pub struct BasicFormattedToPlainIndexed<'a> {
+    capture: &'a str,
+    index: usize,
+}
+
+impl<'a> Iterator for BasicFormattedToPlainIndexed<'a> {
+    /// The first element is the byte index within the original capture of the
+    /// plain substring; the second element is the plain substring itself.
+    type Item = (usize, &'a str);
+
+    fn next(&mut self) -> Option<Self::Item> {
         while !self.capture.is_empty() {
+            let index = self.index;
             let Some((before, after)) = self.capture.split_once('\x1b')
             else {
-                return Some(core::mem::take(&mut self.capture));
+                self.index += self.capture.len();
+                return Some((index, core::mem::take(&mut self.capture)));
             };
-            self.capture = match after.split_once('m') {
-                Some((_esc_body, after_esc)) => after_esc,
-                None => "",
-            };
+
+            self.index += before.len() + 1;
+            self.capture =
+                if let Some((esc_body, after_esc)) = after.split_once('m') {
+                    self.index += esc_body.len() + 1;
+                    after_esc
+                } else {
+                    self.index += after.len();
+                    ""
+                };
+
             if !before.is_empty() {
-                return Some(before);
+                return Some((index, before));
             }
         }
         None
     }
 }
+
+impl core::iter::FusedIterator for BasicFormattedToPlainIndexed<'_> {}
 
 /// Converts a "basic formatted" capture into a plain text one.
 ///
@@ -121,7 +150,32 @@ impl<'a> Iterator for BasicFormattedToPlain<'a> {
 /// [`on_scroll`]: crate::Callbacks::on_scroll
 #[must_use]
 pub fn basic_formatted_to_plain(capture: &str) -> BasicFormattedToPlain<'_> {
-    BasicFormattedToPlain { capture }
+    BasicFormattedToPlain {
+        indexed: basic_formatted_to_plain_indexed(capture),
+    }
+}
+
+/// Like [`basic_formatted_to_plain`], but also provides the original index of
+/// each substring.
+///
+/// The iterator returned by this function yields `(index, string)` tuples,
+/// where `string` is the plain-text substring, and `index` is the byte index
+/// of `string` within `capture`.
+///
+/// # Example
+///
+/// ```
+/// # use vt100::capture::basic_formatted_to_plain_indexed;
+/// let mut iter = basic_formatted_to_plain_indexed("hello\x1b[31;1mworld");
+/// assert_eq!(iter.next(), Some((0, "hello")));
+/// assert_eq!(iter.next(), Some((12, "world")));
+/// assert_eq!(iter.next(), None);
+/// ```
+#[must_use]
+pub fn basic_formatted_to_plain_indexed(
+    capture: &str,
+) -> BasicFormattedToPlainIndexed<'_> {
+    BasicFormattedToPlainIndexed { capture, index: 0 }
 }
 
 /// Iterator returned by [`basic_formatted_rows`].
@@ -198,6 +252,8 @@ impl<'a> Iterator for BasicFormattedRows<'a> {
         self.capture.take()
     }
 }
+
+impl core::iter::FusedIterator for BasicFormattedRows<'_> {}
 
 /// Splits a "basic formatted" capture into individual rows.
 ///
