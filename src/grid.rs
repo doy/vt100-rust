@@ -677,19 +677,31 @@ impl Grid {
     }
 
     pub fn col_wrap(&mut self, width: u16, wrap: bool) {
-        if self.pos.col > self.size.cols - width {
-            let mut prev_pos = self.pos;
-            self.pos.col = 0;
-            let scrolled = self.row_inc_scroll(1);
-            prev_pos.row = prev_pos.row.saturating_sub(scrolled);
-            let new_pos = self.pos;
-            self.drawing_row_mut(prev_pos.row)
-                // we assume self.pos.row is always valid, and so prev_pos.row
-                // must be valid because it is always less than or equal to
-                // self.pos.row
-                .unwrap()
-                .wrap(wrap && prev_pos.row + 1 == new_pos.row);
+        if self.pos.col <= self.size.cols - width {
+            // we haven't reached the end of the row yet
+            return;
         }
+
+        let mut prev_pos = self.pos;
+        self.pos.col = 0;
+        let scrolled = self.row_inc_scroll(1);
+        if prev_pos.row == 0 && scrolled > 0 {
+            // we're trying to scroll but we're already at the top of the
+            // grid - this can happen when the grid height is set to 1. in
+            // this case, we want to do the scrolling (via row_inc_scroll)
+            // but don't want to set the wrap state (since it never makes
+            // sense on a 1-height grid).
+            return;
+        }
+
+        prev_pos.row -= scrolled;
+        let new_pos = self.pos;
+        self.drawing_row_mut(prev_pos.row)
+            // we assume self.pos.row is always valid, and so prev_pos.row
+            // must be valid because it is always less than or equal to
+            // self.pos.row
+            .unwrap()
+            .wrap(wrap && prev_pos.row + 1 == new_pos.row);
     }
 
     fn row_clamp_top(&mut self, limit_to_scroll_region: bool) -> u16 {
