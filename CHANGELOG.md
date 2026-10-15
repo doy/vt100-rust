@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.16.2-patch5] - 2026-10-15
+
+### Changed
+
+* Bumped dependencies (`Cargo.lock` only, no API changes):
+  * `itoa` from 1.0.15 to 1.0.18
+  * `serde_json` from 1.0.140 to 1.0.143
+  * `quickcheck` from 1.0.3 to 1.1.0 (pulls in `env_logger` 0.8.4 → 0.11.11 plus new `env_filter` 2.0.0, `rand` 0.8.5 → 0.10.3, `rand_core` 0.6.4 → 0.10.1, `getrandom` 0.2.16 → 0.4.3 plus new `r-efi` 6.0.0, `regex` 1.11.1 → 1.13.1 / `regex-automata` 0.4.9 → 0.4.18 / `regex-syntax` 0.8.5 → 0.8.11, `log` 0.4.27 → 0.4.34)
+  * `terminal_size` from 0.4.2 to 0.4.4
+  * `unicode-width` from 0.2.1 to 0.2.2
+
 ## [0.16.2-patch4] - 2026-08-20
 
 ### Added
