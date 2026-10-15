@@ -1,6 +1,6 @@
 [package]
 name = "term-wm-vt100"
-version = "0.16.2-patch4"
+version = "0.16.2-patch5"
 authors = [
     "Jesse Luehrs <doy@tozt.net>",
     "Jeremy Harris <jeremy.harris@zenosmosis.com",
