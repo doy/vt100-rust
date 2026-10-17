@@ -1,4 +1,4 @@
-use unicode_width::UnicodeWidthChar as _;
+use unicode_width::{UnicodeWidthChar as _, UnicodeWidthStr as _};
 
 // chosen to make the size of the cell struct 32 bytes
 const CONTENT_BYTES: usize = 22;
@@ -45,9 +45,8 @@ impl Cell {
     pub(crate) fn set(&mut self, c: char, a: crate::attrs::Attrs) {
         self.len = 0;
         self.append_char(0, c);
-        // strings in this context should always be an arbitrary character
-        // followed by zero or more zero-width characters, so we should only
-        // have to look at the first character
+        // if we're setting a single character, we can just look at that one
+        // character to determine the cell width
         self.set_wide(c.width().unwrap_or(1) > 1);
         self.attrs = a;
     }
@@ -66,11 +65,28 @@ impl Cell {
         self.append_char(self.len(), c);
     }
 
+    pub(crate) fn set_contents(&mut self, s: &str, a: crate::attrs::Attrs) {
+        let mut chars = s.chars();
+        let Some(c) = chars.next() else {
+            return;
+        };
+        self.set(c, a);
+        for c in chars {
+            self.append(c);
+        }
+    }
+
     // Writes bytes representing c at start
     // Requires caller to verify start <= CODEPOINTS_IN_CELL * 4
     fn append_char(&mut self, start: usize, c: char) {
         c.encode_utf8(&mut self.contents[start..]);
         self.len += u8::try_from(c.len_utf8()).unwrap();
+        // if we're appending characters, we have to account for emoji
+        // presentation being requested, which can turn a base character that
+        // is otherwise considered to be narrow into a wide character
+        if c == '\u{FE0F}' {
+            self.set_wide(self.contents().width() > 1);
+        }
     }
 
     pub(crate) fn clear(&mut self, attrs: crate::attrs::Attrs) {
@@ -110,7 +126,7 @@ impl Cell {
         self.len & IS_WIDE_CONTINUATION != 0
     }
 
-    pub(crate) fn set_wide(&mut self, wide: bool) {
+    fn set_wide(&mut self, wide: bool) {
         if wide {
             self.len |= IS_WIDE;
         } else {
