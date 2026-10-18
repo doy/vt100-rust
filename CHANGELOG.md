@@ -1,10 +1,25 @@
 # Changelog
 
-## [Unreleased]
+## [0.17.0] - 2026-10-18
 
 ### Added
 
-* Support for clearing scrollback with `Screen::clear_scrollback` and `CSI 3 J`.
+* Support for DECSCUSR (set cursor style) (#21, reuben olinsky)
+* Support for HPA (horizontal position absolute) and REP (repeat last printed
+  character) (#23, KacperLa)
+* no_std and embedded-io support (#25, Chris Pacejo)
+* `Screen::scrollback_len` (#27, Erick Tryzelaar)
+* Support for HVP (horizontal and vertical position) (#34, rezigned)
+* Support for clearing scrollback with `Screen::clear_scrollback` and
+  `CSI 3 J` (#31, Alexey Zhokhov)
+* Support for VS16 emoji-presentation sequences (#32, Junyi Hou)
+
+### Fixed
+
+* Various bugs with oddly-sized terminals (#29, Evan Almloff) (#30, Junyi
+  Hou) (#41, taylor.fish)
+* Scrollback now accumulates when a scroll region is active as long as the
+  top of the scroll region is the top of the terminal (#33, L-jasmine)
 
 ## [0.16.2] - 2025-07-11
 
