@@ -31,7 +31,7 @@ fn set_size() {
 
     parser.screen_mut().set_size(34, 8);
     assert_eq!(parser.screen().size(), (34, 8));
-    assert_eq!(parser.screen().cursor_position(), (23, 4));
+    assert_eq!(parser.screen().cursor_position(), (29, 4));
 
     parser.process(b"\x1b[?1049h");
     assert_eq!(parser.screen().size(), (34, 8));

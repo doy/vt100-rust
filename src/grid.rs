@@ -12,12 +12,14 @@ pub struct Grid {
     origin_mode: bool,
     saved_origin_mode: bool,
     scrollback: alloc::collections::VecDeque<crate::row::Row>,
-    scrollback_len: usize,
+    scrollback_len: Option<usize>,
     scrollback_offset: usize,
+    // Includes discarded history, so resizing is independent of buffer capacity.
+    scrollback_count: usize,
 }
 
 impl Grid {
-    pub fn new(size: Size, scrollback_len: usize) -> Self {
+    pub fn new(size: Size, scrollback_len: Option<usize>) -> Self {
         Self {
             size,
             pos: Pos::default(),
@@ -30,6 +32,7 @@ impl Grid {
             scrollback: alloc::collections::VecDeque::new(),
             scrollback_len,
             scrollback_offset: 0,
+            scrollback_count: 0,
         }
     }
 
@@ -65,39 +68,60 @@ impl Grid {
     }
 
     pub fn set_size(&mut self, size: Size) {
-        if size.cols != self.size.cols {
+        if size == self.size {
+            return;
+        }
+
+        self.scroll_top = 0;
+        self.scroll_bottom = self.size.rows - 1;
+        self.scrollback_offset = 0;
+
+        // An unused alternate screen has no allocated rows yet.
+        let allocated = !self.rows.is_empty();
+        let moved = if !allocated {
+            0
+        } else if size.rows < self.size.rows {
+            let moved = self.pos.row.saturating_sub(size.rows - 1);
+            self.scroll_up(moved);
+            self.rows.truncate(usize::from(size.rows));
+            moved
+        } else if self.scrollback_len.is_some() {
+            let moved = usize::from(size.rows - self.size.rows)
+                .min(self.scrollback_count);
+            let retained = moved.min(self.scrollback.len());
+            let restored =
+                core::iter::repeat_with(|| crate::row::Row::new(size.cols))
+                    .take(moved - retained)
+                    .chain(
+                        self.scrollback
+                            .drain(self.scrollback.len() - retained..),
+                    );
+            self.rows.splice(0..0, restored);
+            self.scrollback_count -= moved;
+            u16::try_from(moved).unwrap()
+        } else {
+            0
+        };
+
+        if size.rows < self.size.rows {
+            self.pos.row = self.pos.row.saturating_sub(moved);
+            self.saved_pos.row = self.saved_pos.row.saturating_sub(moved);
+        } else {
+            self.pos.row += moved;
+            self.saved_pos.row = self.saved_pos.row.saturating_add(moved);
+        }
+        self.size = size;
+        self.scroll_bottom = size.rows - 1;
+        if allocated {
+            self.rows.resize(usize::from(size.rows), self.new_row());
             for row in &mut self.rows {
-                row.wrap(false);
+                row.resize(size.cols, crate::Cell::new());
             }
         }
-
-        if self.scroll_bottom == self.size.rows - 1 {
-            self.scroll_bottom = size.rows - 1;
-        }
-
-        self.size = size;
-        for row in &mut self.rows {
-            row.resize(size.cols, crate::Cell::new());
-        }
-        self.rows.resize(usize::from(size.rows), self.new_row());
-
-        if self.scroll_bottom >= size.rows {
-            self.scroll_bottom = size.rows - 1;
-        }
-        if self.scroll_bottom < self.scroll_top {
-            self.scroll_top = 0;
-        }
-
-        self.row_clamp_top(false);
-        self.row_clamp_bottom(false);
-        self.col_clamp();
-
-        if self.saved_pos.row > self.size.rows - 1 {
-            self.saved_pos.row = self.size.rows - 1;
-        }
-        if self.saved_pos.col > self.size.cols - 1 {
-            self.saved_pos.col = self.size.cols - 1;
-        }
+        self.pos.row = self.pos.row.min(size.rows - 1);
+        self.pos.col = self.pos.col.min(size.cols - 1);
+        self.saved_pos.row = self.saved_pos.row.min(size.rows - 1);
+        self.saved_pos.col = self.saved_pos.col.min(size.cols - 1);
     }
 
     pub fn pos(&self) -> Pos {
@@ -189,7 +213,7 @@ impl Grid {
     }
 
     pub fn scrollback_len(&self) -> usize {
-        self.scrollback_len
+        self.scrollback_len.unwrap_or(0)
     }
 
     pub fn scrollback(&self) -> usize {
@@ -203,6 +227,7 @@ impl Grid {
     pub fn clear_scrollback(&mut self) {
         self.scrollback.clear();
         self.scrollback_offset = 0;
+        self.scrollback_count = 0;
     }
 
     pub fn write_contents(&self, contents: &mut String) {
@@ -576,9 +601,16 @@ impl Grid {
             // via `SetScrollRegion(1..viewport_top)` + `\r\n` / reverse-index — they never built
             // any scrollback. With `scroll_top == 0`, full-screen scrolling is unchanged and we
             // save only when the region includes the screen top (matching xterm).
-            if self.scrollback_len > 0 && self.scroll_top == 0 {
+            if let Some(capacity) =
+                self.scrollback_len.filter(|_| self.scroll_top == 0)
+            {
+                self.scrollback_count =
+                    self.scrollback_count.saturating_add(1);
+                if capacity == 0 {
+                    continue;
+                }
                 self.scrollback.push_back(removed);
-                while self.scrollback.len() > self.scrollback_len {
+                while self.scrollback.len() > capacity {
                     self.scrollback.pop_front();
                 }
                 if self.scrollback_offset > 0 {

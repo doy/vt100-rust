@@ -99,11 +99,11 @@ impl Screen {
         size: crate::grid::Size,
         scrollback_len: usize,
     ) -> Self {
-        let mut grid = crate::grid::Grid::new(size, scrollback_len);
+        let mut grid = crate::grid::Grid::new(size, Some(scrollback_len));
         grid.allocate_rows();
         Self {
             grid,
-            alternate_grid: crate::grid::Grid::new(size, 0),
+            alternate_grid: crate::grid::Grid::new(size, None),
 
             attrs: crate::attrs::Attrs::default(),
             saved_attrs: crate::attrs::Attrs::default(),
@@ -118,6 +118,13 @@ impl Screen {
     }
 
     /// Resizes the terminal.
+    ///
+    /// Shrinking the height scrolls rows off the top when needed to keep the
+    /// cursor line visible. Growing the normal screen restores scrollback,
+    /// using blank rows for history beyond the configured buffer capacity.
+    /// Resizing resets the scroll region and scrollback position.
+    /// Setting the current size leaves the screen state unchanged, including
+    /// a pending line wrap.
     pub fn set_size(&mut self, rows: u16, cols: u16) {
         self.grid.set_size(crate::grid::Size { rows, cols });
         self.alternate_grid
