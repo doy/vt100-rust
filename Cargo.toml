@@ -2,8 +2,8 @@
 name = "vt100"
 version = "0.17.0"
 authors = ["Jesse Luehrs <doy@tozt.net>"]
-edition = "2021"
-rust-version = "1.70"
+edition = "2024"
+rust-version = "1.85"
 
 description = "Library for parsing terminal data"
 homepage = "https://github.com/doy/vt100-rust"
