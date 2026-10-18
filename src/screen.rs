@@ -1,5 +1,5 @@
 use crate::term::BufWrite as _;
-use alloc::{string::String, vec::Vec};
+use alloc::{string::String, string::ToString as _, vec::Vec};
 use unicode_width::UnicodeWidthChar as _;
 
 const MODE_APPLICATION_KEYPAD: u8 = 0b0000_0001;
