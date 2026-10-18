@@ -52,11 +52,13 @@ fn main() {
                         pos.1 -= 1;
                     }
                     if helpers::compare_screens(parser.screen(), &screen) {
-                        log!(format!(
-                            "{}: {}: ({}, {})\n",
-                            idx, byte, pos.0, pos.1,
-                        )
-                        .as_bytes());
+                        log!(
+                            format!(
+                                "{}: {}: ({}, {})\n",
+                                idx, byte, pos.0, pos.1,
+                            )
+                            .as_bytes()
+                        );
                     } else {
                         let diff = parser.screen().state_diff(&screen);
                         stdout.write_all(&diff).unwrap();

@@ -58,7 +58,8 @@ fn vs16_promotion_over_existing_wide_char_does_not_orphan_continuation() {
         "col1 = ❤️ continuation"
     );
     assert_eq!(
-        cell(&parser, 0, 2), ("".into(), false, false),
+        cell(&parser, 0, 2),
+        ("".into(), false, false),
         "col2 (clobbered 中's old continuation) must be cleared, not orphaned"
     );
 }
