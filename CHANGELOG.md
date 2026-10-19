@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.18.1] - 2026-10-19
+
+### Fixed
+
+* actually release the intended changes that were supposed to be in 0.18.0
+
 ## [0.18.0] - 2026-10-18
 
 ### Added
