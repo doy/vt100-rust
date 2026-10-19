@@ -4,60 +4,60 @@ on:
     branches: [main]
   pull_request: {}
 env:
+  CARGO_TERM_COLOR: always
   RUST_BACKTRACE: 1
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: dtolnay/rust-toolchain@stable
-      - run: cargo build --all-targets
-  build-musl:
-    runs-on: ubuntu-latest
-    steps:
-      - run: sudo apt-get install clang-18
-      - uses: actions/checkout@v3
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: x86_64-unknown-linux-musl
-      - run: TARGET_CC=clang-18 TARGET_AR=llvm-ar-18 cargo build --all-targets --target x86_64-unknown-linux-musl
-  build-macos:
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: dtolnay/rust-toolchain@stable
-      - run: cargo build --all-targets
   test:
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [linux, linux-musl, macos, windows]
+        opts: ["", "--no-default-features"]
+        include:
+          - target: linux
+            os: ubuntu-latest
+          - target: linux-musl
+            os: ubuntu-latest
+            triple: x86_64-unknown-linux-musl
+          - target: linux
+            os: ubuntu-latest
+          - target: macos
+            os: macos-latest
+          - target: windows
+            os: windows-latest
+    runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v3
-      - uses: dtolnay/rust-toolchain@stable
-      - run: cargo test
-  test-musl:
-    runs-on: ubuntu-latest
-    steps:
-      - run: sudo apt-get install clang-18
-      - uses: actions/checkout@v3
+      - run: |
+          sudo apt-get install clang-18
+          echo TARGET_CC=clang-18 >> "$GITHUB_ENV"
+          echo TARGET_AR=llvm-ar-18 >> "$GITHUB_ENV"
+        if: ${{ endsWith(matrix.triple, '-musl') }}
+      - run: |
+          echo TARGET_OPTS="--target ${{ matrix.triple }}" >> "$GITHUB_ENV"
+        if: ${{ matrix.triple != '' }}
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
         with:
-          targets: x86_64-unknown-linux-musl
-      - run: TARGET_CC=clang-18 TARGET_AR=llvm-ar-18 cargo test --target x86_64-unknown-linux-musl
-  test-macos:
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v3
+          targets: ${{ matrix.triple }}
+        if: ${{ matrix.triple != '' }}
       - uses: dtolnay/rust-toolchain@stable
-      - run: cargo test
-  test-nostd:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: dtolnay/rust-toolchain@stable
-      - run: cargo test --no-default-features
+        if: ${{ matrix.triple == '' }}
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-nextest
+      - uses: actions/cache@v6
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: cargo-${{ matrix.target }}-${{ matrix.triple }}-${{ hashfiles('**/Cargo.lock') }}
+      - run: cargo nextest run --all-targets ${{ matrix.opts }} $TARGET_OPTS
+      - run: cargo test --doc ${{ matrix.opts }} $TARGET_OPTS
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy, rustfmt
@@ -68,13 +68,15 @@ jobs:
   doc:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
-      - run: cargo doc
+      - run: cargo doc --no-deps
+        env:
+          RUSTDOCFLAGS: -D warnings
   msrv:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: 1.85.0
