@@ -1,5 +1,83 @@
 # Changelog
 
+## [0.18.0] - 2026-10-18
+
+### Added
+
+* `Screen::contents_formatted_basic`, which is like
+  `Screen::contents_formatted`, but restricts escape sequences to SGR escapes
+  only, and control characters to `'\n'`.
+* `Screen::write_contents_formatted_basic`, like
+  `Screen::contents_formatted_basic` but writes to any type implementing
+  `std::fmt::Write` instead of returning a `String`.
+* `Callbacks::on_scroll`, called when a row scrolls off the top of the
+  scrollback. This enables capturing terminal output in a streaming fashion.
+  Currently this can only be used to obtain the row contents in the "basic
+  formatted" style (the same returned by `Screen::contents_formatted_basic`).
+* `Parser::DEFAULT_ROWS` and `Parser::DEFAULT_COLS`, set to 24 and 80 (the
+  same already used by `Parser::default`). These have type `NonZeroU16`.
+* `Parser::set_size`, which is like `Screen::set_size` but calls the
+  `on_scroll` callback when a row is pushed off the top of scrollback (which
+  is now possible due to the other `set_size` changes).
+* `Parser::screen_and_callbacks_mut`, which returns mutable references to
+  both the screen and callbacks object at once. This was not possible with
+  the existing methods.
+* `capture::basic_formatted_to_plain`, which converts a basic formatted
+  capture (as returned by `Screen::contents_formatted_basic`) into a plain
+  text one without allocating.
+* `capture::basic_formatted_rows`, which splits a basic formatted capture
+  into individual rows without allocating.
+* `capture::basic_formatted_to_plain_indexed`, which is like
+  `capture::basic_formatted_to_plain`, but also includes the original index
+  of each plain text substring.
+
+### Changed
+
+* Bumped MSRV to 1.85 and edition to 2024
+* `Parser::new` and `Screen::set_size` now take `NonZeroU16`s instead of
+  `u16`s. Passing 0 for `rows` or `cols` was not supported and resulted in
+  panics. Additionally, `Screen::size` now returns `NonZeroU16`s.
+* The following methods of Screen now return/yield strings rather than byte vectors:
+
+  * attributes_formatted
+  * contents_diff
+  * contents_formatted
+  * cursor_state_formatted
+  * input_mode_diff
+  * input_mode_formatted
+  * rows_diff
+  * rows_formatted
+  * state_diff
+  * state_formatted
+
+  The byte vectors were already always UTF-8.
+* `Screen::set_size` resets the scroll region and scrollback offset when the
+  size changes, matching the behavior of xterm.
+* `Screen::set_size` has different behavior when the screen height changes.
+  Previously, it would discard rows from or add rows to the bottom as needed,
+  but this does not match most terminal emulators.
+
+  Now, when the height is decreased, `set_size` discards rows from the bottom
+  only until the cursor is at the bottom. Then, it pushes excess rows from
+  the top of the screen into scrollback.
+
+  When the height is increased, `set_size` pulls rows from scrollback into
+  the top of the screen. If scrollback is exhausted and the new height hasn't
+  been reached yet, blank rows are added to the bottom.
+
+### Fixed
+
+* Fixed no_std support which was inadvertently broken in 0.17.0
+* Changed handling of IL and DL sequences when the cursor is outside the
+  scroll region. These operations are now no-ops in that case, which is the
+  spec-compliant behavior.
+* Fixed issue where one-row scroll regions could cause unrelated rows to be
+  marked as wrapped or not wrapped.
+* Improved the performance of various operations, especially escape sequences
+  that insert/delete multiple rows or characters.
+* `Screen::set_size` only clears each row's `wrapped` when the screen width
+  changes. Previously, it would unconditionally clear that flag.
+
 ## [0.17.0] - 2026-10-18
 
 ### Added
