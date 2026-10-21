@@ -215,7 +215,19 @@ impl Grid {
     }
 
     pub fn visible_row(&self, row: u16) -> Option<&crate::row::Row> {
-        self.visible_rows().nth(usize::from(row))
+        // Indexes directly into what `visible_rows` iterates: `nth` on its
+        // chained iterator steps through every row before this one.
+        let row = usize::from(row);
+        if row >= self.rows.len() {
+            return None;
+        }
+        match &self.scrollback {
+            Some(s) if row < s.offset => {
+                s.rows.get(s.rows.len() - s.offset + row)
+            }
+            Some(s) => self.rows.get(row - s.offset),
+            None => self.rows.get(row),
+        }
     }
 
     pub fn drawing_row(&self, row: u16) -> Option<&crate::row::Row> {
@@ -941,4 +953,51 @@ impl Size {
 pub struct Pos {
     pub row: u16,
     pub col: u16,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // `visible_row` indexes directly into what `visible_rows` iterates; check
+    // it picks the same row for every scrollback offset and every row, past
+    // the end included, with scrollback disabled, partly filled, full and
+    // overflowed.
+    #[test]
+    fn visible_row_is_visible_rows_nth() {
+        let size = Size {
+            rows: core::num::NonZeroU16::new(4).unwrap(),
+            cols: core::num::NonZeroU16::new(3).unwrap(),
+        };
+        let cases = [
+            (Scrollback::Disabled, 5),
+            (Scrollback::Enabled { capacity: 10 }, 0),
+            (Scrollback::Enabled { capacity: 10 }, 3),
+            (Scrollback::Enabled { capacity: 10 }, 10),
+            (Scrollback::Enabled { capacity: 10 }, 25),
+        ];
+        for (scrollback, scrolled) in cases {
+            let mut grid = Grid::new(size, scrollback);
+            grid.allocate_rows();
+            for _ in 0..scrolled {
+                grid.scroll_up(1, |_| {});
+            }
+            for offset in 0..=grid.scrollback_len() + 1 {
+                grid.set_scrollback(offset);
+                for row in 0..size.rows() + 2 {
+                    let direct = grid.visible_row(row);
+                    let walked = grid.visible_rows().nth(usize::from(row));
+                    let same = match (direct, walked) {
+                        (Some(a), Some(b)) => core::ptr::eq(a, b),
+                        (None, None) => true,
+                        _ => false,
+                    };
+                    assert!(
+                        same,
+                        "scrolled {scrolled}, offset {offset}, row {row}"
+                    );
+                }
+            }
+        }
+    }
 }
