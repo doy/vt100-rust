@@ -336,3 +336,24 @@ fn gen_nums(range: RangeInclusive<u8>, join: &str) -> String {
         .collect::<Vec<String>>()
         .join(join)
 }
+
+#[test]
+fn scrollback_rows_keep_their_cells_and_screen_rows_reset() {
+    let mut parser = helpers::new(2, 10, 10);
+    // A row ending in blanks with a background color, which are not blank
+    // cells and must survive into scrollback, then a row that wraps.
+    parser.process(b"ab\x1b[44m   \x1b[m\r\n0123456789xyz\r\n");
+    parser.process(b"long line!\r\nq");
+    assert_eq!(parser.screen().contents(), "long line!\nq");
+    // The row reused for "q" was "long line!"'s neighbor; nothing of what
+    // it held before remains.
+    assert_eq!(parser.screen().cell(1, 1).unwrap().contents(), "");
+
+    parser.screen_mut().set_scrollback(4);
+    assert_eq!(parser.screen().contents(), "ab   \n0123456789");
+    let screen = parser.screen();
+    assert_eq!(screen.cell(0, 4).unwrap().bgcolor(), vt100::Color::Idx(4));
+    assert_eq!(screen.cell(0, 5).unwrap().bgcolor(), vt100::Color::Default);
+    assert!(!screen.row_wrapped(0));
+    assert!(screen.row_wrapped(1));
+}

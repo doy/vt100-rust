@@ -151,16 +151,25 @@ impl Row {
         }
     }
 
-    /// Trims trailing blank cells from the row.
-    pub fn trim(&mut self) {
+    /// Returns a copy of the row without its trailing blank cells, and
+    /// resets the row. Only the cells before the trailing blank ones need
+    /// resetting, so this avoids both allocating a full-width replacement row
+    /// and reallocating the trimmed one.
+    pub fn take_trimmed(&mut self) -> Self {
         let excess = self
             .cells
             .iter()
             .rev()
-            .take_while(|c| **c == crate::cell::Cell::DEFAULT)
+            .take_while(|c| c.is_default())
             .count();
-        self.cells.truncate(self.cells.len() - excess);
-        self.cells.shrink_to_fit();
+        let used = self.cells.len() - excess;
+        let taken = Self {
+            cells: self.cells[..used].to_vec(),
+            wrapped: self.wrapped,
+        };
+        self.cells[..used].fill(crate::Cell::new());
+        self.wrapped = false;
+        taken
     }
 
     pub fn wrap(&mut self, wrap: bool) {
