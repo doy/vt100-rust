@@ -274,10 +274,24 @@ impl Grid {
             });
     }
 
+    /// Trims every visible row of scrollback back to its used cells, undoing
+    /// [`Self::grow_visible_scrollback`] for rows about to leave the view.
+    fn trim_visible_scrollback(scrollback: &mut ScrollbackState, size: Size) {
+        let scrollback_len = scrollback.rows.len();
+        scrollback
+            .rows
+            .iter_mut()
+            .skip(scrollback_len - scrollback.offset)
+            .take(size.rows().into())
+            .for_each(|row| *row = row.take_trimmed());
+    }
+
     pub fn set_scrollback(&mut self, rows: usize) {
         let Some(scrollback) = &mut self.scrollback else {
             return;
         };
+        // Otherwise every row ever scrolled to would stay at full width.
+        Self::trim_visible_scrollback(scrollback, self.size);
         scrollback.offset = rows.min(scrollback.rows.len());
         Self::grow_visible_scrollback(scrollback, self.size);
     }
@@ -939,4 +953,35 @@ impl Size {
 pub struct Pos {
     pub row: u16,
     pub col: u16,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // Rows of scrollback are widened to the screen's width while they are
+    // visible; once the view moves on they should be narrow again, or paging
+    // through the scrollback leaves all of it at full width.
+    #[test]
+    fn scrollback_rows_are_trimmed_once_scrolled_past() {
+        let size = Size {
+            rows: core::num::NonZeroU16::new(4).unwrap(),
+            cols: core::num::NonZeroU16::new(10).unwrap(),
+        };
+        let mut grid = Grid::new(size, Scrollback::Enabled { capacity: 20 });
+        grid.allocate_rows();
+        for _ in 0..20 {
+            grid.scroll_up(1, |_| {});
+        }
+        assert_eq!(grid.scrollback_len(), 20);
+        for offset in 0..=20 {
+            grid.set_scrollback(offset);
+            assert!(grid.visible_row(0).unwrap().get(9).is_some());
+        }
+        grid.set_scrollback(0);
+        let scrollback = grid.scrollback.as_ref().unwrap();
+        for (i, row) in scrollback.rows.iter().enumerate() {
+            assert!(row.get(9).is_none(), "row {i} still full width");
+        }
+    }
 }
