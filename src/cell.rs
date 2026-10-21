@@ -40,6 +40,11 @@ impl Cell {
         }
     }
 
+    /// Equivalent to `*self == Self::DEFAULT`, but cheaper.
+    pub(crate) fn is_default(&self) -> bool {
+        self.len == 0 && self.attrs == crate::attrs::Attrs::new()
+    }
+
     fn len(&self) -> usize {
         usize::from(self.len & LEN_BITS)
     }
