@@ -39,6 +39,10 @@ impl Row {
         self.cells.iter()
     }
 
+    pub fn as_slice(&self) -> &[crate::Cell] {
+        &self.cells
+    }
+
     pub fn get(&self, col: u16) -> Option<&crate::Cell> {
         self.cells.get(usize::from(col))
     }
