@@ -681,6 +681,34 @@ impl Screen {
         self.grid().line(line).map(crate::row::Row::as_slice)
     }
 
+    /// Returns the cells of row `row` of the normal screen while the
+    /// alternate screen hides it, as it was when the alternate screen came
+    /// on (what tmux's `capture-pane -a` reads). `None` when the alternate
+    /// screen is not shown, or past the screen's last row. As with
+    /// [`Screen::line_cells`], the cells after the ones returned are blank.
+    #[must_use]
+    pub fn normal_screen_row_cells(
+        &self,
+        row: u16,
+    ) -> Option<&[crate::Cell]> {
+        if !self.alternate_screen() {
+            return None;
+        }
+        self.grid.visible_row(row).map(crate::row::Row::as_slice)
+    }
+
+    /// Returns whether row `row` of the normal screen the alternate screen
+    /// hides (see [`Screen::normal_screen_row_cells`]) should wrap to the
+    /// next row.
+    #[must_use]
+    pub fn normal_screen_row_wrapped(&self, row: u16) -> bool {
+        self.alternate_screen()
+            && self
+                .grid
+                .visible_row(row)
+                .is_some_and(crate::row::Row::wrapped)
+    }
+
     /// Returns whether line `line` (numbered as in [`Screen::line_cells`])
     /// should wrap to the next line.
     #[must_use]
