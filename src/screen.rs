@@ -77,6 +77,16 @@ pub enum CursorStyle {
     SteadyVerticalBar,
 }
 
+/// An OSC 8 hyperlink: where it points, and the `id` it was given, which
+/// joins its pieces when the text of one link is broken up.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Hyperlink {
+    /// Where the link points.
+    pub uri: String,
+    /// The `id` parameter it was given, if any.
+    pub id: Option<String>,
+}
+
 /// Represents the overall terminal state.
 #[derive(Clone, Debug)]
 pub struct Screen {
@@ -85,6 +95,11 @@ pub struct Screen {
 
     attrs: crate::attrs::Attrs,
     saved_attrs: crate::attrs::Attrs,
+
+    /// The OSC 8 hyperlink text is written under, as a cell keeps it (an
+    /// index into `hyperlinks` plus one; 0 for none).
+    link: u16,
+    hyperlinks: Vec<Hyperlink>,
 
     modes: u8,
     mouse_protocol_mode: MouseProtocolMode,
@@ -115,6 +130,9 @@ impl Screen {
 
             attrs: crate::attrs::Attrs::default(),
             saved_attrs: crate::attrs::Attrs::default(),
+
+            link: 0,
+            hyperlinks: Vec::new(),
 
             modes: 0,
             mouse_protocol_mode: MouseProtocolMode::default(),
@@ -670,6 +688,41 @@ impl Screen {
         self.grid().visible_cell(crate::grid::Pos { row, col })
     }
 
+    /// Returns the hyperlink a cell's [`Cell::hyperlink_id`] names.
+    ///
+    /// [`Cell::hyperlink_id`]: crate::Cell::hyperlink_id
+    #[must_use]
+    pub fn hyperlink(&self, id: core::num::NonZeroU16) -> Option<&Hyperlink> {
+        self.hyperlinks.get(usize::from(id.get()) - 1)
+    }
+
+    /// OSC 8: text written from here on links to `uri` (`params` may give it
+    /// an `id`), or with an empty `uri` to nothing. Each distinct link is
+    /// kept once; past `u16::MAX` of them, text is written unlinked.
+    pub(crate) fn set_hyperlink(&mut self, params: &[u8], uri: &[u8]) {
+        if uri.is_empty() {
+            self.link = 0;
+            return;
+        }
+        let id = params
+            .split(|&b| b == b':')
+            .find_map(|p| p.strip_prefix(b"id="))
+            .map(|id| String::from_utf8_lossy(id).into_owned());
+        let link = Hyperlink {
+            uri: String::from_utf8_lossy(uri).into_owned(),
+            id,
+        };
+        let index = self
+            .hyperlinks
+            .iter()
+            .position(|h| *h == link)
+            .unwrap_or_else(|| {
+                self.hyperlinks.push(link);
+                self.hyperlinks.len() - 1
+            });
+        self.link = u16::try_from(index + 1).unwrap_or(0);
+    }
+
     /// Returns whether the text in row `row` should wrap to the next line.
     #[must_use]
     pub fn row_wrapped(&self, row: u16) -> bool {
@@ -926,16 +979,11 @@ impl Screen {
     ) {
         if new_pos.col == 0 {
             let attrs = self.attrs;
-            let contents = self
-                .grid()
-                .drawing_cell(old_pos)
-                .unwrap()
-                .contents()
-                .to_string();
-            self.grid_mut()
-                .drawing_cell_mut(new_pos)
-                .unwrap()
-                .set_contents(&contents, attrs);
+            let old = self.grid().drawing_cell(old_pos).unwrap();
+            let (contents, link) = (old.contents().to_string(), old.link());
+            let new = self.grid_mut().drawing_cell_mut(new_pos).unwrap();
+            new.set_contents(&contents, attrs);
+            new.set_link(link);
             self.grid_mut()
                 .drawing_cell_mut(old_pos)
                 .unwrap()
@@ -956,6 +1004,7 @@ impl Screen {
     ) {
         let size = self.grid().size();
         let attrs = self.attrs;
+        let link = self.link;
 
         if base_pos.col > 0 {
             let prev_cell = self
@@ -1001,6 +1050,7 @@ impl Screen {
             let next_cell_was_wide = next_cell.is_wide();
             next_cell.clear(crate::attrs::Attrs::default());
             next_cell.set_wide_continuation(true);
+            next_cell.set_link(link);
             if next_cell_was_wide {
                 let next_next_cell = self
                     .grid_mut()
@@ -1088,11 +1138,10 @@ impl<CB: crate::Callbacks> WrappedScreen<CB> {
             cell_was_wide =
                 screen.grid().drawing_cell(base_pos).unwrap().is_wide();
 
-            screen
-                .grid_mut()
-                .drawing_cell_mut(base_pos)
-                .unwrap()
-                .set(c, attrs);
+            let link = screen.link;
+            let cell = screen.grid_mut().drawing_cell_mut(base_pos).unwrap();
+            cell.set(c, attrs);
+            cell.set_link(link);
             screen.last_char = Some(c);
             screen.grid_mut().col_inc(width);
         } else {
