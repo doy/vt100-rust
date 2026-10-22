@@ -336,3 +336,45 @@ fn gen_nums(range: RangeInclusive<u8>, join: &str) -> String {
         .collect::<Vec<String>>()
         .join(join)
 }
+
+#[test]
+fn line_cells_read_scrollback_without_scrolling() {
+    let mut parser = helpers::new(4, 10, 20);
+    for n in 0..30 {
+        parser.process(
+            format!("\x1b[3{}m{n} {}\x1b[m\r\n", n % 8, "x".repeat(n % 13))
+                .as_bytes(),
+        );
+    }
+    let history = parser.screen().scrollback_len();
+    assert_eq!(history, 20);
+    let lines = history + 4;
+    // What paging through with set_scrollback and reading each cell shows.
+    let mut paged = vec![None; lines];
+    for offset in (0..=history).rev() {
+        parser.screen_mut().set_scrollback(offset);
+        let screen = parser.screen();
+        for row in 0..4u16 {
+            let line = history - offset + usize::from(row);
+            let cells: Vec<vt100::Cell> = (0..10)
+                .map(|col| screen.cell(row, col).unwrap().clone())
+                .collect();
+            paged[line] = Some((cells, screen.row_wrapped(row)));
+        }
+    }
+    parser.screen_mut().set_scrollback(3);
+    let screen = parser.screen();
+    let blank = helpers::new(1, 1, 0).screen().cell(0, 0).unwrap().clone();
+    for (line, page) in paged.into_iter().enumerate() {
+        let (want, wrapped) = page.unwrap();
+        let got = screen.line_cells(line).unwrap();
+        assert!(got.len() <= 10, "line {line}");
+        let got: Vec<vt100::Cell> = (0..10)
+            .map(|col| got.get(col).cloned().unwrap_or_else(|| blank.clone()))
+            .collect();
+        assert_eq!(got, want, "line {line}");
+        assert_eq!(screen.line_wrapped(line), wrapped, "line {line}");
+    }
+    assert!(screen.line_cells(lines).is_none());
+    assert_eq!(screen.scrollback(), 3, "the view is left where it was");
+}

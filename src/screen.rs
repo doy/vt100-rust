@@ -670,6 +670,52 @@ impl Screen {
         self.grid().visible_cell(crate::grid::Pos { row, col })
     }
 
+    /// Returns the cells of line `line` of the scrollback and the screen taken
+    /// together: line 0 is the oldest row of scrollback, and the screen's rows
+    /// follow the newest. Unlike [`Screen::cell`], this does not depend on
+    /// where the scrollback is scrolled to, so a whole scrollback can be read
+    /// without moving the view. A row of scrollback can be shorter than the
+    /// screen is wide: the cells after the ones returned are blank.
+    #[must_use]
+    pub fn line_cells(&self, line: usize) -> Option<&[crate::Cell]> {
+        self.grid().line(line).map(crate::row::Row::as_slice)
+    }
+
+    /// Returns the cells of row `row` of the normal screen while the
+    /// alternate screen hides it, as it was when the alternate screen came
+    /// on (what tmux's `capture-pane -a` reads). `None` when the alternate
+    /// screen is not shown, or past the screen's last row. As with
+    /// [`Screen::line_cells`], the cells after the ones returned are blank.
+    #[must_use]
+    pub fn normal_screen_row_cells(
+        &self,
+        row: u16,
+    ) -> Option<&[crate::Cell]> {
+        if !self.alternate_screen() {
+            return None;
+        }
+        self.grid.visible_row(row).map(crate::row::Row::as_slice)
+    }
+
+    /// Returns whether row `row` of the normal screen the alternate screen
+    /// hides (see [`Screen::normal_screen_row_cells`]) should wrap to the
+    /// next row.
+    #[must_use]
+    pub fn normal_screen_row_wrapped(&self, row: u16) -> bool {
+        self.alternate_screen()
+            && self
+                .grid
+                .visible_row(row)
+                .is_some_and(crate::row::Row::wrapped)
+    }
+
+    /// Returns whether line `line` (numbered as in [`Screen::line_cells`])
+    /// should wrap to the next line.
+    #[must_use]
+    pub fn line_wrapped(&self, line: usize) -> bool {
+        self.grid().line(line).is_some_and(crate::row::Row::wrapped)
+    }
+
     /// Returns whether the text in row `row` should wrap to the next line.
     #[must_use]
     pub fn row_wrapped(&self, row: u16) -> bool {
