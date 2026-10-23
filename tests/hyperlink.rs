@@ -58,3 +58,22 @@ fn the_same_link_is_kept_once() {
     );
     assert_eq!(screen.cell(0, 1).unwrap().hyperlink_id(), None);
 }
+
+#[test]
+fn cleared_links_link_nothing_and_their_numbers_stay_unused() {
+    let mut parser = helpers::new(3, 20, 0);
+    parser.process(b"\x1b]8;;u\x07a\x1b]8;;\x07");
+    let old = parser.screen().cell(0, 0).unwrap().hyperlink_id();
+    assert!(old.is_some());
+    parser.screen_mut().clear_hyperlinks();
+    assert_eq!(link(parser.screen(), 0, 0), None);
+    parser.process(b"\x1b]8;;u\x07b\x1b]8;;\x07");
+    let screen = parser.screen();
+    assert_eq!(link(screen, 0, 1), Some(("u".to_owned(), None)));
+    assert_ne!(screen.cell(0, 1).unwrap().hyperlink_id(), old);
+    assert_eq!(
+        link(screen, 0, 0),
+        None,
+        "the old cell does not take the new link"
+    );
+}

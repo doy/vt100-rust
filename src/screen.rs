@@ -99,7 +99,9 @@ pub struct Screen {
     /// The OSC 8 hyperlink text is written under, as a cell keeps it (an
     /// index into `hyperlinks` plus one; 0 for none).
     link: u16,
-    hyperlinks: Vec<Hyperlink>,
+    /// Each link by its number; one cleared stays as `None`, so a cell
+    /// still holding its number links to nothing rather than a later link.
+    hyperlinks: Vec<Option<Hyperlink>>,
 
     modes: u8,
     mouse_protocol_mode: MouseProtocolMode,
@@ -693,7 +695,15 @@ impl Screen {
     /// [`Cell::hyperlink_id`]: crate::Cell::hyperlink_id
     #[must_use]
     pub fn hyperlink(&self, id: core::num::NonZeroU16) -> Option<&Hyperlink> {
-        self.hyperlinks.get(usize::from(id.get()) - 1)
+        self.hyperlinks.get(usize::from(id.get()) - 1)?.as_ref()
+    }
+
+    /// Forgets every hyperlink: the cells written under one link to nothing
+    /// from now on, as does text written before the next OSC 8. A later link
+    /// is never given a number one of them had.
+    pub fn clear_hyperlinks(&mut self) {
+        self.hyperlinks.fill(None);
+        self.link = 0;
     }
 
     /// OSC 8: text written from here on links to `uri` (`params` may give it
@@ -715,9 +725,9 @@ impl Screen {
         let index = self
             .hyperlinks
             .iter()
-            .position(|h| *h == link)
+            .position(|h| h.as_ref() == Some(&link))
             .unwrap_or_else(|| {
-                self.hyperlinks.push(link);
+                self.hyperlinks.push(Some(link));
                 self.hyperlinks.len() - 1
             });
         self.link = u16::try_from(index + 1).unwrap_or(0);
