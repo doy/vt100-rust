@@ -1,7 +1,7 @@
 use unicode_width::{UnicodeWidthChar as _, UnicodeWidthStr as _};
 
-// chosen to make the size of the cell struct 32 bytes
-const CONTENT_BYTES: usize = 22;
+// chosen to make the size of the cell struct 32 bytes, with its hyperlink
+const CONTENT_BYTES: usize = 20;
 
 const IS_WIDE: u8 = 0b1000_0000;
 const IS_WIDE_CONTINUATION: u8 = 0b0100_0000;
@@ -13,6 +13,9 @@ pub struct Cell {
     contents: [u8; CONTENT_BYTES],
     len: u8,
     attrs: crate::attrs::Attrs,
+    /// The OSC 8 hyperlink the cell was written under, as an index into
+    /// the screen's hyperlinks plus one; 0 for none.
+    link: u16,
 }
 const _: () = assert!(core::mem::size_of::<Cell>() == 32);
 
@@ -21,7 +24,7 @@ impl PartialEq<Self> for Cell {
         if self.len != other.len {
             return false;
         }
-        if self.attrs != other.attrs {
+        if self.attrs != other.attrs || self.link != other.link {
             return false;
         }
         let len = self.len();
@@ -37,6 +40,7 @@ impl Cell {
             contents: [0; CONTENT_BYTES],
             len: 0,
             attrs: crate::attrs::Attrs::new(),
+            link: 0,
         }
     }
 
@@ -51,6 +55,22 @@ impl Cell {
         // character to determine the cell width
         self.set_wide(c.width().unwrap_or(1) > 1);
         self.attrs = a;
+        self.link = 0;
+    }
+
+    pub(crate) fn set_link(&mut self, link: u16) {
+        self.link = link;
+    }
+
+    pub(crate) fn link(&self) -> u16 {
+        self.link
+    }
+
+    /// Returns the OSC 8 hyperlink the cell was written under, if any, as an
+    /// id for [`Screen::hyperlink`](crate::Screen::hyperlink).
+    #[must_use]
+    pub fn hyperlink_id(&self) -> Option<core::num::NonZeroU16> {
+        core::num::NonZeroU16::new(self.link)
     }
 
     pub(crate) fn append(&mut self, c: char) {
@@ -94,6 +114,7 @@ impl Cell {
     pub(crate) fn clear(&mut self, attrs: crate::attrs::Attrs) {
         self.len = 0;
         self.attrs = attrs;
+        self.link = 0;
     }
 
     /// Returns the text contents of the cell.
