@@ -64,6 +64,19 @@ pub trait Callbacks {
     /// This callback is called when the terminal receives a OSC sequence
     /// (`\e]`) which is otherwise not implemented.
     fn unhandled_osc(&mut self, _: &mut crate::Screen, _params: &[&[u8]]) {}
+    /// This callback is called when the terminal receives a DCS sequence
+    /// (`\eP`) which is otherwise not implemented.
+    ///
+    /// The payload is limited to 8192 bytes. Longer payloads are truncated.
+    fn unhandled_dcs(
+        &mut self,
+        _: &mut crate::Screen,
+        _params: &[&[u16]],
+        _intermediates: &[u8],
+        _action: char,
+        _payload: &[u8],
+    ) {
+    }
 }
 
 impl Callbacks for () {}

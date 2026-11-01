@@ -2,9 +2,19 @@ const BASE64: &[u8] =
     b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
 const CLIPBOARD_SELECTOR: &[u8] = b"cpqs01234567";
 
+const DCS_PAYLOAD_LIMIT: usize = 8192;
+
+struct Dcs {
+    params: Vec<Vec<u16>>,
+    intermediates: Vec<u8>,
+    action: char,
+    payload: Vec<u8>,
+}
+
 pub struct WrappedScreen<CB: crate::callbacks::Callbacks = ()> {
     pub screen: crate::screen::Screen,
     pub callbacks: CB,
+    dcs: Option<Dcs>,
 }
 
 impl WrappedScreen<()> {
@@ -26,6 +36,7 @@ impl<CB: crate::callbacks::Callbacks> WrappedScreen<CB> {
                 scrollback_len,
             ),
             callbacks,
+            dcs: None,
         }
     }
 }
@@ -192,6 +203,43 @@ impl<CB: crate::callbacks::Callbacks> vte::Perform for WrappedScreen<CB> {
                     c,
                 );
             }
+        }
+    }
+
+    fn hook(
+        &mut self,
+        params: &vte::Params,
+        intermediates: &[u8],
+        _ignore: bool,
+        action: char,
+    ) {
+        self.dcs = Some(Dcs {
+            params: params.iter().map(<[u16]>::to_vec).collect(),
+            intermediates: intermediates.to_vec(),
+            action,
+            payload: Vec::new(),
+        });
+    }
+
+    fn put(&mut self, byte: u8) {
+        if let Some(dcs) = &mut self.dcs {
+            if dcs.payload.len() < DCS_PAYLOAD_LIMIT {
+                dcs.payload.push(byte);
+            }
+        }
+    }
+
+    fn unhook(&mut self) {
+        if let Some(dcs) = self.dcs.take() {
+            let params: Vec<&[u16]> =
+                dcs.params.iter().map(Vec::as_slice).collect();
+            self.callbacks.unhandled_dcs(
+                &mut self.screen,
+                &params,
+                &dcs.intermediates,
+                dcs.action,
+                &dcs.payload,
+            );
         }
     }
 
