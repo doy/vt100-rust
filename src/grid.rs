@@ -1,6 +1,8 @@
 use crate::term::BufWrite as _;
 use alloc::{string::String, vec::Vec};
 
+mod reflow;
+
 #[derive(Clone, Debug)]
 pub struct Grid {
     size: Size,
@@ -78,11 +80,19 @@ impl Grid {
         self.size
     }
 
-    pub fn set_size<F>(&mut self, size: Size, on_row: F)
+    pub fn set_size<F>(&mut self, size: Size, reflow: bool, on_row: F)
     where
         F: FnMut(&crate::row::Row),
     {
         if size == self.size {
+            return;
+        }
+
+        // Only the primary grid reflows. Full-screen applications own the
+        // alternate grid's geometry and redraw it after SIGWINCH.
+        if reflow && size.cols != self.size.cols && self.scrollback.is_some()
+        {
+            self.reflow(size, on_row);
             return;
         }
 
@@ -270,7 +280,9 @@ impl Grid {
             .skip(scrollback_len - scrollback.offset)
             .take(size.rows().into())
             .for_each(|row| {
+                let wrapped = row.wrapped();
                 row.grow(size.cols(), crate::cell::Cell::new());
+                row.wrap(wrapped);
             });
     }
 

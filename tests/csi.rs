@@ -92,11 +92,13 @@ fn xtwinops() {
     vt.process(
         b"\x1b[H\x1b[8;24;15tbbbbbbbbbbbbbbbbbbbb\x1b[8;24;80tcccccccccccccccccccc",
     );
-    assert_eq!(vt.screen().rows(0, 80).next().unwrap(), "bbbbbbbbbbbbbbb");
+    // The narrow rows rejoin before the final write overwrites the next
+    // twenty columns of the original logical line.
     assert_eq!(
-        vt.screen().rows(0, 80).nth(1).unwrap(),
-        "bbbbbcccccccccccccccccccc"
+        vt.screen().rows(0, 80).next().unwrap(),
+        format!("{}{}{}", "b".repeat(20), "c".repeat(20), "a".repeat(40))
     );
+    assert_eq!(vt.screen().rows(0, 80).nth(1).unwrap(), "aaaaaaaaaa");
 }
 
 #[test]

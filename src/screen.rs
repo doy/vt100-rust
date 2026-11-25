@@ -137,9 +137,16 @@ impl Screen {
         rows: core::num::NonZeroU16,
         cols: core::num::NonZeroU16,
     ) {
-        self.grid.set_size(crate::grid::Size { rows, cols }, |_| {});
-        self.alternate_grid
-            .set_size(crate::grid::Size { rows, cols }, |_| {});
+        self.grid.set_size(
+            crate::grid::Size { rows, cols },
+            self.alternate_screen() || !self.bracketed_paste(),
+            |_| {},
+        );
+        self.alternate_grid.set_size(
+            crate::grid::Size { rows, cols },
+            false,
+            |_| {},
+        );
     }
 
     /// Returns the current size of the terminal.
@@ -404,20 +411,22 @@ impl Screen {
         width: u16,
     ) -> impl Iterator<Item = String> + '_ {
         let mut wrapping = false;
+        let mut previous_position = None;
         self.grid().visible_rows().enumerate().map(move |(i, row)| {
             // number of rows in a grid is stored in a u16 (see Size), so
             // visible_rows can never return enough rows to overflow here
             let i = i.try_into().unwrap();
             let mut contents = String::new();
-            row.write_contents_formatted(
+            let (position, _) = row.write_contents_formatted(
                 &mut contents,
                 start,
                 width,
                 i,
                 wrapping,
-                None,
+                if wrapping { previous_position } else { None },
                 None,
             );
+            previous_position = Some(position);
             if start == 0 && width == self.grid.size().cols() {
                 wrapping = row.wrapped();
             }
@@ -886,34 +895,21 @@ impl Screen {
         let pos = self.grid().pos();
         let size = self.grid().size();
 
-        // it doesn't make any sense to wrap if the last column in a row
-        // didn't already have contents. don't try to handle the case
-        // where a character wraps because there was only one column left
-        // in the previous row - literally everything handles this case
-        // differently, and this is tmux behavior (and also the
-        // simplest). i'm open to reconsidering this behavior, but only
-        // with a really good reason (xterm handles this by introducing
-        // the concept of triple width cells, which i really don't want
-        // to do).
-        let mut wrap = false;
-        if pos.col + width > size.cols() {
-            let last_cell = self
+        if pos.col.saturating_add(width) <= size.cols() {
+            return false;
+        }
+        // A wide glyph can wrap with one unused column left. Keep that
+        // soft wrap, but retain the existing treatment of erased ASCII rows.
+        width > 1
+            || self
                 .grid()
                 .drawing_cell(crate::grid::Pos {
                     row: pos.row,
                     col: size.cols() - 1,
                 })
-                // pos.row is valid, since it comes directly from
-                // self.grid().pos() which we assume to always have a
-                // valid row value. size.cols - 1 is also always a valid
-                // column.
-                .unwrap();
-            if last_cell.has_contents() || last_cell.is_wide_continuation() {
-                wrap = true;
-            }
-        }
-
-        wrap
+                .is_some_and(|cell| {
+                    cell.has_contents() || cell.is_wide_continuation()
+                })
     }
 
     // if we already have a character in a cell, but adding a continuation
@@ -973,17 +969,16 @@ impl Screen {
         }
 
         if cell_was_wide && !cell_is_wide {
-            let next_cell = self
-                .grid_mut()
-                .drawing_cell_mut(crate::grid::Pos {
+            // Reflow can retain a wide glyph on a one-column screen. Such a
+            // cell has no continuation to clear when it is overwritten.
+            if let Some(next_cell) =
+                self.grid_mut().drawing_cell_mut(crate::grid::Pos {
                     row: base_pos.row,
                     col: base_pos.col + 1,
                 })
-                // base_pos.row is assumed valid, and this cell previously
-                // was wide, so there must have been a continuation cell
-                // after it.
-                .unwrap();
-            next_cell.set(' ', attrs);
+            {
+                next_cell.set(' ', attrs);
+            }
         }
 
         if !cell_was_wide && cell_is_wide {
@@ -1051,14 +1046,23 @@ impl<CB: crate::Callbacks> WrappedScreen<CB> {
         rows: core::num::NonZeroU16,
         cols: core::num::NonZeroU16,
     ) {
+        // Interactive line editors enable bracketed paste while accepting
+        // input. Their SIGWINCH redraw uses the previous physical prompt
+        // rows (including multiline prompts and right prompts). Reflowing
+        // those rows first makes their cursor-up/erase sequence miss them.
+        let reflow =
+            self.screen.alternate_screen() || !self.screen.bracketed_paste();
         let callbacks = &mut self.callbacks;
-        self.screen
-            .grid
-            .set_size(crate::grid::Size { rows, cols }, |row| {
+        self.screen.grid.set_size(
+            crate::grid::Size { rows, cols },
+            reflow,
+            |row| {
                 callbacks.on_scroll(crate::capture::RowContents(row), false);
-            });
+            },
+        );
         self.screen.alternate_grid.set_size(
             crate::grid::Size { rows, cols },
+            false,
             |row| {
                 callbacks.on_scroll(crate::capture::RowContents(row), true);
             },

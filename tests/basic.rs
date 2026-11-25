@@ -31,12 +31,11 @@ fn set_size() {
     assert_eq!(helpers::size(parser.screen()), (24, 80));
     assert_eq!(parser.screen().cursor_position(), (23, 4));
 
-    // The six rows that were pushed off the top to make the screen shorter
-    // come back at the top when it grows again, even though this parser has
-    // no scrollback to hold them, so the cursor moves back down with them.
+    // Width reflow can restore only rows retained in history. This parser
+    // has no scrollback, so the discarded rows do not return.
     helpers::set_size(parser.screen_mut(), 34, 8);
     assert_eq!(helpers::size(parser.screen()), (34, 8));
-    assert_eq!(parser.screen().cursor_position(), (29, 4));
+    assert_eq!(parser.screen().cursor_position(), (23, 4));
 
     parser.process(b"\x1b[?1049h");
     assert_eq!(helpers::size(parser.screen()), (34, 8));
@@ -55,10 +54,10 @@ fn set_size() {
     assert_eq!(parser.screen().contents(), "01234567890123456789");
 
     helpers::set_size(parser.screen_mut(), 24, 80);
-    assert_eq!(parser.screen().contents(), "01234567\n89012345\n6789");
+    assert_eq!(parser.screen().contents(), "01234567890123456789");
 
     helpers::set_size(parser.screen_mut(), 34, 8);
-    assert_eq!(parser.screen().contents(), "01234567\n89012345\n6789");
+    assert_eq!(parser.screen().contents(), "01234567890123456789");
 
     let mut parser = vt100::Parser::default();
     assert_eq!(helpers::size(parser.screen()), (24, 80));
@@ -225,26 +224,25 @@ fn set_size_resets_the_scroll_region_and_scrollback_offset() {
     assert_eq!(parser.screen().scrollback(), 0);
 }
 
-/// Rows in the scrollback keep their old width until they're pulled back onto
-/// the screen, at which point they're resized like any other row.
+/// Width changes reflow history and the live screen together. Growing the
+/// height then pulls back rows that already have the new width.
 #[test]
-fn set_size_resizes_scrollback_rows_when_they_come_back_onto_the_screen() {
+fn set_size_reflows_scrollback_rows_with_the_screen() {
     let mut parser = helpers::new(2, 10, 10);
     parser.process(b"aaaaaaaaaa\r\nbbbbbbbbbb\r\ncccccccccc");
     helpers::set_size(parser.screen_mut(), 2, 5);
+    assert_eq!(parser.screen().contents(), "cccccccccc");
 
-    // The scrollback row is still 10 columns wide while it's in the
-    // scrollback, so it has cells past the last column of the screen, even
-    // though only the first 5 columns of it are displayed.
-    parser.screen_mut().set_scrollback(1);
-    assert_eq!(parser.screen().contents(), "aaaaa\nbbbbb");
-    assert!(parser.screen().cell(0, 5).is_some());
+    parser.screen_mut().set_scrollback(4);
+    assert_eq!(parser.screen().contents(), "aaaaaaaaaa");
+    assert!(parser.screen().cell(0, 4).is_some());
+    assert!(parser.screen().cell(0, 5).is_none());
+    parser.screen_mut().set_scrollback(2);
+    assert_eq!(parser.screen().contents(), "bbbbbbbbbb");
     parser.screen_mut().set_scrollback(0);
 
-    // Growing the screen pulls it back out of the scrollback, which truncates
-    // it to the width of the screen.
     helpers::set_size(parser.screen_mut(), 3, 5);
-    assert_eq!(parser.screen().contents(), "aaaaa\nbbbbb\nccccc");
+    assert_eq!(parser.screen().contents(), "bbbbb\ncccccccccc");
     assert!(parser.screen().cell(0, 4).is_some());
     assert!(parser.screen().cell(0, 5).is_none());
 }
@@ -260,10 +258,10 @@ fn set_size_height_only_preserves_wrapping() {
     assert!(parser.screen().row_wrapped(0));
     assert_eq!(parser.screen().contents(), "abcdefg");
 
-    // Changing the width clears it, because the rows aren't reflowed.
+    // Widening rejoins the soft wrap because the whole line now fits.
     helpers::set_size(parser.screen_mut(), 6, 8);
     assert!(!parser.screen().row_wrapped(0));
-    assert_eq!(parser.screen().contents(), "abcde\nfg");
+    assert_eq!(parser.screen().contents(), "abcdefg");
 }
 
 /// Removing rows from the bottom of the screen can't leave the new bottom row
@@ -292,12 +290,11 @@ fn set_size_moves_the_saved_cursor() {
     let mut parser = helpers::new(6, 10, 10);
     parser.process(b"1\r\n2\r\n3\r\n4\r\n5\r\n6\x1b[5;9H\x1b7\x1b[6;1H");
 
-    // Two rows are pushed off the top to keep the cursor on the screen, so
-    // the saved cursor moves up two rows too, and is clamped to the new
-    // width.
+    // The saved column follows the same reflow as the text: column 8 of
+    // the old row becomes column 3 of its continuation at width 5.
     helpers::set_size(parser.screen_mut(), 4, 5);
     parser.process(b"\x1b8");
-    assert_eq!(parser.screen().cursor_position(), (2, 4));
+    assert_eq!(parser.screen().cursor_position(), (2, 3));
 
     // The saved cursor is clamped to the last row when the rows it was on are
     // removed from the bottom of the screen.

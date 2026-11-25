@@ -39,6 +39,14 @@ impl Row {
         self.cells.iter()
     }
 
+    pub fn into_cells(self) -> Vec<crate::Cell> {
+        self.cells
+    }
+
+    pub fn is_blank(&self) -> bool {
+        self.cells.iter().all(|cell| *cell == crate::Cell::DEFAULT)
+    }
+
     pub fn get(&self, col: u16) -> Option<&crate::Cell> {
         self.cells.get(usize::from(col))
     }
@@ -258,7 +266,32 @@ impl Row {
         let mut prev_attrs = prev_attrs.unwrap_or_default();
 
         let first_cell = &self.cells[usize::from(start)];
-        if wrapping && first_cell == &crate::cell::Cell::DEFAULT {
+        if wrapping
+            && self.cols() > 1
+            && prev_pos.row + 1 == row
+            && prev_pos.col < self.cols()
+            && !first_cell.is_wide()
+        {
+            // A wide glyph may have created this wrap before it was erased.
+            // Recreate the wrap without leaving a character in either row.
+            let edge = crate::grid::Pos {
+                row: prev_pos.row,
+                col: self.cols() - 1,
+            };
+            crate::term::MoveFromTo::new(prev_pos, edge).write_buf(contents);
+            let defaults = crate::attrs::Attrs::default();
+            defaults.write_escape_code_diff(contents, &prev_attrs);
+            prev_attrs = defaults;
+            contents.push('界');
+            crate::term::MoveTo::new(crate::grid::Pos { row, col: 0 })
+                .write_buf(contents);
+            crate::term::EraseChar::new(2).write_buf(contents);
+            prev_pos = crate::grid::Pos { row, col: 0 };
+        }
+        if wrapping
+            && prev_pos.row < row
+            && first_cell == &crate::cell::Cell::DEFAULT
+        {
             let default_attrs = crate::cell::Cell::DEFAULT.attrs();
             if prev_attrs != *default_attrs {
                 default_attrs.write_escape_code_diff(contents, &prev_attrs);
@@ -320,6 +353,23 @@ impl Row {
             if *cell != crate::cell::Cell::DEFAULT {
                 let attrs = cell.attrs();
                 if cell.has_contents() {
+                    if wrapping
+                        && pos.col == 0
+                        && cell.is_wide()
+                        && prev_pos.row + 1 == pos.row
+                        && prev_pos.col < self.cols() - 1
+                    {
+                        // Cursor motion can leave empty cells before a wide
+                        // wrap. Reach the old row's edge without filling those
+                        // cells, then let the glyph wrap naturally.
+                        let edge = crate::grid::Pos {
+                            row: prev_pos.row,
+                            col: self.cols() - 1,
+                        };
+                        crate::term::MoveFromTo::new(prev_pos, edge)
+                            .write_buf(contents);
+                        prev_pos = edge;
+                    }
                     if pos != prev_pos {
                         if !wrapping
                             || prev_pos.row + 1 != pos.row
@@ -368,6 +418,19 @@ impl Row {
                 prev_attrs = *attrs;
             }
             crate::term::ClearRowForward.write_buf(contents);
+        }
+
+        if self.wrapped
+            && start == 0
+            && width == self.cols()
+            && (prev_pos.row != row || prev_pos.col < self.cols() - 1)
+        {
+            let edge = crate::grid::Pos {
+                row,
+                col: self.cols() - 1,
+            };
+            crate::term::MoveFromTo::new(prev_pos, edge).write_buf(contents);
+            prev_pos = edge;
         }
 
         (prev_pos, prev_attrs)
@@ -423,6 +486,21 @@ impl Row {
         mut prev_pos: crate::grid::Pos,
         mut prev_attrs: crate::attrs::Attrs,
     ) -> (crate::grid::Pos, crate::attrs::Attrs) {
+        if wrapping
+            && prev_pos.row + 1 == row
+            && prev_pos.col < self.cols()
+            && (self.cells != prev.cells || wrapping != prev_wrapping)
+        {
+            return self.write_contents_formatted(
+                contents,
+                start,
+                width,
+                row,
+                wrapping,
+                Some(prev_pos),
+                Some(prev_attrs),
+            );
+        }
         let mut prev_was_wide = false;
 
         let first_cell = &self.cells[usize::from(start)];
@@ -509,6 +587,23 @@ impl Row {
             if cell != prev_cell {
                 let attrs = cell.attrs();
                 if cell.has_contents() {
+                    if wrapping
+                        && pos.col == 0
+                        && cell.is_wide()
+                        && prev_pos.row + 1 == pos.row
+                        && prev_pos.col < self.cols() - 1
+                    {
+                        // Cursor motion can leave empty cells before a wide
+                        // wrap. Reach the old row's edge without filling those
+                        // cells, then let the glyph wrap naturally.
+                        let edge = crate::grid::Pos {
+                            row: prev_pos.row,
+                            col: self.cols() - 1,
+                        };
+                        crate::term::MoveFromTo::new(prev_pos, edge)
+                            .write_buf(contents);
+                        prev_pos = edge;
+                    }
                     if pos != prev_pos {
                         if !wrapping
                             || prev_pos.row + 1 != pos.row
