@@ -207,7 +207,18 @@ fn resizes_keep_the_screen_consistent(session: TerminalSession) -> bool {
         }
     }
     parser.screen_mut().set_scrollback(0);
-    helpers::contents_formatted_reproduces_sized_screen(parser.screen())
+    let mut screen = parser.screen().clone();
+    let (rows, cols) = screen.size();
+    if cols.get() == 1
+        && (0..rows.get())
+            .any(|row| screen.cell(row, 0).is_some_and(vt100::Cell::is_wide))
+    {
+        // Reflow retains wide glyphs even at one column so they can return
+        // when widened. Input parsing cannot draw them at that width, so
+        // round-trip the retained text at the minimum drawable width.
+        helpers::set_size(&mut screen, rows.get(), 2);
+    }
+    helpers::contents_formatted_reproduces_sized_screen(&screen)
 }
 
 #[test]

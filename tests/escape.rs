@@ -78,7 +78,8 @@ fn decsc_resize() {
     parser.process(b"y\x1b8z");
     assert_eq!(
         parser.screen().contents(),
-        "yoo\n\n\n\n\n\n\n\n\n\n\n\n\n\n                                                           z"
+        format!("yoo{}{}z", "\n".repeat(14), " ".repeat(12))
     );
-    assert_eq!(parser.screen().cursor_position(), (14, 60));
+    // The saved column is mapped through reflow before its row is clamped.
+    assert_eq!(parser.screen().cursor_position(), (14, 13));
 }
